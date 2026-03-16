@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+# Mark the necessary Go modules as private to avoid Go's proxy
+export GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}github.com/dedalus-labs/dedalus-go,github.com/stainless-sdks/dedalus-go"
+
+REPLACEMENT="${1:-"../Dedalus-go"}"
+echo "==> Replacing Go SDK with $REPLACEMENT"
+go mod edit -replace github.com/dedalus-labs/dedalus-go="$REPLACEMENT"
+go mod tidy -e

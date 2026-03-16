@@ -11,8 +11,9 @@ import (
 func TestWorkspacesCreate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
-			t, "workspaces", "create",
+			t,
 			"--api-key", "string",
+			"workspaces", "create",
 			"--cpus", "0",
 			"--image-version", "image_version",
 			"--memory-mib", "0",
@@ -28,8 +29,9 @@ func TestWorkspacesCreate(t *testing.T) {
 			"memory_mib: 0\n" +
 			"storage_gib: 0\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
-			t, pipeData, "workspaces", "create",
+			t, pipeData,
 			"--api-key", "string",
+			"workspaces", "create",
 		)
 	})
 }
@@ -37,8 +39,9 @@ func TestWorkspacesCreate(t *testing.T) {
 func TestWorkspacesRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
-			t, "workspaces", "retrieve",
+			t,
 			"--api-key", "string",
+			"workspaces", "retrieve",
 			"--workspace-id", "workspace_id",
 		)
 	})
@@ -47,8 +50,9 @@ func TestWorkspacesRetrieve(t *testing.T) {
 func TestWorkspacesUpdate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
-			t, "workspaces", "update",
+			t,
 			"--api-key", "string",
+			"workspaces", "update",
 			"--workspace-id", "workspace_id",
 			"--if-match", "If-Match",
 			"--cpus", "0",
@@ -64,8 +68,9 @@ func TestWorkspacesUpdate(t *testing.T) {
 			"memory_mib: 0\n" +
 			"storage_gib: 0\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
-			t, pipeData, "workspaces", "update",
+			t, pipeData,
 			"--api-key", "string",
+			"workspaces", "update",
 			"--workspace-id", "workspace_id",
 			"--if-match", "If-Match",
 		)
@@ -75,8 +80,9 @@ func TestWorkspacesUpdate(t *testing.T) {
 func TestWorkspacesList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
-			t, "workspaces", "list",
+			t,
 			"--api-key", "string",
+			"workspaces", "list",
 			"--max-items", "10",
 			"--cursor", "cursor",
 			"--limit", "0",
@@ -87,8 +93,9 @@ func TestWorkspacesList(t *testing.T) {
 func TestWorkspacesDelete(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
-			t, "workspaces", "delete",
+			t,
 			"--api-key", "string",
+			"workspaces", "delete",
 			"--workspace-id", "workspace_id",
 			"--if-match", "If-Match",
 		)

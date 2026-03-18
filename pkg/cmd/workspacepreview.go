@@ -15,55 +15,36 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var workspacesCreate = cli.Command{
+var workspacesPreviewsCreate = cli.Command{
 	Name:    "create",
-	Usage:   "Create workspace",
+	Usage:   "Create preview",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "image-version",
+			Name:     "workspace-id",
 			Required: true,
-			BodyPath: "image_version",
 		},
 		&requestflag.Flag[int64]{
-			Name:     "memory-mib",
-			Usage:    "Memory in MiB.",
+			Name:     "port",
 			Required: true,
-			BodyPath: "memory_mib",
+			BodyPath: "port",
 		},
-		&requestflag.Flag[int64]{
-			Name:     "storage-gib",
-			Required: true,
-			BodyPath: "storage_gib",
+		&requestflag.Flag[string]{
+			Name:     "protocol",
+			BodyPath: "protocol",
 		},
-		&requestflag.Flag[float64]{
-			Name:     "vcpu",
-			Usage:    "CPU in vCPUs.",
-			Required: true,
-			BodyPath: "vcpu",
+		&requestflag.Flag[bool]{
+			Name:     "wake-if-needed",
+			BodyPath: "wake_if_needed",
 		},
 	},
-	Action:          handleWorkspacesCreate,
+	Action:          handleWorkspacesPreviewsCreate,
 	HideHelpCommand: true,
 }
 
-var workspacesRetrieve = cli.Command{
+var workspacesPreviewsRetrieve = cli.Command{
 	Name:    "retrieve",
-	Usage:   "Get workspace",
-	Suggest: true,
-	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:     "workspace-id",
-			Required: true,
-		},
-	},
-	Action:          handleWorkspacesRetrieve,
-	HideHelpCommand: true,
-}
-
-var workspacesUpdate = cli.Command{
-	Name:    "update",
-	Usage:   "Update workspace",
+	Usage:   "Get preview",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -71,34 +52,23 @@ var workspacesUpdate = cli.Command{
 			Required: true,
 		},
 		&requestflag.Flag[string]{
-			Name:       "if-match",
-			Required:   true,
-			HeaderPath: "If-Match",
-		},
-		&requestflag.Flag[int64]{
-			Name:     "memory-mib",
-			Usage:    "Memory in MiB.",
-			BodyPath: "memory_mib",
-		},
-		&requestflag.Flag[int64]{
-			Name:     "storage-gib",
-			BodyPath: "storage_gib",
-		},
-		&requestflag.Flag[float64]{
-			Name:     "vcpu",
-			Usage:    "CPU in vCPUs.",
-			BodyPath: "vcpu",
+			Name:     "preview-id",
+			Required: true,
 		},
 	},
-	Action:          handleWorkspacesUpdate,
+	Action:          handleWorkspacesPreviewsRetrieve,
 	HideHelpCommand: true,
 }
 
-var workspacesList = cli.Command{
+var workspacesPreviewsList = cli.Command{
 	Name:    "list",
-	Usage:   "List workspaces",
+	Usage:   "List previews",
 	Suggest: true,
 	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:     "workspace-id",
+			Required: true,
+		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
 			QueryPath: "cursor",
@@ -112,13 +82,13 @@ var workspacesList = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesList,
+	Action:          handleWorkspacesPreviewsList,
 	HideHelpCommand: true,
 }
 
-var workspacesDelete = cli.Command{
+var workspacesPreviewsDelete = cli.Command{
 	Name:    "delete",
-	Usage:   "Destroy workspace",
+	Usage:   "Delete preview",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -126,24 +96,26 @@ var workspacesDelete = cli.Command{
 			Required: true,
 		},
 		&requestflag.Flag[string]{
-			Name:       "if-match",
-			Required:   true,
-			HeaderPath: "If-Match",
+			Name:     "preview-id",
+			Required: true,
 		},
 	},
-	Action:          handleWorkspacesDelete,
+	Action:          handleWorkspacesPreviewsDelete,
 	HideHelpCommand: true,
 }
 
-func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-
+	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
+		cmd.Set("workspace-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceNewParams{}
+	params := dedalus.WorkspacePreviewNewParams{}
 
 	options, err := flagOptions(
 		cmd,
@@ -158,7 +130,12 @@ func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.New(ctx, params, options...)
+	_, err = client.Workspaces.Previews.New(
+		ctx,
+		cmd.Value("workspace-id").(string),
+		params,
+		options...,
+	)
 	if err != nil {
 		return err
 	}
@@ -166,18 +143,22 @@ func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces create", obj, format, transform)
+	return ShowJSON(os.Stdout, "workspaces:previews create", obj, format, transform)
 }
 
-func handleWorkspacesRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
+	if !cmd.IsSet("preview-id") && len(unusedArgs) > 0 {
+		cmd.Set("preview-id", unusedArgs[0])
 		unusedArgs = unusedArgs[1:]
 	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	}
+
+	params := dedalus.WorkspacePreviewGetParams{
+		WorkspaceID: cmd.Value("workspace-id").(string),
 	}
 
 	options, err := flagOptions(
@@ -193,46 +174,9 @@ func handleWorkspacesRetrieve(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Get(ctx, cmd.Value("workspace-id").(string), options...)
-	if err != nil {
-		return err
-	}
-
-	obj := gjson.ParseBytes(res)
-	format := cmd.Root().String("format")
-	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces retrieve", obj, format, transform)
-}
-
-func handleWorkspacesUpdate(ctx context.Context, cmd *cli.Command) error {
-	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
-	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
-	if len(unusedArgs) > 0 {
-		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
-	}
-
-	params := dedalus.WorkspaceUpdateParams{}
-
-	options, err := flagOptions(
-		cmd,
-		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
-		ApplicationJSON,
-		false,
-	)
-	if err != nil {
-		return err
-	}
-
-	var res []byte
-	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Update(
+	_, err = client.Workspaces.Previews.Get(
 		ctx,
-		cmd.Value("workspace-id").(string),
+		cmd.Value("preview-id").(string),
 		params,
 		options...,
 	)
@@ -243,18 +187,21 @@ func handleWorkspacesUpdate(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces update", obj, format, transform)
+	return ShowJSON(os.Stdout, "workspaces:previews retrieve", obj, format, transform)
 }
 
-func handleWorkspacesList(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-
+	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
+		cmd.Set("workspace-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceListParams{}
+	params := dedalus.WorkspacePreviewListParams{}
 
 	options, err := flagOptions(
 		cmd,
@@ -272,34 +219,46 @@ func handleWorkspacesList(ctx context.Context, cmd *cli.Command) error {
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.List(ctx, params, options...)
+		_, err = client.Workspaces.Previews.List(
+			ctx,
+			cmd.Value("workspace-id").(string),
+			params,
+			options...,
+		)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces list", obj, format, transform)
+		return ShowJSON(os.Stdout, "workspaces:previews list", obj, format, transform)
 	} else {
-		iter := client.Workspaces.ListAutoPaging(ctx, params, options...)
+		iter := client.Workspaces.Previews.ListAutoPaging(
+			ctx,
+			cmd.Value("workspace-id").(string),
+			params,
+			options...,
+		)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "workspaces:previews list", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
+	if !cmd.IsSet("preview-id") && len(unusedArgs) > 0 {
+		cmd.Set("preview-id", unusedArgs[0])
 		unusedArgs = unusedArgs[1:]
 	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceDeleteParams{}
+	params := dedalus.WorkspacePreviewDeleteParams{
+		WorkspaceID: cmd.Value("workspace-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
@@ -314,9 +273,9 @@ func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Delete(
+	_, err = client.Workspaces.Previews.Delete(
 		ctx,
-		cmd.Value("workspace-id").(string),
+		cmd.Value("preview-id").(string),
 		params,
 		options...,
 	)
@@ -327,5 +286,5 @@ func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces delete", obj, format, transform)
+	return ShowJSON(os.Stdout, "workspaces:previews delete", obj, format, transform)
 }

@@ -15,55 +15,49 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var workspacesCreate = cli.Command{
+var workspacesTerminalsCreate = cli.Command{
 	Name:    "create",
-	Usage:   "Create workspace",
+	Usage:   "Create terminal",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "image-version",
+			Name:     "workspace-id",
 			Required: true,
-			BodyPath: "image_version",
 		},
 		&requestflag.Flag[int64]{
-			Name:     "memory-mib",
-			Usage:    "Memory in MiB.",
+			Name:     "height",
 			Required: true,
-			BodyPath: "memory_mib",
+			BodyPath: "height",
 		},
 		&requestflag.Flag[int64]{
-			Name:     "storage-gib",
+			Name:     "width",
 			Required: true,
-			BodyPath: "storage_gib",
+			BodyPath: "width",
 		},
-		&requestflag.Flag[float64]{
-			Name:     "vcpu",
-			Usage:    "CPU in vCPUs.",
-			Required: true,
-			BodyPath: "vcpu",
+		&requestflag.Flag[string]{
+			Name:     "cwd",
+			BodyPath: "cwd",
+		},
+		&requestflag.Flag[map[string]any]{
+			Name:     "env",
+			BodyPath: "env",
+		},
+		&requestflag.Flag[string]{
+			Name:     "shell",
+			BodyPath: "shell",
+		},
+		&requestflag.Flag[bool]{
+			Name:     "wake-if-needed",
+			BodyPath: "wake_if_needed",
 		},
 	},
-	Action:          handleWorkspacesCreate,
+	Action:          handleWorkspacesTerminalsCreate,
 	HideHelpCommand: true,
 }
 
-var workspacesRetrieve = cli.Command{
+var workspacesTerminalsRetrieve = cli.Command{
 	Name:    "retrieve",
-	Usage:   "Get workspace",
-	Suggest: true,
-	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:     "workspace-id",
-			Required: true,
-		},
-	},
-	Action:          handleWorkspacesRetrieve,
-	HideHelpCommand: true,
-}
-
-var workspacesUpdate = cli.Command{
-	Name:    "update",
-	Usage:   "Update workspace",
+	Usage:   "Get terminal",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -71,34 +65,23 @@ var workspacesUpdate = cli.Command{
 			Required: true,
 		},
 		&requestflag.Flag[string]{
-			Name:       "if-match",
-			Required:   true,
-			HeaderPath: "If-Match",
-		},
-		&requestflag.Flag[int64]{
-			Name:     "memory-mib",
-			Usage:    "Memory in MiB.",
-			BodyPath: "memory_mib",
-		},
-		&requestflag.Flag[int64]{
-			Name:     "storage-gib",
-			BodyPath: "storage_gib",
-		},
-		&requestflag.Flag[float64]{
-			Name:     "vcpu",
-			Usage:    "CPU in vCPUs.",
-			BodyPath: "vcpu",
+			Name:     "terminal-id",
+			Required: true,
 		},
 	},
-	Action:          handleWorkspacesUpdate,
+	Action:          handleWorkspacesTerminalsRetrieve,
 	HideHelpCommand: true,
 }
 
-var workspacesList = cli.Command{
+var workspacesTerminalsList = cli.Command{
 	Name:    "list",
-	Usage:   "List workspaces",
+	Usage:   "List terminals",
 	Suggest: true,
 	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:     "workspace-id",
+			Required: true,
+		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
 			QueryPath: "cursor",
@@ -112,13 +95,13 @@ var workspacesList = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesList,
+	Action:          handleWorkspacesTerminalsList,
 	HideHelpCommand: true,
 }
 
-var workspacesDelete = cli.Command{
+var workspacesTerminalsDelete = cli.Command{
 	Name:    "delete",
-	Usage:   "Destroy workspace",
+	Usage:   "Delete terminal",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -126,24 +109,26 @@ var workspacesDelete = cli.Command{
 			Required: true,
 		},
 		&requestflag.Flag[string]{
-			Name:       "if-match",
-			Required:   true,
-			HeaderPath: "If-Match",
+			Name:     "terminal-id",
+			Required: true,
 		},
 	},
-	Action:          handleWorkspacesDelete,
+	Action:          handleWorkspacesTerminalsDelete,
 	HideHelpCommand: true,
 }
 
-func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesTerminalsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-
+	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
+		cmd.Set("workspace-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceNewParams{}
+	params := dedalus.WorkspaceTerminalNewParams{}
 
 	options, err := flagOptions(
 		cmd,
@@ -158,7 +143,12 @@ func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.New(ctx, params, options...)
+	_, err = client.Workspaces.Terminals.New(
+		ctx,
+		cmd.Value("workspace-id").(string),
+		params,
+		options...,
+	)
 	if err != nil {
 		return err
 	}
@@ -166,18 +156,22 @@ func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces create", obj, format, transform)
+	return ShowJSON(os.Stdout, "workspaces:terminals create", obj, format, transform)
 }
 
-func handleWorkspacesRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
+	if !cmd.IsSet("terminal-id") && len(unusedArgs) > 0 {
+		cmd.Set("terminal-id", unusedArgs[0])
 		unusedArgs = unusedArgs[1:]
 	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	}
+
+	params := dedalus.WorkspaceTerminalGetParams{
+		WorkspaceID: cmd.Value("workspace-id").(string),
 	}
 
 	options, err := flagOptions(
@@ -193,46 +187,9 @@ func handleWorkspacesRetrieve(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Get(ctx, cmd.Value("workspace-id").(string), options...)
-	if err != nil {
-		return err
-	}
-
-	obj := gjson.ParseBytes(res)
-	format := cmd.Root().String("format")
-	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces retrieve", obj, format, transform)
-}
-
-func handleWorkspacesUpdate(ctx context.Context, cmd *cli.Command) error {
-	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
-	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
-	if len(unusedArgs) > 0 {
-		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
-	}
-
-	params := dedalus.WorkspaceUpdateParams{}
-
-	options, err := flagOptions(
-		cmd,
-		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
-		ApplicationJSON,
-		false,
-	)
-	if err != nil {
-		return err
-	}
-
-	var res []byte
-	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Update(
+	_, err = client.Workspaces.Terminals.Get(
 		ctx,
-		cmd.Value("workspace-id").(string),
+		cmd.Value("terminal-id").(string),
 		params,
 		options...,
 	)
@@ -243,18 +200,21 @@ func handleWorkspacesUpdate(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces update", obj, format, transform)
+	return ShowJSON(os.Stdout, "workspaces:terminals retrieve", obj, format, transform)
 }
 
-func handleWorkspacesList(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-
+	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
+		cmd.Set("workspace-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceListParams{}
+	params := dedalus.WorkspaceTerminalListParams{}
 
 	options, err := flagOptions(
 		cmd,
@@ -272,34 +232,46 @@ func handleWorkspacesList(ctx context.Context, cmd *cli.Command) error {
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.List(ctx, params, options...)
+		_, err = client.Workspaces.Terminals.List(
+			ctx,
+			cmd.Value("workspace-id").(string),
+			params,
+			options...,
+		)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces list", obj, format, transform)
+		return ShowJSON(os.Stdout, "workspaces:terminals list", obj, format, transform)
 	} else {
-		iter := client.Workspaces.ListAutoPaging(ctx, params, options...)
+		iter := client.Workspaces.Terminals.ListAutoPaging(
+			ctx,
+			cmd.Value("workspace-id").(string),
+			params,
+			options...,
+		)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "workspaces:terminals list", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesTerminalsDelete(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
+	if !cmd.IsSet("terminal-id") && len(unusedArgs) > 0 {
+		cmd.Set("terminal-id", unusedArgs[0])
 		unusedArgs = unusedArgs[1:]
 	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceDeleteParams{}
+	params := dedalus.WorkspaceTerminalDeleteParams{
+		WorkspaceID: cmd.Value("workspace-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
@@ -314,9 +286,9 @@ func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Delete(
+	_, err = client.Workspaces.Terminals.Delete(
 		ctx,
-		cmd.Value("workspace-id").(string),
+		cmd.Value("terminal-id").(string),
 		params,
 		options...,
 	)
@@ -327,5 +299,5 @@ func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces delete", obj, format, transform)
+	return ShowJSON(os.Stdout, "workspaces:terminals delete", obj, format, transform)
 }

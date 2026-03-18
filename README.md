@@ -8,6 +8,12 @@ It is generated with [Stainless](https://www.stainless.com/).
 
 ## Installation
 
+### Installing with Homebrew
+
+```sh
+brew install dedalus-labs/dedalus/dedalus
+```
+
 ### Installing with Go
 
 To test or install the CLI locally, you need [Go](https://go.dev/doc/install) version 1.22 or later installed.
@@ -50,10 +56,10 @@ dedalus [resource] <command> [flags...]
 ```sh
 dedalus workspaces create \
   --api-key 'My API Key' \
-  --cpus 1 \
-  --image-version noble@2026-03-01.1 \
+  --image-version noble@golden \
   --memory-mib 2048 \
-  --storage-gib 20
+  --storage-gib 10 \
+  --vcpu 1
 ```
 
 For details about specific commands, use the `--help` flag.

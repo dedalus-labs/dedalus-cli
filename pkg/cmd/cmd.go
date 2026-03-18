@@ -100,6 +100,62 @@ func init() {
 				},
 			},
 			{
+				Name:     "workspaces:artifacts",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&workspacesArtifactsRetrieve,
+					&workspacesArtifactsList,
+					&workspacesArtifactsDelete,
+				},
+			},
+			{
+				Name:     "workspaces:previews",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&workspacesPreviewsCreate,
+					&workspacesPreviewsRetrieve,
+					&workspacesPreviewsList,
+					&workspacesPreviewsDelete,
+				},
+			},
+			{
+				Name:     "workspaces:ssh",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&workspacesSSHCreate,
+					&workspacesSSHRetrieve,
+					&workspacesSSHList,
+					&workspacesSSHDelete,
+				},
+			},
+			{
+				Name:     "workspaces:executions",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&workspacesExecutionsCreate,
+					&workspacesExecutionsRetrieve,
+					&workspacesExecutionsList,
+					&workspacesExecutionsDelete,
+					&workspacesExecutionsEvents,
+					&workspacesExecutionsOutput,
+				},
+			},
+			{
+				Name:     "workspaces:terminals",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&workspacesTerminalsCreate,
+					&workspacesTerminalsRetrieve,
+					&workspacesTerminalsList,
+					&workspacesTerminalsDelete,
+				},
+			},
+			{
 				Name:            "@manpages",
 				Usage:           "Generate documentation for 'man'",
 				UsageText:       "dedalus @manpages [-o dedalus.1] [--gzip]",

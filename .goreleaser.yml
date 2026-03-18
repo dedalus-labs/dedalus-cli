@@ -78,3 +78,33 @@ nfpms:
     contents:
       - src: man/man1/*.1.gz
         dst: /usr/share/man/man1/
+homebrew_casks:
+  - name: dedalus
+    repository:
+      owner: dedalus-labs
+      name: homebrew-dedalus
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: https://docs.dedaluslabs.ai
+    description: The official CLI for Dedalus.
+    license: MIT
+    binary: "dedalus"
+    completions:
+      bash: "completions/dedalus.bash"
+      zsh: "completions/dedalus.zsh"
+      fish: "completions/dedalus.fish"
+    manpages:
+    - man/man1/dedalus.1.gz
+
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      ids: [macos]
+
+      sign:
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+
+      notarize:
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+        key: "{{.Env.MACOS_NOTARY_KEY}}"

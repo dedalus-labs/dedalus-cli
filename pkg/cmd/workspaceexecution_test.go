@@ -16,7 +16,6 @@ func TestWorkspacesExecutionsCreate(t *testing.T) {
 			"workspaces:executions", "create",
 			"--workspace-id", "workspace_id",
 			"--command", "[string]",
-			"--capture-path", "[string]",
 			"--cwd", "cwd",
 			"--env", "{foo: string}",
 			"--stdin", "stdin",
@@ -29,8 +28,6 @@ func TestWorkspacesExecutionsCreate(t *testing.T) {
 		// Test piping YAML data over stdin
 		pipeData := []byte("" +
 			"command:\n" +
-			"  - string\n" +
-			"capture_paths:\n" +
 			"  - string\n" +
 			"cwd: cwd\n" +
 			"env:\n" +

@@ -29,10 +29,6 @@ var workspacesExecutionsCreate = cli.Command{
 			Required: true,
 			BodyPath: "command",
 		},
-		&requestflag.Flag[any]{
-			Name:     "capture-path",
-			BodyPath: "capture_paths",
-		},
 		&requestflag.Flag[string]{
 			Name:     "cwd",
 			BodyPath: "cwd",

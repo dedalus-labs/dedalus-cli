@@ -56,7 +56,6 @@ dedalus [resource] <command> [flags...]
 ```sh
 dedalus workspaces create \
   --api-key 'My API Key' \
-  --image-version noble@golden \
   --memory-mib 2048 \
   --storage-gib 10 \
   --vcpu 1

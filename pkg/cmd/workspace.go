@@ -20,11 +20,6 @@ var workspacesCreate = cli.Command{
 	Usage:   "Create workspace",
 	Suggest: true,
 	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:     "image-version",
-			Required: true,
-			BodyPath: "image_version",
-		},
 		&requestflag.Flag[int64]{
 			Name:     "memory-mib",
 			Usage:    "Memory in MiB.",

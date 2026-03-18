@@ -14,7 +14,6 @@ func TestWorkspacesCreate(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"workspaces", "create",
-			"--image-version", "image_version",
 			"--memory-mib", "0",
 			"--storage-gib", "0",
 			"--vcpu", "0",
@@ -24,7 +23,6 @@ func TestWorkspacesCreate(t *testing.T) {
 	t.Run("piping data", func(t *testing.T) {
 		// Test piping YAML data over stdin
 		pipeData := []byte("" +
-			"image_version: image_version\n" +
 			"memory_mib: 0\n" +
 			"storage_gib: 0\n" +
 			"vcpu: 0\n")

@@ -11,7 +11,7 @@ It is generated with [Stainless](https://www.stainless.com/).
 ### Installing with Homebrew
 
 ```sh
-brew install dedalus-labs/dedalus/dedalus
+brew install dedalus-labs/tap/dedalus
 ```
 
 ### Installing with Go

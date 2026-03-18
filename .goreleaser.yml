@@ -82,7 +82,7 @@ homebrew_casks:
   - name: dedalus
     repository:
       owner: dedalus-labs
-      name: homebrew-dedalus
+      name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://docs.dedaluslabs.ai
     description: The official CLI for Dedalus.

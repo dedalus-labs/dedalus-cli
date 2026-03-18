@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/dedalus-labs/dedalus-go"
+	"github.com/dedalus-labs/dedalus-go/packages/param"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/crypto/ssh"
 )
@@ -79,7 +80,7 @@ func handleSSH(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	sess, err := awaitSSHSession(ctx, client, wsID, pubKey, cmd.Bool("wake-if-needed"))
+	sess, err := awaitSSHSession(ctx, &client, wsID, pubKey, cmd.Bool("wake-if-needed"))
 	if err != nil {
 		return err
 	}
@@ -114,10 +115,12 @@ func awaitSSHSession(
 	client *dedalus.Client,
 	wsID, pubKey string,
 	wake bool,
-) (*dedalus.SSHSessionResponse, error) {
+) (*dedalus.SSHSession, error) {
 	resp, err := client.Workspaces.SSH.New(ctx, wsID, dedalus.WorkspaceSSHNewParams{
-		PublicKey:    pubKey,
-		WakeIfNeeded: dedalus.Bool(wake),
+		SSHSessionCreateParams: dedalus.SSHSessionCreateParams{
+			PublicKey:    pubKey,
+			WakeIfNeeded: param.NewOpt(wake),
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create ssh session: %w", err)
@@ -126,23 +129,23 @@ func awaitSSHSession(
 
 	for i := 0; i < sshPollMax; i++ {
 		switch resp.Status {
-		case "ready":
+		case dedalus.SSHSessionStatusReady:
 			return resp, nil
-		case "failed":
+		case dedalus.SSHSessionStatusFailed:
 			msg := resp.ErrorMessage
 			if msg == "" {
 				msg = "no detail from server"
 			}
 			return nil, fmt.Errorf("SSH session failed: %s (error_code=%s)", msg, resp.ErrorCode)
-		case "expired":
+		case dedalus.SSHSessionStatusExpired:
 			return nil, fmt.Errorf("SSH session expired before it became ready; try again with a fresh session")
-		case "closed":
+		case dedalus.SSHSessionStatusClosed:
 			return nil, fmt.Errorf("SSH session was closed before it became ready; another client may have deleted it")
 		}
 
 		delay := sshPollInterval
-		if resp.RetryAfterMS > 0 {
-			delay = time.Duration(resp.RetryAfterMS) * time.Millisecond
+		if resp.RetryAfterMs > 0 {
+			delay = time.Duration(resp.RetryAfterMs) * time.Millisecond
 		}
 		select {
 		case <-ctx.Done():

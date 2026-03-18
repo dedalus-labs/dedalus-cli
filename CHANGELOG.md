@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.2 (2026-03-18)
+
+Full Changelog: [v0.0.1...v0.0.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.1...v0.0.2)
+
+### Bug Fixes
+
+* improve linking behavior when developing on a branch not in the Go SDK ([69e4687](https://github.com/dedalus-labs/dedalus-cli/commit/69e468741b4d3abe8e710e047fb08633157ffdd2))
+* **ssh:** align types with dedalus-go SDK ([#4](https://github.com/dedalus-labs/dedalus-cli/issues/4)) ([75391d4](https://github.com/dedalus-labs/dedalus-cli/commit/75391d43a3f9491a2bff328f4b1ae5d5ce390e60))
+
+
+### Chores
+
+* **api:** update homebrew tap and code samples ([654e2de](https://github.com/dedalus-labs/dedalus-cli/commit/654e2de50b0f85b285b4932e0238a95d48d07d1a))
+
 ## 0.0.1 (2026-03-18)
 
 Full Changelog: [v0.0.1...v0.0.1](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.1...v0.0.1)

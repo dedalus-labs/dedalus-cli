@@ -31,6 +31,7 @@ var workspacesPreviewsCreate = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:     "protocol",
+			Usage:    `Allowed values: "http", "https".`,
 			BodyPath: "protocol",
 		},
 		&requestflag.Flag[bool]{

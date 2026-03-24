@@ -130,6 +130,28 @@ var workspacesDelete = cli.Command{
 	HideHelpCommand: true,
 }
 
+var workspacesStreamStatus = cli.Command{
+	Name:    "stream-status",
+	Usage:   "Streams workspace lifecycle updates over Server-Sent Events. Each `status` event\ncontains a full `LifecycleResponse` payload. The stream closes after the\nworkspace reaches its current desired state.",
+	Suggest: true,
+	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:     "workspace-id",
+			Required: true,
+		},
+		&requestflag.Flag[string]{
+			Name:       "last-event-id",
+			HeaderPath: "Last-Event-ID",
+		},
+		&requestflag.Flag[int64]{
+			Name:  "max-items",
+			Usage: "The maximum number of items to return (use -1 for unlimited).",
+		},
+	},
+	Action:          handleWorkspacesStreamStatus,
+	HideHelpCommand: true,
+}
+
 func handleWorkspacesCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
@@ -323,4 +345,43 @@ func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
 	return ShowJSON(os.Stdout, "workspaces delete", obj, format, transform)
+}
+
+func handleWorkspacesStreamStatus(ctx context.Context, cmd *cli.Command) error {
+	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
+	unusedArgs := cmd.Args().Slice()
+	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
+		cmd.Set("workspace-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
+	if len(unusedArgs) > 0 {
+		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	}
+
+	params := dedalus.WorkspaceStreamStatusParams{}
+
+	options, err := flagOptions(
+		cmd,
+		apiquery.NestedQueryFormatBrackets,
+		apiquery.ArrayQueryFormatComma,
+		EmptyBody,
+		false,
+	)
+	if err != nil {
+		return err
+	}
+
+	format := cmd.Root().String("format")
+	transform := cmd.Root().String("transform")
+	stream := client.Workspaces.StreamStatusStreaming(
+		ctx,
+		cmd.Value("workspace-id").(string),
+		params,
+		options...,
+	)
+	maxItems := int64(-1)
+	if cmd.IsSet("max-items") {
+		maxItems = cmd.Value("max-items").(int64)
+	}
+	return ShowJSONIterator(os.Stdout, "workspaces stream-status", stream, format, transform, maxItems)
 }

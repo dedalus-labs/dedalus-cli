@@ -20,7 +20,6 @@ func TestWorkspacesTerminalsCreate(t *testing.T) {
 			"--cwd", "cwd",
 			"--env", "{foo: string}",
 			"--shell", "shell",
-			"--wake-if-needed=true",
 		)
 	})
 
@@ -32,8 +31,7 @@ func TestWorkspacesTerminalsCreate(t *testing.T) {
 			"cwd: cwd\n" +
 			"env:\n" +
 			"  foo: string\n" +
-			"shell: shell\n" +
-			"wake_if_needed: true\n")
+			"shell: shell\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",

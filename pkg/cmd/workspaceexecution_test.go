@@ -20,7 +20,6 @@ func TestWorkspacesExecutionsCreate(t *testing.T) {
 			"--env", "{foo: string}",
 			"--stdin", "stdin",
 			"--timeout-ms", "0",
-			"--wake-if-needed=true",
 		)
 	})
 
@@ -33,8 +32,7 @@ func TestWorkspacesExecutionsCreate(t *testing.T) {
 			"env:\n" +
 			"  foo: string\n" +
 			"stdin: stdin\n" +
-			"timeout_ms: 0\n" +
-			"wake_if_needed: true\n")
+			"timeout_ms: 0\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",

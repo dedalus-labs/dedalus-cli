@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/dedalus-labs/dedalus-go"
-	"github.com/dedalus-labs/dedalus-go/packages/param"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/crypto/ssh"
 )
@@ -41,12 +40,7 @@ func init() {
 		UsageText: "dedalus ssh <workspace_id>",
 		Category:  "WORKSPACE",
 		Suggest:   true,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "wake-if-needed",
-				Usage: "Wake the workspace if it is sleeping",
-			},
-		},
+		Flags:  []cli.Flag{},
 		Action:          handleSSH,
 		HideHelpCommand: true,
 	})
@@ -80,7 +74,7 @@ func handleSSH(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	sess, err := awaitSSHSession(ctx, &client, wsID, pubKey, cmd.Bool("wake-if-needed"))
+	sess, err := awaitSSHSession(ctx, &client, wsID, pubKey)
 	if err != nil {
 		return err
 	}
@@ -114,12 +108,10 @@ func awaitSSHSession(
 	ctx context.Context,
 	client *dedalus.Client,
 	wsID, pubKey string,
-	wake bool,
 ) (*dedalus.SSHSession, error) {
 	resp, err := client.Workspaces.SSH.New(ctx, wsID, dedalus.WorkspaceSSHNewParams{
 		SSHSessionCreateParams: dedalus.SSHSessionCreateParams{
-			PublicKey:    pubKey,
-			WakeIfNeeded: param.NewOpt(wake),
+			PublicKey: pubKey,
 		},
 	})
 	if err != nil {

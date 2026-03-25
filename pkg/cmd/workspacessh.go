@@ -29,10 +29,6 @@ var workspacesSSHCreate = cli.Command{
 			Required: true,
 			BodyPath: "public_key",
 		},
-		&requestflag.Flag[bool]{
-			Name:     "wake-if-needed",
-			BodyPath: "wake_if_needed",
-		},
 	},
 	Action:          handleWorkspacesSSHCreate,
 	HideHelpCommand: true,

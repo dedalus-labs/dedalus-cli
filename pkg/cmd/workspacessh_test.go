@@ -16,15 +16,12 @@ func TestWorkspacesSSHCreate(t *testing.T) {
 			"workspaces:ssh", "create",
 			"--workspace-id", "workspace_id",
 			"--public-key", "public_key",
-			"--wake-if-needed=true",
 		)
 	})
 
 	t.Run("piping data", func(t *testing.T) {
 		// Test piping YAML data over stdin
-		pipeData := []byte("" +
-			"public_key: public_key\n" +
-			"wake_if_needed: true\n")
+		pipeData := []byte("public_key: public_key")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",

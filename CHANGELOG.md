@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.3 (2026-03-25)
+
+Full Changelog: [v0.0.2...v0.0.3](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.2...v0.0.3)
+
+### Bug Fixes
+
+* **api:** remove ssh command, rename stream-status to watch, drop wake-if-needed ([6c435f3](https://github.com/dedalus-labs/dedalus-cli/commit/6c435f3110f58e2b00f88a4618af66e19f4655ea))
+* **ssh:** remove deprecated wake_if_needed field, tidy deps ([982a108](https://github.com/dedalus-labs/dedalus-cli/commit/982a108033a4bee055187538c7f660db0246d7ef))
+
+
+### Chores
+
+* **ci:** skip lint on metadata-only changes ([421e8ad](https://github.com/dedalus-labs/dedalus-cli/commit/421e8ad850603793988df632dbb69db695894d56))
+* **internal:** codegen related update ([40bf2f7](https://github.com/dedalus-labs/dedalus-cli/commit/40bf2f75287c9661956079d19d99d9df152a6260))
+* **tests:** bump steady to v0.19.7 ([b60170b](https://github.com/dedalus-labs/dedalus-cli/commit/b60170b9f684e1ca711164495ebc302228336954))
+
 ## 0.0.2 (2026-03-23)
 
 Full Changelog: [v0.0.2...v0.0.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.2...v0.0.2)

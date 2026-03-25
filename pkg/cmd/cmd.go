@@ -97,7 +97,7 @@ func init() {
 					&workspacesUpdate,
 					&workspacesList,
 					&workspacesDelete,
-					&workspacesStreamStatus,
+					&workspacesWatch,
 				},
 			},
 			{

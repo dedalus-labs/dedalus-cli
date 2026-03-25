@@ -34,10 +34,6 @@ var workspacesPreviewsCreate = cli.Command{
 			Usage:    `Allowed values: "http", "https".`,
 			BodyPath: "protocol",
 		},
-		&requestflag.Flag[bool]{
-			Name:     "wake-if-needed",
-			BodyPath: "wake_if_needed",
-		},
 	},
 	Action:          handleWorkspacesPreviewsCreate,
 	HideHelpCommand: true,

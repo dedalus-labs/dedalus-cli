@@ -28,6 +28,7 @@ var workspacesCreate = cli.Command{
 		},
 		&requestflag.Flag[int64]{
 			Name:     "storage-gib",
+			Usage:    "Storage in GiB.",
 			Required: true,
 			BodyPath: "storage_gib",
 		},
@@ -77,6 +78,7 @@ var workspacesUpdate = cli.Command{
 		},
 		&requestflag.Flag[int64]{
 			Name:     "storage-gib",
+			Usage:    "Storage in GiB.",
 			BodyPath: "storage_gib",
 		},
 		&requestflag.Flag[float64]{
@@ -130,8 +132,8 @@ var workspacesDelete = cli.Command{
 	HideHelpCommand: true,
 }
 
-var workspacesStreamStatus = cli.Command{
-	Name:    "stream-status",
+var workspacesWatch = cli.Command{
+	Name:    "watch",
 	Usage:   "Streams workspace lifecycle updates over Server-Sent Events. Each `status` event\ncontains a full `LifecycleResponse` payload. The stream closes after the\nworkspace reaches its current desired state.",
 	Suggest: true,
 	Flags: []cli.Flag{
@@ -148,7 +150,7 @@ var workspacesStreamStatus = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesStreamStatus,
+	Action:          handleWorkspacesWatch,
 	HideHelpCommand: true,
 }
 
@@ -347,7 +349,7 @@ func handleWorkspacesDelete(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(os.Stdout, "workspaces delete", obj, format, transform)
 }
 
-func handleWorkspacesStreamStatus(ctx context.Context, cmd *cli.Command) error {
+func handleWorkspacesWatch(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
 	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
@@ -358,7 +360,7 @@ func handleWorkspacesStreamStatus(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceStreamStatusParams{}
+	params := dedalus.WorkspaceWatchParams{}
 
 	options, err := flagOptions(
 		cmd,
@@ -373,7 +375,7 @@ func handleWorkspacesStreamStatus(ctx context.Context, cmd *cli.Command) error {
 
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	stream := client.Workspaces.StreamStatusStreaming(
+	stream := client.Workspaces.WatchStreaming(
 		ctx,
 		cmd.Value("workspace-id").(string),
 		params,
@@ -383,5 +385,5 @@ func handleWorkspacesStreamStatus(ctx context.Context, cmd *cli.Command) error {
 	if cmd.IsSet("max-items") {
 		maxItems = cmd.Value("max-items").(int64)
 	}
-	return ShowJSONIterator(os.Stdout, "workspaces stream-status", stream, format, transform, maxItems)
+	return ShowJSONIterator(os.Stdout, "workspaces watch", stream, format, transform, maxItems)
 }

@@ -46,10 +46,6 @@ var workspacesTerminalsCreate = cli.Command{
 			Name:     "shell",
 			BodyPath: "shell",
 		},
-		&requestflag.Flag[bool]{
-			Name:     "wake-if-needed",
-			BodyPath: "wake_if_needed",
-		},
 	},
 	Action:          handleWorkspacesTerminalsCreate,
 	HideHelpCommand: true,

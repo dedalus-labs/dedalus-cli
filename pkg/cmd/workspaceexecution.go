@@ -45,10 +45,6 @@ var workspacesExecutionsCreate = cli.Command{
 			Name:     "timeout-ms",
 			BodyPath: "timeout_ms",
 		},
-		&requestflag.Flag[bool]{
-			Name:     "wake-if-needed",
-			BodyPath: "wake_if_needed",
-		},
 	},
 	Action:          handleWorkspacesExecutionsCreate,
 	HideHelpCommand: true,

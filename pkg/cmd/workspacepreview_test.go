@@ -17,7 +17,6 @@ func TestWorkspacesPreviewsCreate(t *testing.T) {
 			"--workspace-id", "workspace_id",
 			"--port", "0",
 			"--protocol", "http",
-			"--wake-if-needed=true",
 		)
 	})
 
@@ -25,8 +24,7 @@ func TestWorkspacesPreviewsCreate(t *testing.T) {
 		// Test piping YAML data over stdin
 		pipeData := []byte("" +
 			"port: 0\n" +
-			"protocol: http\n" +
-			"wake_if_needed: true\n")
+			"protocol: http\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",

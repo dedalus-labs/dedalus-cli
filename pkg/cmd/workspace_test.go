@@ -100,12 +100,12 @@ func TestWorkspacesDelete(t *testing.T) {
 	})
 }
 
-func TestWorkspacesStreamStatus(t *testing.T) {
+func TestWorkspacesWatch(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "stream-status",
+			"workspaces", "watch",
 			"--max-items", "10",
 			"--workspace-id", "workspace_id",
 			"--last-event-id", "Last-Event-ID",

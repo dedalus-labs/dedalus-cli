@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.0 (2026-03-27)
+
+Full Changelog: [v0.0.3...v0.1.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.3...v0.1.0)
+
+### Features
+
+* set CLI flag constant values automatically where `x-stainless-const` is set ([d1a4106](https://github.com/dedalus-labs/dedalus-cli/commit/d1a4106fd2f001b4c178a49050a30504528c74ee))
+
+
+### Bug Fixes
+
+* fix for off-by-one error in pagination logic ([2eec67c](https://github.com/dedalus-labs/dedalus-cli/commit/2eec67c81e2d195c52e97c2d885d57bb3456ccdc))
+
+
+### Chores
+
+* **internal:** update multipart form array serialization ([a9a88ea](https://github.com/dedalus-labs/dedalus-cli/commit/a9a88ead67668ed1c2fdbb4b523dac9597a71d67))
+* omit full usage information when missing required CLI parameters ([8f88284](https://github.com/dedalus-labs/dedalus-cli/commit/8f88284f411c79bed22083d8322a3b9ef5d5faf0))
+
 ## 0.0.3 (2026-03-25)
 
 Full Changelog: [v0.0.2...v0.0.3](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.2...v0.0.3)

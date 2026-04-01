@@ -1,7 +1,7 @@
-// Implements `dedalus ssh <workspace_id>`:
+// Implements `dedalus ssh <machine_id>`:
 //
 //  1. Generate ephemeral ed25519 keypair in a temp directory.
-//  2. POST /v1/workspaces/{workspace_id}/ssh with the public key.
+//  2. POST /v1/machines/{machine_id}/ssh with the public key.
 //  3. Poll GET until status=ready.
 //  4. Write user certificate and host CA to temp files.
 //  5. Exec the local ssh binary with explicit trust settings.
@@ -36,9 +36,9 @@ const (
 func init() {
 	Command.Commands = append(Command.Commands, &cli.Command{
 		Name:      "ssh",
-		Usage:     "SSH into a running workspace",
-		UsageText: "dedalus ssh <workspace_id>",
-		Category:  "WORKSPACE",
+		Usage:     "SSH into a running machine",
+		UsageText: "dedalus ssh <machine_id>",
+		Category:  "MACHINE",
 		Suggest:   true,
 		Flags:  []cli.Flag{},
 		Action:          handleSSH,
@@ -47,9 +47,9 @@ func init() {
 }
 
 func handleSSH(ctx context.Context, cmd *cli.Command) error {
-	wsID := cmd.Args().First()
-	if wsID == "" {
-		return fmt.Errorf("workspace_id is required; usage: dedalus ssh <workspace_id>")
+	machineID := cmd.Args().First()
+	if machineID == "" {
+		return fmt.Errorf("machine_id is required; usage: dedalus ssh <machine_id>")
 	}
 
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
@@ -74,7 +74,7 @@ func handleSSH(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	sess, err := awaitSSHSession(ctx, &client, wsID, pubKey)
+	sess, err := awaitSSHSession(ctx, &client, machineID, pubKey)
 	if err != nil {
 		return err
 	}
@@ -107,9 +107,10 @@ func handleSSH(ctx context.Context, cmd *cli.Command) error {
 func awaitSSHSession(
 	ctx context.Context,
 	client *dedalus.Client,
-	wsID, pubKey string,
+	machineID, pubKey string,
 ) (*dedalus.SSHSession, error) {
-	resp, err := client.Workspaces.SSH.New(ctx, wsID, dedalus.WorkspaceSSHNewParams{
+	resp, err := client.Machines.SSH.New(ctx, dedalus.MachineSSHNewParams{
+		MachineID: machineID,
 		SSHSessionCreateParams: dedalus.SSHSessionCreateParams{
 			PublicKey: pubKey,
 		},
@@ -145,15 +146,16 @@ func awaitSSHSession(
 		case <-time.After(delay):
 		}
 
-		resp, err = client.Workspaces.SSH.Get(ctx, resp.SessionID, dedalus.WorkspaceSSHGetParams{
-			WorkspaceID: wsID,
+		resp, err = client.Machines.SSH.Get(ctx, dedalus.MachineSSHGetParams{
+			MachineID: machineID,
+			SessionID: resp.SessionID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("poll ssh session: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "ssh %s: %s\n", resp.SessionID, resp.Status)
 	}
-	return nil, fmt.Errorf("SSH session did not become ready after %d polls (%v); the workspace may be unresponsive or the SSH gateway may be down", sshPollMax, time.Duration(sshPollMax)*sshPollInterval)
+	return nil, fmt.Errorf("SSH session did not become ready after %d polls (%v); the machine may be unresponsive or the SSH gateway may be down", sshPollMax, time.Duration(sshPollMax)*sshPollInterval)
 }
 
 func runSSH(ctx context.Context, keyPath, certPath, khPath string, conn dedalus.SSHConnection) error {

@@ -15,50 +15,60 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var workspacesSSHCreate = cli.Command{
+var machinesPreviewsCreate = cli.Command{
 	Name:    "create",
-	Usage:   "Create SSH session",
+	Usage:   "Create preview",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
+		},
+		&requestflag.Flag[int64]{
+			Name:     "port",
+			Required: true,
+			BodyPath: "port",
 		},
 		&requestflag.Flag[string]{
-			Name:     "public-key",
-			Required: true,
-			BodyPath: "public_key",
+			Name:     "protocol",
+			Usage:    `Allowed values: "http", "https".`,
+			BodyPath: "protocol",
+		},
+		&requestflag.Flag[string]{
+			Name:     "visibility",
+			Usage:    `Allowed values: "public", "private", "org".`,
+			BodyPath: "visibility",
 		},
 	},
-	Action:          handleWorkspacesSSHCreate,
+	Action:          handleMachinesPreviewsCreate,
 	HideHelpCommand: true,
 }
 
-var workspacesSSHRetrieve = cli.Command{
+var machinesPreviewsRetrieve = cli.Command{
 	Name:    "retrieve",
-	Usage:   "Get SSH session",
+	Usage:   "Get preview",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
-			Name:     "session-id",
+			Name:     "preview-id",
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesSSHRetrieve,
+	Action:          handleMachinesPreviewsRetrieve,
 	HideHelpCommand: true,
 }
 
-var workspacesSSHList = cli.Command{
+var machinesPreviewsList = cli.Command{
 	Name:    "list",
-	Usage:   "List SSH sessions",
+	Usage:   "List previews",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -74,45 +84,44 @@ var workspacesSSHList = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesSSHList,
+	Action:          handleMachinesPreviewsList,
 	HideHelpCommand: true,
 }
 
-var workspacesSSHDelete = cli.Command{
+var machinesPreviewsDelete = cli.Command{
 	Name:    "delete",
-	Usage:   "Delete SSH session",
+	Usage:   "Delete preview",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
-			Name:     "session-id",
+			Name:     "preview-id",
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesSSHDelete,
+	Action:          handleMachinesPreviewsDelete,
 	HideHelpCommand: true,
 }
 
-func handleWorkspacesSSHCreate(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceSSHNewParams{}
+	params := dedalus.MachinePreviewNewParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		ApplicationJSON,
 		false,
 	)
@@ -122,12 +131,7 @@ func handleWorkspacesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.SSH.New(
-		ctx,
-		cmd.Value("workspace-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Previews.New(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -135,28 +139,26 @@ func handleWorkspacesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:ssh create", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:previews create", obj, format, transform)
 }
 
-func handleWorkspacesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("session-id") && len(unusedArgs) > 0 {
-		cmd.Set("session-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceSSHGetParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachinePreviewGetParams{
+		MachineID: cmd.Value("machine-id").(string),
+		PreviewID: cmd.Value("preview-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -166,12 +168,7 @@ func handleWorkspacesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.SSH.Get(
-		ctx,
-		cmd.Value("session-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Previews.Get(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -179,26 +176,25 @@ func handleWorkspacesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:ssh retrieve", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:previews retrieve", obj, format, transform)
 }
 
-func handleWorkspacesSSHList(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceSSHListParams{}
+	params := dedalus.MachinePreviewListParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -211,51 +207,39 @@ func handleWorkspacesSSHList(ctx context.Context, cmd *cli.Command) error {
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.SSH.List(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		_, err = client.Machines.Previews.List(ctx, params, options...)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces:ssh list", obj, format, transform)
+		return ShowJSON(os.Stdout, "machines:previews list", obj, format, transform)
 	} else {
-		iter := client.Workspaces.SSH.ListAutoPaging(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		iter := client.Machines.Previews.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces:ssh list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "machines:previews list", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesSSHDelete(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("session-id") && len(unusedArgs) > 0 {
-		cmd.Set("session-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceSSHDeleteParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachinePreviewDeleteParams{
+		MachineID: cmd.Value("machine-id").(string),
+		PreviewID: cmd.Value("preview-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -265,12 +249,7 @@ func handleWorkspacesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.SSH.Delete(
-		ctx,
-		cmd.Value("session-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Previews.Delete(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -278,5 +257,5 @@ func handleWorkspacesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:ssh delete", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:previews delete", obj, format, transform)
 }

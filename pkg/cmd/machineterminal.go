@@ -15,13 +15,13 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var workspacesTerminalsCreate = cli.Command{
+var machinesTerminalsCreate = cli.Command{
 	Name:    "create",
 	Usage:   "Create terminal",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[int64]{
@@ -47,17 +47,17 @@ var workspacesTerminalsCreate = cli.Command{
 			BodyPath: "shell",
 		},
 	},
-	Action:          handleWorkspacesTerminalsCreate,
+	Action:          handleMachinesTerminalsCreate,
 	HideHelpCommand: true,
 }
 
-var workspacesTerminalsRetrieve = cli.Command{
+var machinesTerminalsRetrieve = cli.Command{
 	Name:    "retrieve",
 	Usage:   "Get terminal",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -65,17 +65,17 @@ var workspacesTerminalsRetrieve = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesTerminalsRetrieve,
+	Action:          handleMachinesTerminalsRetrieve,
 	HideHelpCommand: true,
 }
 
-var workspacesTerminalsList = cli.Command{
+var machinesTerminalsList = cli.Command{
 	Name:    "list",
 	Usage:   "List terminals",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -91,17 +91,17 @@ var workspacesTerminalsList = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesTerminalsList,
+	Action:          handleMachinesTerminalsList,
 	HideHelpCommand: true,
 }
 
-var workspacesTerminalsDelete = cli.Command{
+var machinesTerminalsDelete = cli.Command{
 	Name:    "delete",
 	Usage:   "Delete terminal",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -109,27 +109,26 @@ var workspacesTerminalsDelete = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesTerminalsDelete,
+	Action:          handleMachinesTerminalsDelete,
 	HideHelpCommand: true,
 }
 
-func handleWorkspacesTerminalsCreate(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesTerminalsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceTerminalNewParams{}
+	params := dedalus.MachineTerminalNewParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		ApplicationJSON,
 		false,
 	)
@@ -139,12 +138,7 @@ func handleWorkspacesTerminalsCreate(ctx context.Context, cmd *cli.Command) erro
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Terminals.New(
-		ctx,
-		cmd.Value("workspace-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Terminals.New(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -152,28 +146,26 @@ func handleWorkspacesTerminalsCreate(ctx context.Context, cmd *cli.Command) erro
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:terminals create", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:terminals create", obj, format, transform)
 }
 
-func handleWorkspacesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("terminal-id") && len(unusedArgs) > 0 {
-		cmd.Set("terminal-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceTerminalGetParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineTerminalGetParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		TerminalID: cmd.Value("terminal-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -183,12 +175,7 @@ func handleWorkspacesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) er
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Terminals.Get(
-		ctx,
-		cmd.Value("terminal-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Terminals.Get(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -196,26 +183,25 @@ func handleWorkspacesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) er
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:terminals retrieve", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:terminals retrieve", obj, format, transform)
 }
 
-func handleWorkspacesTerminalsList(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceTerminalListParams{}
+	params := dedalus.MachineTerminalListParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -228,51 +214,39 @@ func handleWorkspacesTerminalsList(ctx context.Context, cmd *cli.Command) error 
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.Terminals.List(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		_, err = client.Machines.Terminals.List(ctx, params, options...)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces:terminals list", obj, format, transform)
+		return ShowJSON(os.Stdout, "machines:terminals list", obj, format, transform)
 	} else {
-		iter := client.Workspaces.Terminals.ListAutoPaging(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		iter := client.Machines.Terminals.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces:terminals list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "machines:terminals list", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesTerminalsDelete(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesTerminalsDelete(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("terminal-id") && len(unusedArgs) > 0 {
-		cmd.Set("terminal-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceTerminalDeleteParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineTerminalDeleteParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		TerminalID: cmd.Value("terminal-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -282,12 +256,7 @@ func handleWorkspacesTerminalsDelete(ctx context.Context, cmd *cli.Command) erro
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Terminals.Delete(
-		ctx,
-		cmd.Value("terminal-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Terminals.Delete(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -295,5 +264,5 @@ func handleWorkspacesTerminalsDelete(ctx context.Context, cmd *cli.Command) erro
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:terminals delete", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:terminals delete", obj, format, transform)
 }

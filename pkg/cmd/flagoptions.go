@@ -246,17 +246,15 @@ func flagOptions(
 	}
 
 	if missingFlags := requestflag.GetMissingRequiredFlags(cmd, requestContents.Body); len(missingFlags) > 0 {
-		var buf bytes.Buffer
-		cli.HelpPrinter(&buf, cli.SubcommandHelpTemplate, cmd)
-		usage := buf.String()
 		if len(missingFlags) == 1 {
-			return nil, fmt.Errorf("%sRequired flag %q not set", usage, missingFlags[0].Names()[0])
+			return nil, fmt.Errorf("Required flag %q not set\nRun '%s --help' for usage information", missingFlags[0].Names()[0], cmd.FullName())
+
 		} else {
 			names := []string{}
 			for _, flag := range missingFlags {
 				names = append(names, flag.Names()[0])
 			}
-			return nil, fmt.Errorf("%sRequired flags %q not set", usage, strings.Join(names, ", "))
+			return nil, fmt.Errorf("Required flags %q not set\nRun '%s --help' for usage information", strings.Join(names, ", "), cmd.FullName())
 		}
 	}
 
@@ -336,7 +334,7 @@ func flagOptions(
 		if !ok {
 			return nil, fmt.Errorf("Cannot send a non-map value to a form-encoded endpoint: %v\n", requestContents.Body)
 		}
-		encodingFormat := apiform.FormatComma
+		encodingFormat := apiform.FormatRepeat
 		if err := apiform.MarshalWithSettings(bodyMap, writer, encodingFormat); err != nil {
 			return nil, err
 		}

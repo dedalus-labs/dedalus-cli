@@ -54,7 +54,7 @@ dedalus [resource] <command> [flags...]
 ```
 
 ```sh
-dedalus workspaces create \
+dedalus machines create \
   --api-key 'My API Key' \
   --memory-mib 2048 \
   --storage-gib 10 \
@@ -65,17 +65,17 @@ For details about specific commands, use the `--help` flag.
 
 ### Environment variables
 
-| Environment variable | Description                                          | Required | Default value |
-| -------------------- | ---------------------------------------------------- | -------- | ------------- |
-| `DEDALUS_API_KEY`    | Dedalus API key sent as Authorization: Bearer <key>. | no       | `null`        |
-| `DEDALUS_X_API_KEY`  | Dedalus API key sent as x-api-key.                   | no       | `null`        |
-| `DEDALUS_ORG_ID`     | Organization ID header applied to all DCS requests.  | no       | `null`        |
+| Environment variable | Description                                   | Required | Default value |
+| -------------------- | --------------------------------------------- | -------- | ------------- |
+| `DEDALUS_API_KEY`    | Dedalus API key sent as Authorization Bearer. | no       | `null`        |
+| `DEDALUS_X_API_KEY`  | Dedalus API key sent as x-api-key header.     | no       | `null`        |
+| `DEDALUS_ORG_ID`     | Organization ID header for all DCS requests.  | no       | `null`        |
 
 ### Global flags
 
-- `--api-key` - Dedalus API key sent as Authorization: Bearer <key>. (can also be set with `DEDALUS_API_KEY` env var)
-- `--x-api-key` - Dedalus API key sent as x-api-key. (can also be set with `DEDALUS_X_API_KEY` env var)
-- `--dedalus-org-id` - Organization ID header applied to all DCS requests. (can also be set with `DEDALUS_ORG_ID` env var)
+- `--api-key` - Dedalus API key sent as Authorization Bearer. (can also be set with `DEDALUS_API_KEY` env var)
+- `--x-api-key` - Dedalus API key sent as x-api-key header. (can also be set with `DEDALUS_X_API_KEY` env var)
+- `--dedalus-org-id` - Organization ID header for all DCS requests. (can also be set with `DEDALUS_ORG_ID` env var)
 - `--help` - Show command line usage
 - `--debug` - Enable debug logging (includes HTTP request/response details)
 - `--version`, `-v` - Show the CLI version

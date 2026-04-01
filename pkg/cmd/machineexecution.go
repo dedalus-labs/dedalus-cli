@@ -15,13 +15,13 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var workspacesExecutionsCreate = cli.Command{
+var machinesExecutionsCreate = cli.Command{
 	Name:    "create",
 	Usage:   "Create execution",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[any]{
@@ -46,17 +46,17 @@ var workspacesExecutionsCreate = cli.Command{
 			BodyPath: "timeout_ms",
 		},
 	},
-	Action:          handleWorkspacesExecutionsCreate,
+	Action:          handleMachinesExecutionsCreate,
 	HideHelpCommand: true,
 }
 
-var workspacesExecutionsRetrieve = cli.Command{
+var machinesExecutionsRetrieve = cli.Command{
 	Name:    "retrieve",
 	Usage:   "Get execution",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -64,17 +64,17 @@ var workspacesExecutionsRetrieve = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesExecutionsRetrieve,
+	Action:          handleMachinesExecutionsRetrieve,
 	HideHelpCommand: true,
 }
 
-var workspacesExecutionsList = cli.Command{
+var machinesExecutionsList = cli.Command{
 	Name:    "list",
 	Usage:   "List executions",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -90,17 +90,17 @@ var workspacesExecutionsList = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesExecutionsList,
+	Action:          handleMachinesExecutionsList,
 	HideHelpCommand: true,
 }
 
-var workspacesExecutionsDelete = cli.Command{
+var machinesExecutionsDelete = cli.Command{
 	Name:    "delete",
 	Usage:   "Delete execution",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -108,17 +108,17 @@ var workspacesExecutionsDelete = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesExecutionsDelete,
+	Action:          handleMachinesExecutionsDelete,
 	HideHelpCommand: true,
 }
 
-var workspacesExecutionsEvents = cli.Command{
+var machinesExecutionsEvents = cli.Command{
 	Name:    "events",
 	Usage:   "List execution events",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -138,17 +138,17 @@ var workspacesExecutionsEvents = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesExecutionsEvents,
+	Action:          handleMachinesExecutionsEvents,
 	HideHelpCommand: true,
 }
 
-var workspacesExecutionsOutput = cli.Command{
+var machinesExecutionsOutput = cli.Command{
 	Name:    "output",
 	Usage:   "Get execution output",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -156,27 +156,26 @@ var workspacesExecutionsOutput = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesExecutionsOutput,
+	Action:          handleMachinesExecutionsOutput,
 	HideHelpCommand: true,
 }
 
-func handleWorkspacesExecutionsCreate(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceExecutionNewParams{}
+	params := dedalus.MachineExecutionNewParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		ApplicationJSON,
 		false,
 	)
@@ -186,12 +185,7 @@ func handleWorkspacesExecutionsCreate(ctx context.Context, cmd *cli.Command) err
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Executions.New(
-		ctx,
-		cmd.Value("workspace-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Executions.New(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -199,28 +193,26 @@ func handleWorkspacesExecutionsCreate(ctx context.Context, cmd *cli.Command) err
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:executions create", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:executions create", obj, format, transform)
 }
 
-func handleWorkspacesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("execution-id") && len(unusedArgs) > 0 {
-		cmd.Set("execution-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceExecutionGetParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineExecutionGetParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -230,12 +222,7 @@ func handleWorkspacesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) e
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Executions.Get(
-		ctx,
-		cmd.Value("execution-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Executions.Get(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -243,26 +230,25 @@ func handleWorkspacesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) e
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:executions retrieve", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:executions retrieve", obj, format, transform)
 }
 
-func handleWorkspacesExecutionsList(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceExecutionListParams{}
+	params := dedalus.MachineExecutionListParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -275,51 +261,39 @@ func handleWorkspacesExecutionsList(ctx context.Context, cmd *cli.Command) error
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.Executions.List(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		_, err = client.Machines.Executions.List(ctx, params, options...)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces:executions list", obj, format, transform)
+		return ShowJSON(os.Stdout, "machines:executions list", obj, format, transform)
 	} else {
-		iter := client.Workspaces.Executions.ListAutoPaging(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		iter := client.Machines.Executions.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces:executions list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "machines:executions list", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesExecutionsDelete(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesExecutionsDelete(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("execution-id") && len(unusedArgs) > 0 {
-		cmd.Set("execution-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceExecutionDeleteParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineExecutionDeleteParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -329,12 +303,7 @@ func handleWorkspacesExecutionsDelete(ctx context.Context, cmd *cli.Command) err
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Executions.Delete(
-		ctx,
-		cmd.Value("execution-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Executions.Delete(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -342,28 +311,26 @@ func handleWorkspacesExecutionsDelete(ctx context.Context, cmd *cli.Command) err
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:executions delete", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:executions delete", obj, format, transform)
 }
 
-func handleWorkspacesExecutionsEvents(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("execution-id") && len(unusedArgs) > 0 {
-		cmd.Set("execution-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceExecutionEventsParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineExecutionEventsParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -376,51 +343,39 @@ func handleWorkspacesExecutionsEvents(ctx context.Context, cmd *cli.Command) err
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.Executions.Events(
-			ctx,
-			cmd.Value("execution-id").(string),
-			params,
-			options...,
-		)
+		_, err = client.Machines.Executions.Events(ctx, params, options...)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces:executions events", obj, format, transform)
+		return ShowJSON(os.Stdout, "machines:executions events", obj, format, transform)
 	} else {
-		iter := client.Workspaces.Executions.EventsAutoPaging(
-			ctx,
-			cmd.Value("execution-id").(string),
-			params,
-			options...,
-		)
+		iter := client.Machines.Executions.EventsAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces:executions events", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "machines:executions events", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesExecutionsOutput(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesExecutionsOutput(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("execution-id") && len(unusedArgs) > 0 {
-		cmd.Set("execution-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceExecutionOutputParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineExecutionOutputParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -430,12 +385,7 @@ func handleWorkspacesExecutionsOutput(ctx context.Context, cmd *cli.Command) err
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Executions.Output(
-		ctx,
-		cmd.Value("execution-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Executions.Output(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -443,5 +393,5 @@ func handleWorkspacesExecutionsOutput(ctx context.Context, cmd *cli.Command) err
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:executions output", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:executions output", obj, format, transform)
 }

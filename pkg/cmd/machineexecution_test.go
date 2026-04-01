@@ -8,13 +8,13 @@ import (
 	"github.com/dedalus-labs/dedalus-cli/internal/mocktest"
 )
 
-func TestWorkspacesExecutionsCreate(t *testing.T) {
+func TestMachinesExecutionsCreate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:executions", "create",
-			"--workspace-id", "workspace_id",
+			"machines:executions", "create",
+			"--machine-id", "machine_id",
 			"--command", "[string]",
 			"--cwd", "cwd",
 			"--env", "{foo: string}",
@@ -36,58 +36,58 @@ func TestWorkspacesExecutionsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"workspaces:executions", "create",
-			"--workspace-id", "workspace_id",
+			"machines:executions", "create",
+			"--machine-id", "machine_id",
 		)
 	})
 }
 
-func TestWorkspacesExecutionsRetrieve(t *testing.T) {
+func TestMachinesExecutionsRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:executions", "retrieve",
-			"--workspace-id", "workspace_id",
+			"machines:executions", "retrieve",
+			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 		)
 	})
 }
 
-func TestWorkspacesExecutionsList(t *testing.T) {
+func TestMachinesExecutionsList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:executions", "list",
+			"machines:executions", "list",
 			"--max-items", "10",
-			"--workspace-id", "workspace_id",
+			"--machine-id", "machine_id",
 			"--cursor", "cursor",
 			"--limit", "0",
 		)
 	})
 }
 
-func TestWorkspacesExecutionsDelete(t *testing.T) {
+func TestMachinesExecutionsDelete(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:executions", "delete",
-			"--workspace-id", "workspace_id",
+			"machines:executions", "delete",
+			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 		)
 	})
 }
 
-func TestWorkspacesExecutionsEvents(t *testing.T) {
+func TestMachinesExecutionsEvents(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:executions", "events",
+			"machines:executions", "events",
 			"--max-items", "10",
-			"--workspace-id", "workspace_id",
+			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 			"--cursor", "cursor",
 			"--limit", "0",
@@ -95,13 +95,13 @@ func TestWorkspacesExecutionsEvents(t *testing.T) {
 	})
 }
 
-func TestWorkspacesExecutionsOutput(t *testing.T) {
+func TestMachinesExecutionsOutput(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:executions", "output",
-			"--workspace-id", "workspace_id",
+			"machines:executions", "output",
+			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 		)
 	})

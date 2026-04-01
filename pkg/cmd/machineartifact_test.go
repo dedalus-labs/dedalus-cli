@@ -8,39 +8,39 @@ import (
 	"github.com/dedalus-labs/dedalus-cli/internal/mocktest"
 )
 
-func TestWorkspacesArtifactsRetrieve(t *testing.T) {
+func TestMachinesArtifactsRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:artifacts", "retrieve",
-			"--workspace-id", "workspace_id",
+			"machines:artifacts", "retrieve",
+			"--machine-id", "machine_id",
 			"--artifact-id", "artifact_id",
 		)
 	})
 }
 
-func TestWorkspacesArtifactsList(t *testing.T) {
+func TestMachinesArtifactsList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:artifacts", "list",
+			"machines:artifacts", "list",
 			"--max-items", "10",
-			"--workspace-id", "workspace_id",
+			"--machine-id", "machine_id",
 			"--cursor", "cursor",
 			"--limit", "0",
 		)
 	})
 }
 
-func TestWorkspacesArtifactsDelete(t *testing.T) {
+func TestMachinesArtifactsDelete(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:artifacts", "delete",
-			"--workspace-id", "workspace_id",
+			"machines:artifacts", "delete",
+			"--machine-id", "machine_id",
 			"--artifact-id", "artifact_id",
 		)
 	})

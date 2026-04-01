@@ -15,13 +15,13 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var workspacesArtifactsRetrieve = cli.Command{
+var machinesArtifactsRetrieve = cli.Command{
 	Name:    "retrieve",
 	Usage:   "Get artifact",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -29,17 +29,17 @@ var workspacesArtifactsRetrieve = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesArtifactsRetrieve,
+	Action:          handleMachinesArtifactsRetrieve,
 	HideHelpCommand: true,
 }
 
-var workspacesArtifactsList = cli.Command{
+var machinesArtifactsList = cli.Command{
 	Name:    "list",
 	Usage:   "List artifacts",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -55,17 +55,17 @@ var workspacesArtifactsList = cli.Command{
 			Usage: "The maximum number of items to return (use -1 for unlimited).",
 		},
 	},
-	Action:          handleWorkspacesArtifactsList,
+	Action:          handleMachinesArtifactsList,
 	HideHelpCommand: true,
 }
 
-var workspacesArtifactsDelete = cli.Command{
+var machinesArtifactsDelete = cli.Command{
 	Name:    "delete",
 	Usage:   "Delete artifact",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "workspace-id",
+			Name:     "machine-id",
 			Required: true,
 		},
 		&requestflag.Flag[string]{
@@ -73,29 +73,27 @@ var workspacesArtifactsDelete = cli.Command{
 			Required: true,
 		},
 	},
-	Action:          handleWorkspacesArtifactsDelete,
+	Action:          handleMachinesArtifactsDelete,
 	HideHelpCommand: true,
 }
 
-func handleWorkspacesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("artifact-id") && len(unusedArgs) > 0 {
-		cmd.Set("artifact-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceArtifactGetParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineArtifactGetParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		ArtifactID: cmd.Value("artifact-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -105,12 +103,7 @@ func handleWorkspacesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) er
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Artifacts.Get(
-		ctx,
-		cmd.Value("artifact-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Artifacts.Get(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -118,26 +111,25 @@ func handleWorkspacesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) er
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:artifacts retrieve", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:artifacts retrieve", obj, format, transform)
 }
 
-func handleWorkspacesArtifactsList(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("workspace-id") && len(unusedArgs) > 0 {
-		cmd.Set("workspace-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceArtifactListParams{}
+	params := dedalus.MachineArtifactListParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -150,51 +142,39 @@ func handleWorkspacesArtifactsList(ctx context.Context, cmd *cli.Command) error 
 	if format == "raw" {
 		var res []byte
 		options = append(options, option.WithResponseBodyInto(&res))
-		_, err = client.Workspaces.Artifacts.List(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		_, err = client.Machines.Artifacts.List(ctx, params, options...)
 		if err != nil {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "workspaces:artifacts list", obj, format, transform)
+		return ShowJSON(os.Stdout, "machines:artifacts list", obj, format, transform)
 	} else {
-		iter := client.Workspaces.Artifacts.ListAutoPaging(
-			ctx,
-			cmd.Value("workspace-id").(string),
-			params,
-			options...,
-		)
+		iter := client.Machines.Artifacts.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "workspaces:artifacts list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, "machines:artifacts list", iter, format, transform, maxItems)
 	}
 }
 
-func handleWorkspacesArtifactsDelete(ctx context.Context, cmd *cli.Command) error {
+func handleMachinesArtifactsDelete(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("artifact-id") && len(unusedArgs) > 0 {
-		cmd.Set("artifact-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
+
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.WorkspaceArtifactDeleteParams{
-		WorkspaceID: cmd.Value("workspace-id").(string),
+	params := dedalus.MachineArtifactDeleteParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		ArtifactID: cmd.Value("artifact-id").(string),
 	}
 
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatComma,
+		apiquery.ArrayQueryFormatRepeat,
 		EmptyBody,
 		false,
 	)
@@ -204,12 +184,7 @@ func handleWorkspacesArtifactsDelete(ctx context.Context, cmd *cli.Command) erro
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Workspaces.Artifacts.Delete(
-		ctx,
-		cmd.Value("artifact-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Machines.Artifacts.Delete(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -217,5 +192,5 @@ func handleWorkspacesArtifactsDelete(ctx context.Context, cmd *cli.Command) erro
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "workspaces:artifacts delete", obj, format, transform)
+	return ShowJSON(os.Stdout, "machines:artifacts delete", obj, format, transform)
 }

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.0 (2026-04-01)
+
+Full Changelog: [v0.0.3...v0.1.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.3...v0.1.0)
+
+### Features
+
+* set CLI flag constant values automatically where `x-stainless-const` is set ([d1a4106](https://github.com/dedalus-labs/dedalus-cli/commit/d1a4106fd2f001b4c178a49050a30504528c74ee))
+
+
+### Bug Fixes
+
+* fix for off-by-one error in pagination logic ([2eec67c](https://github.com/dedalus-labs/dedalus-cli/commit/2eec67c81e2d195c52e97c2d885d57bb3456ccdc))
+* handle empty data set using `--format explore` ([bfa5c16](https://github.com/dedalus-labs/dedalus-cli/commit/bfa5c16f7fadd9c6e85818815780ab9dac2fcc7b))
+* use `RawJSON` when iterating items with `--format explore` in the CLI ([2963002](https://github.com/dedalus-labs/dedalus-cli/commit/296300221e8cf98a27bc927f044aacff4d73f5d9))
+
+
+### Chores
+
+* **api:** refresh codegen ([2b89c22](https://github.com/dedalus-labs/dedalus-cli/commit/2b89c22a7da48e6def715c9c3e273d9aea9fbb19))
+* **api:** rename workspaces to machines ([837411d](https://github.com/dedalus-labs/dedalus-cli/commit/837411d95bc147f00eb5e42f99f420e506752e6b))
+* **internal:** update multipart form array serialization ([a9a88ea](https://github.com/dedalus-labs/dedalus-cli/commit/a9a88ead67668ed1c2fdbb4b523dac9597a71d67))
+* omit full usage information when missing required CLI parameters ([8f88284](https://github.com/dedalus-labs/dedalus-cli/commit/8f88284f411c79bed22083d8322a3b9ef5d5faf0))
+* **tests:** bump steady to v0.20.1 ([d4a2e39](https://github.com/dedalus-labs/dedalus-cli/commit/d4a2e3908e4ec8e7bcca15b68d258dc692a178ee))
+* **tests:** bump steady to v0.20.2 ([1aa9e71](https://github.com/dedalus-labs/dedalus-cli/commit/1aa9e718c5d1ab377ed240d15d3027393880feec))
+
 ## 0.0.3 (2026-03-25)
 
 Full Changelog: [v0.0.2...v0.0.3](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.2...v0.0.3)

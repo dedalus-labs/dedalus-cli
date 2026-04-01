@@ -8,66 +8,63 @@ import (
 	"github.com/dedalus-labs/dedalus-cli/internal/mocktest"
 )
 
-func TestWorkspacesPreviewsCreate(t *testing.T) {
+func TestMachinesSSHCreate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:previews", "create",
-			"--workspace-id", "workspace_id",
-			"--port", "0",
-			"--protocol", "http",
+			"machines:ssh", "create",
+			"--machine-id", "machine_id",
+			"--public-key", "public_key",
 		)
 	})
 
 	t.Run("piping data", func(t *testing.T) {
 		// Test piping YAML data over stdin
-		pipeData := []byte("" +
-			"port: 0\n" +
-			"protocol: http\n")
+		pipeData := []byte("public_key: public_key")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"workspaces:previews", "create",
-			"--workspace-id", "workspace_id",
+			"machines:ssh", "create",
+			"--machine-id", "machine_id",
 		)
 	})
 }
 
-func TestWorkspacesPreviewsRetrieve(t *testing.T) {
+func TestMachinesSSHRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:previews", "retrieve",
-			"--workspace-id", "workspace_id",
-			"--preview-id", "preview_id",
+			"machines:ssh", "retrieve",
+			"--machine-id", "machine_id",
+			"--session-id", "session_id",
 		)
 	})
 }
 
-func TestWorkspacesPreviewsList(t *testing.T) {
+func TestMachinesSSHList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:previews", "list",
+			"machines:ssh", "list",
 			"--max-items", "10",
-			"--workspace-id", "workspace_id",
+			"--machine-id", "machine_id",
 			"--cursor", "cursor",
 			"--limit", "0",
 		)
 	})
 }
 
-func TestWorkspacesPreviewsDelete(t *testing.T) {
+func TestMachinesSSHDelete(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:previews", "delete",
-			"--workspace-id", "workspace_id",
-			"--preview-id", "preview_id",
+			"machines:ssh", "delete",
+			"--machine-id", "machine_id",
+			"--session-id", "session_id",
 		)
 	})
 }

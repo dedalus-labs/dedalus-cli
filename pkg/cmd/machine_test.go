@@ -8,12 +8,12 @@ import (
 	"github.com/dedalus-labs/dedalus-cli/internal/mocktest"
 )
 
-func TestWorkspacesCreate(t *testing.T) {
+func TestMachinesCreate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "create",
+			"machines", "create",
 			"--memory-mib", "0",
 			"--storage-gib", "0",
 			"--vcpu", "0",
@@ -29,29 +29,29 @@ func TestWorkspacesCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"workspaces", "create",
+			"machines", "create",
 		)
 	})
 }
 
-func TestWorkspacesRetrieve(t *testing.T) {
+func TestMachinesRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "retrieve",
-			"--workspace-id", "workspace_id",
+			"machines", "retrieve",
+			"--machine-id", "machine_id",
 		)
 	})
 }
 
-func TestWorkspacesUpdate(t *testing.T) {
+func TestMachinesUpdate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "update",
-			"--workspace-id", "workspace_id",
+			"machines", "update",
+			"--machine-id", "machine_id",
 			"--if-match", "If-Match",
 			"--memory-mib", "0",
 			"--storage-gib", "0",
@@ -68,19 +68,19 @@ func TestWorkspacesUpdate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"workspaces", "update",
-			"--workspace-id", "workspace_id",
+			"machines", "update",
+			"--machine-id", "machine_id",
 			"--if-match", "If-Match",
 		)
 	})
 }
 
-func TestWorkspacesList(t *testing.T) {
+func TestMachinesList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "list",
+			"machines", "list",
 			"--max-items", "10",
 			"--cursor", "cursor",
 			"--limit", "0",
@@ -88,26 +88,26 @@ func TestWorkspacesList(t *testing.T) {
 	})
 }
 
-func TestWorkspacesDelete(t *testing.T) {
+func TestMachinesDelete(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "delete",
-			"--workspace-id", "workspace_id",
+			"machines", "delete",
+			"--machine-id", "machine_id",
 			"--if-match", "If-Match",
 		)
 	})
 }
 
-func TestWorkspacesWatch(t *testing.T) {
+func TestMachinesWatch(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces", "watch",
+			"machines", "watch",
 			"--max-items", "10",
-			"--workspace-id", "workspace_id",
+			"--machine-id", "machine_id",
 			"--last-event-id", "Last-Event-ID",
 		)
 	})

@@ -8,63 +8,73 @@ import (
 	"github.com/dedalus-labs/dedalus-cli/internal/mocktest"
 )
 
-func TestWorkspacesSSHCreate(t *testing.T) {
+func TestMachinesTerminalsCreate(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:ssh", "create",
-			"--workspace-id", "workspace_id",
-			"--public-key", "public_key",
+			"machines:terminals", "create",
+			"--machine-id", "machine_id",
+			"--height", "0",
+			"--width", "0",
+			"--cwd", "cwd",
+			"--env", "{foo: string}",
+			"--shell", "shell",
 		)
 	})
 
 	t.Run("piping data", func(t *testing.T) {
 		// Test piping YAML data over stdin
-		pipeData := []byte("public_key: public_key")
+		pipeData := []byte("" +
+			"height: 0\n" +
+			"width: 0\n" +
+			"cwd: cwd\n" +
+			"env:\n" +
+			"  foo: string\n" +
+			"shell: shell\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"workspaces:ssh", "create",
-			"--workspace-id", "workspace_id",
+			"machines:terminals", "create",
+			"--machine-id", "machine_id",
 		)
 	})
 }
 
-func TestWorkspacesSSHRetrieve(t *testing.T) {
+func TestMachinesTerminalsRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:ssh", "retrieve",
-			"--workspace-id", "workspace_id",
-			"--session-id", "session_id",
+			"machines:terminals", "retrieve",
+			"--machine-id", "machine_id",
+			"--terminal-id", "terminal_id",
 		)
 	})
 }
 
-func TestWorkspacesSSHList(t *testing.T) {
+func TestMachinesTerminalsList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:ssh", "list",
+			"machines:terminals", "list",
 			"--max-items", "10",
-			"--workspace-id", "workspace_id",
+			"--machine-id", "machine_id",
 			"--cursor", "cursor",
 			"--limit", "0",
 		)
 	})
 }
 
-func TestWorkspacesSSHDelete(t *testing.T) {
+func TestMachinesTerminalsDelete(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"workspaces:ssh", "delete",
-			"--workspace-id", "workspace_id",
-			"--session-id", "session_id",
+			"machines:terminals", "delete",
+			"--machine-id", "machine_id",
+			"--terminal-id", "terminal_id",
 		)
 	})
 }

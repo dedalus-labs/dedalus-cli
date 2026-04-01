@@ -155,7 +155,7 @@ func awaitSSHSession(
 		}
 		fmt.Fprintf(os.Stderr, "ssh %s: %s\n", resp.SessionID, resp.Status)
 	}
-	return nil, fmt.Errorf("SSH session did not become ready after %d polls (%v); the machine may be unresponsive or the SSH gateway may be down", sshPollMax, time.Duration(sshPollMax)*sshPollInterval)
+	return nil, fmt.Errorf("SSH session did not become ready after %d polls (%v); the Dedalus Machine may be unresponsive or the SSH gateway may be down", sshPollMax, time.Duration(sshPollMax)*sshPollInterval)
 }
 
 func runSSH(ctx context.Context, keyPath, certPath, khPath string, conn dedalus.SSHConnection) error {

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0 (2026-04-02)
+
+Full Changelog: [v0.0.4...v0.1.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.4...v0.1.0)
+
+### Features
+
+* **api:** add sleep & wake methods ([1fac358](https://github.com/dedalus-labs/dedalus-cli/commit/1fac358baa8165f7f27ee2de287c5d40f6b34149))
+
+
+### Chores
+
+* **deps:** bump dedalus-go to v0.1.0 ([#12](https://github.com/dedalus-labs/dedalus-cli/issues/12)) ([e167131](https://github.com/dedalus-labs/dedalus-cli/commit/e167131e75828424fd144682754314b3731d13c5))
+
 ## 0.0.4 (2026-04-01)
 
 Full Changelog: [v0.0.3...v0.0.4](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.3...v0.0.4)

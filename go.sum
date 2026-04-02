@@ -22,8 +22,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.2 h1:p1EgwI/C7NhT0JmVkwCD2ZBK8j4aeHQX2pMHH
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dedalus-labs/dedalus-go v0.0.5 h1:eQ6FkrewlhKLEsr6biOntumVCdd+/0f3W3xLEDEllDA=
-github.com/dedalus-labs/dedalus-go v0.0.5/go.mod h1:tcwRinHcyjTtLhXOiHaCPEHmm9tPwsAvagi5qiXaxDs=
+github.com/dedalus-labs/dedalus-go v0.1.0 h1:cYb2cE4j0tLCw2FSHWoM0LP67gVl3R4BJONg8wyaX0E=
+github.com/dedalus-labs/dedalus-go v0.1.0/go.mod h1:tcwRinHcyjTtLhXOiHaCPEHmm9tPwsAvagi5qiXaxDs=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
 github.com/goccy/go-yaml v1.18.0 h1:8W7wMFS12Pcas7KU+VVkaiCng+kG8QiFeFwzFb+rwuw=

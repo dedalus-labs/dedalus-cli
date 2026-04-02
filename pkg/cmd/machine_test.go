@@ -100,6 +100,30 @@ func TestMachinesDelete(t *testing.T) {
 	})
 }
 
+func TestMachinesSleep(t *testing.T) {
+	t.Run("regular flags", func(t *testing.T) {
+		mocktest.TestRunMockTestWithFlags(
+			t,
+			"--api-key", "string",
+			"machines", "sleep",
+			"--machine-id", "machine_id",
+			"--if-match", "If-Match",
+		)
+	})
+}
+
+func TestMachinesWake(t *testing.T) {
+	t.Run("regular flags", func(t *testing.T) {
+		mocktest.TestRunMockTestWithFlags(
+			t,
+			"--api-key", "string",
+			"machines", "wake",
+			"--machine-id", "machine_id",
+			"--if-match", "If-Match",
+		)
+	})
+}
+
 func TestMachinesWatch(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(

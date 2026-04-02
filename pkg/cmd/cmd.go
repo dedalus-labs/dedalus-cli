@@ -97,6 +97,8 @@ func init() {
 					&machinesUpdate,
 					&machinesList,
 					&machinesDelete,
+					&machinesSleep,
+					&machinesWake,
 					&machinesWatch,
 				},
 			},

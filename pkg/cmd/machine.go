@@ -132,6 +132,44 @@ var machinesDelete = cli.Command{
 	HideHelpCommand: true,
 }
 
+var machinesSleep = cli.Command{
+	Name:    "sleep",
+	Usage:   "Sleep a running machine",
+	Suggest: true,
+	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:     "machine-id",
+			Required: true,
+		},
+		&requestflag.Flag[string]{
+			Name:       "if-match",
+			Required:   true,
+			HeaderPath: "If-Match",
+		},
+	},
+	Action:          handleMachinesSleep,
+	HideHelpCommand: true,
+}
+
+var machinesWake = cli.Command{
+	Name:    "wake",
+	Usage:   "Wake a sleeping machine",
+	Suggest: true,
+	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:     "machine-id",
+			Required: true,
+		},
+		&requestflag.Flag[string]{
+			Name:       "if-match",
+			Required:   true,
+			HeaderPath: "If-Match",
+		},
+	},
+	Action:          handleMachinesWake,
+	HideHelpCommand: true,
+}
+
 var machinesWatch = cli.Command{
 	Name:    "watch",
 	Usage:   "Streams machine lifecycle updates over Server-Sent Events. Each `status` event\ncontains a full `LifecycleResponse` payload. The stream closes after the machine\nreaches its current desired state.",
@@ -336,6 +374,78 @@ func handleMachinesDelete(ctx context.Context, cmd *cli.Command) error {
 	format := cmd.Root().String("format")
 	transform := cmd.Root().String("transform")
 	return ShowJSON(os.Stdout, "machines delete", obj, format, transform)
+}
+
+func handleMachinesSleep(ctx context.Context, cmd *cli.Command) error {
+	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
+	unusedArgs := cmd.Args().Slice()
+
+	if len(unusedArgs) > 0 {
+		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	}
+
+	params := dedalus.MachineSleepParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
+
+	options, err := flagOptions(
+		cmd,
+		apiquery.NestedQueryFormatBrackets,
+		apiquery.ArrayQueryFormatRepeat,
+		EmptyBody,
+		false,
+	)
+	if err != nil {
+		return err
+	}
+
+	var res []byte
+	options = append(options, option.WithResponseBodyInto(&res))
+	_, err = client.Machines.Sleep(ctx, params, options...)
+	if err != nil {
+		return err
+	}
+
+	obj := gjson.ParseBytes(res)
+	format := cmd.Root().String("format")
+	transform := cmd.Root().String("transform")
+	return ShowJSON(os.Stdout, "machines sleep", obj, format, transform)
+}
+
+func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
+	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
+	unusedArgs := cmd.Args().Slice()
+
+	if len(unusedArgs) > 0 {
+		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	}
+
+	params := dedalus.MachineWakeParams{
+		MachineID: cmd.Value("machine-id").(string),
+	}
+
+	options, err := flagOptions(
+		cmd,
+		apiquery.NestedQueryFormatBrackets,
+		apiquery.ArrayQueryFormatRepeat,
+		EmptyBody,
+		false,
+	)
+	if err != nil {
+		return err
+	}
+
+	var res []byte
+	options = append(options, option.WithResponseBodyInto(&res))
+	_, err = client.Machines.Wake(ctx, params, options...)
+	if err != nil {
+		return err
+	}
+
+	obj := gjson.ParseBytes(res)
+	format := cmd.Root().String("format")
+	transform := cmd.Root().String("transform")
+	return ShowJSON(os.Stdout, "machines wake", obj, format, transform)
 }
 
 func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {

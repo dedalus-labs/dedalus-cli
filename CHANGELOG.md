@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.0 (2026-04-03)
+
+Full Changelog: [v0.1.0...v0.2.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.1.0...v0.2.0)
+
+### Features
+
+* allow `-` as value representing stdin to binary-only file parameters in CLIs ([7da15e2](https://github.com/dedalus-labs/dedalus-cli/commit/7da15e2f6c1d715fc55e26fa2bd7be95eba5ff0e))
+* better error message if scheme forgotten in CLI `*_BASE_URL`/`--base-url` ([5edec04](https://github.com/dedalus-labs/dedalus-cli/commit/5edec044b3dda53824fa2981ffe94b557fc3ce65))
+* binary-only parameters become CLI flags that take filenames only ([0875d6c](https://github.com/dedalus-labs/dedalus-cli/commit/0875d6c6e2426509185f56022f763b2927b07af2))
+
+
+### Chores
+
+* mark all CLI-related tests in Go with `t.Parallel()` ([7d1a565](https://github.com/dedalus-labs/dedalus-cli/commit/7d1a565862ae3190b48e40ff892073eca20a5480))
+* modify CLI tests to inject stdout so mutating `os.Stdout` isn't necessary ([6073189](https://github.com/dedalus-labs/dedalus-cli/commit/6073189d85a64ac3d53c0f8b08899a2b617740b8))
+* switch some CLI Go tests from `os.Chdir` to `t.Chdir` ([ba52bbe](https://github.com/dedalus-labs/dedalus-cli/commit/ba52bbea1667ea208f169c8b1b768e714ad3eeb7))
+
 ## 0.1.0 (2026-04-02)
 
 Full Changelog: [v0.0.4...v0.1.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.4...v0.1.0)

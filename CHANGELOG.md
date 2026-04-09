@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.0 (2026-04-09)
+
+Full Changelog: [v0.1.0...v0.2.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.1.0...v0.2.0)
+
+### Features
+
+* allow `-` as value representing stdin to binary-only file parameters in CLIs ([7da15e2](https://github.com/dedalus-labs/dedalus-cli/commit/7da15e2f6c1d715fc55e26fa2bd7be95eba5ff0e))
+* better error message if scheme forgotten in CLI `*_BASE_URL`/`--base-url` ([5edec04](https://github.com/dedalus-labs/dedalus-cli/commit/5edec044b3dda53824fa2981ffe94b557fc3ce65))
+* binary-only parameters become CLI flags that take filenames only ([0875d6c](https://github.com/dedalus-labs/dedalus-cli/commit/0875d6c6e2426509185f56022f763b2927b07af2))
+
+
+### Bug Fixes
+
+* fall back to main branch if linking fails in CI ([87613ec](https://github.com/dedalus-labs/dedalus-cli/commit/87613ecfe5030a1a76be6dcfdb29161ff58a2550))
+* fix for failing to drop invalid module replace in link script ([547c3e1](https://github.com/dedalus-labs/dedalus-cli/commit/547c3e146cf035cee1b466a85a06529c0117edf2))
+* fix quoting typo ([575418c](https://github.com/dedalus-labs/dedalus-cli/commit/575418c4b4a58aa2496fef880d038c59da9e7fb8))
+
+
+### Chores
+
+* **cli:** additional test cases for `ShowJSONIterator` ([c64d07c](https://github.com/dedalus-labs/dedalus-cli/commit/c64d07ce2e2819b489ee60e500379bb3d3b4fc67))
+* **cli:** let `--format raw` be used in conjunction with `--transform` ([c913d27](https://github.com/dedalus-labs/dedalus-cli/commit/c913d2739ca2f58b5498e7aea3b644b4068a1fe8))
+* mark all CLI-related tests in Go with `t.Parallel()` ([7d1a565](https://github.com/dedalus-labs/dedalus-cli/commit/7d1a565862ae3190b48e40ff892073eca20a5480))
+* modify CLI tests to inject stdout so mutating `os.Stdout` isn't necessary ([6073189](https://github.com/dedalus-labs/dedalus-cli/commit/6073189d85a64ac3d53c0f8b08899a2b617740b8))
+* switch some CLI Go tests from `os.Chdir` to `t.Chdir` ([ba52bbe](https://github.com/dedalus-labs/dedalus-cli/commit/ba52bbea1667ea208f169c8b1b768e714ad3eeb7))
+
 ## 0.1.0 (2026-04-02)
 
 Full Changelog: [v0.0.4...v0.1.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.4...v0.1.0)

@@ -9,5 +9,9 @@ export GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}github.com/dedalus-labs/dedalus-go,gi
 
 REPLACEMENT="${1:-"../Dedalus-go"}"
 echo "==> Replacing Go SDK with $REPLACEMENT"
-go mod edit -replace github.com/dedalus-labs/dedalus-go="$REPLACEMENT"
-go mod tidy -e
+if [[ -d "$REPLACEMENT" ]] || go list -m "$REPLACEMENT" >/dev/null; then
+    go mod edit -replace github.com/dedalus-labs/dedalus-go="$REPLACEMENT"
+    go mod tidy -e
+else
+    echo "Skipping Go SDK replacement (branch may not exist on Go SDK)"
+fi

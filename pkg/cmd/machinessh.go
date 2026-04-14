@@ -128,8 +128,9 @@ func handleMachinesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines:ssh create", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines:ssh create", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
@@ -165,8 +166,9 @@ func handleMachinesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines:ssh retrieve", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines:ssh retrieve", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
@@ -193,6 +195,7 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte
@@ -202,14 +205,14 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "machines:ssh list", obj, format, transform)
+		return ShowJSON(os.Stdout, os.Stderr, "machines:ssh list", obj, format, explicitFormat, transform)
 	} else {
 		iter := client.Machines.SSH.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "machines:ssh list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, os.Stderr, "machines:ssh list", iter, format, explicitFormat, transform, maxItems)
 	}
 }
 
@@ -246,6 +249,7 @@ func handleMachinesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines:ssh delete", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines:ssh delete", obj, format, explicitFormat, transform)
 }

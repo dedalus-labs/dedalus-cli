@@ -222,8 +222,9 @@ func handleMachinesCreate(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines create", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines create", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesRetrieve(ctx context.Context, cmd *cli.Command) error {
@@ -258,8 +259,9 @@ func handleMachinesRetrieve(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines retrieve", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines retrieve", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesUpdate(ctx context.Context, cmd *cli.Command) error {
@@ -294,8 +296,9 @@ func handleMachinesUpdate(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines update", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines update", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
@@ -320,6 +323,7 @@ func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte
@@ -329,14 +333,14 @@ func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, "machines list", obj, format, transform)
+		return ShowJSON(os.Stdout, os.Stderr, "machines list", obj, format, explicitFormat, transform)
 	} else {
 		iter := client.Machines.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, "machines list", iter, format, transform, maxItems)
+		return ShowJSONIterator(os.Stdout, os.Stderr, "machines list", iter, format, explicitFormat, transform, maxItems)
 	}
 }
 
@@ -372,8 +376,9 @@ func handleMachinesDelete(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines delete", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines delete", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesSleep(ctx context.Context, cmd *cli.Command) error {
@@ -408,8 +413,9 @@ func handleMachinesSleep(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines sleep", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines sleep", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
@@ -444,8 +450,9 @@ func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
 
 	obj := gjson.ParseBytes(res)
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, "machines wake", obj, format, transform)
+	return ShowJSON(os.Stdout, os.Stderr, "machines wake", obj, format, explicitFormat, transform)
 }
 
 func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {
@@ -472,11 +479,12 @@ func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
 	stream := client.Machines.WatchStreaming(ctx, params, options...)
 	maxItems := int64(-1)
 	if cmd.IsSet("max-items") {
 		maxItems = cmd.Value("max-items").(int64)
 	}
-	return ShowJSONIterator(os.Stdout, "machines watch", stream, format, transform, maxItems)
+	return ShowJSONIterator(os.Stdout, os.Stderr, "machines watch", stream, format, explicitFormat, transform, maxItems)
 }

@@ -5,7 +5,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/dedalus-labs/dedalus-cli/internal/apiquery"
 	"github.com/dedalus-labs/dedalus-cli/internal/requestflag"
@@ -194,7 +193,12 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:executions create", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:executions create",
+		Transform:      transform,
+	})
 }
 
 func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) error {
@@ -232,7 +236,12 @@ func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) err
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:executions retrieve", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:executions retrieve",
+		Transform:      transform,
+	})
 }
 
 func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
@@ -269,14 +278,24 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, os.Stderr, "machines:executions list", obj, format, explicitFormat, transform)
+		return ShowJSON(obj, ShowJSONOpts{
+			ExplicitFormat: explicitFormat,
+			Format:         format,
+			Title:          "machines:executions list",
+			Transform:      transform,
+		})
 	} else {
 		iter := client.Machines.Executions.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, os.Stderr, "machines:executions list", iter, format, explicitFormat, transform, maxItems)
+		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
+			ExplicitFormat: explicitFormat,
+			Format:         format,
+			Title:          "machines:executions list",
+			Transform:      transform,
+		})
 	}
 }
 
@@ -315,7 +334,12 @@ func handleMachinesExecutionsDelete(ctx context.Context, cmd *cli.Command) error
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:executions delete", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:executions delete",
+		Transform:      transform,
+	})
 }
 
 func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error {
@@ -353,14 +377,24 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, os.Stderr, "machines:executions events", obj, format, explicitFormat, transform)
+		return ShowJSON(obj, ShowJSONOpts{
+			ExplicitFormat: explicitFormat,
+			Format:         format,
+			Title:          "machines:executions events",
+			Transform:      transform,
+		})
 	} else {
 		iter := client.Machines.Executions.EventsAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, os.Stderr, "machines:executions events", iter, format, explicitFormat, transform, maxItems)
+		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
+			ExplicitFormat: explicitFormat,
+			Format:         format,
+			Title:          "machines:executions events",
+			Transform:      transform,
+		})
 	}
 }
 
@@ -399,5 +433,10 @@ func handleMachinesExecutionsOutput(ctx context.Context, cmd *cli.Command) error
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:executions output", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:executions output",
+		Transform:      transform,
+	})
 }

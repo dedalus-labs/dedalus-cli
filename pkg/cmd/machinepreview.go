@@ -5,7 +5,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/dedalus-labs/dedalus-cli/internal/apiquery"
 	"github.com/dedalus-labs/dedalus-cli/internal/requestflag"
@@ -140,7 +139,12 @@ func handleMachinesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:previews create", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:previews create",
+		Transform:      transform,
+	})
 }
 
 func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error {
@@ -178,7 +182,12 @@ func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:previews retrieve", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:previews retrieve",
+		Transform:      transform,
+	})
 }
 
 func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
@@ -215,14 +224,24 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		obj := gjson.ParseBytes(res)
-		return ShowJSON(os.Stdout, os.Stderr, "machines:previews list", obj, format, explicitFormat, transform)
+		return ShowJSON(obj, ShowJSONOpts{
+			ExplicitFormat: explicitFormat,
+			Format:         format,
+			Title:          "machines:previews list",
+			Transform:      transform,
+		})
 	} else {
 		iter := client.Machines.Previews.ListAutoPaging(ctx, params, options...)
 		maxItems := int64(-1)
 		if cmd.IsSet("max-items") {
 			maxItems = cmd.Value("max-items").(int64)
 		}
-		return ShowJSONIterator(os.Stdout, os.Stderr, "machines:previews list", iter, format, explicitFormat, transform, maxItems)
+		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
+			ExplicitFormat: explicitFormat,
+			Format:         format,
+			Title:          "machines:previews list",
+			Transform:      transform,
+		})
 	}
 }
 
@@ -261,5 +280,10 @@ func handleMachinesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
-	return ShowJSON(os.Stdout, os.Stderr, "machines:previews delete", obj, format, explicitFormat, transform)
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		Title:          "machines:previews delete",
+		Transform:      transform,
+	})
 }

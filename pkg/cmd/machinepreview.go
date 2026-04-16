@@ -142,6 +142,7 @@ func handleMachinesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:previews create",
 		Transform:      transform,
 	})
@@ -185,6 +186,7 @@ func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:previews retrieve",
 		Transform:      transform,
 	})
@@ -227,6 +229,7 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSON(obj, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:previews list",
 			Transform:      transform,
 		})
@@ -239,6 +242,7 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:previews list",
 			Transform:      transform,
 		})
@@ -283,6 +287,7 @@ func handleMachinesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:previews delete",
 		Transform:      transform,
 	})

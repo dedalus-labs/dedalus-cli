@@ -149,6 +149,7 @@ func handleMachinesTerminalsCreate(ctx context.Context, cmd *cli.Command) error 
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:terminals create",
 		Transform:      transform,
 	})
@@ -192,6 +193,7 @@ func handleMachinesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) erro
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:terminals retrieve",
 		Transform:      transform,
 	})
@@ -234,6 +236,7 @@ func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSON(obj, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:terminals list",
 			Transform:      transform,
 		})
@@ -246,6 +249,7 @@ func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:terminals list",
 			Transform:      transform,
 		})
@@ -290,6 +294,7 @@ func handleMachinesTerminalsDelete(ctx context.Context, cmd *cli.Command) error 
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:terminals delete",
 		Transform:      transform,
 	})

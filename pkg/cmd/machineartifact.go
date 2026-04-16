@@ -114,6 +114,7 @@ func handleMachinesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) erro
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:artifacts retrieve",
 		Transform:      transform,
 	})
@@ -156,6 +157,7 @@ func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSON(obj, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:artifacts list",
 			Transform:      transform,
 		})
@@ -168,6 +170,7 @@ func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:artifacts list",
 			Transform:      transform,
 		})
@@ -212,6 +215,7 @@ func handleMachinesArtifactsDelete(ctx context.Context, cmd *cli.Command) error 
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:artifacts delete",
 		Transform:      transform,
 	})

@@ -132,6 +132,7 @@ func handleMachinesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:ssh create",
 		Transform:      transform,
 	})
@@ -175,6 +176,7 @@ func handleMachinesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:ssh retrieve",
 		Transform:      transform,
 	})
@@ -217,6 +219,7 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSON(obj, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:ssh list",
 			Transform:      transform,
 		})
@@ -229,6 +232,7 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines:ssh list",
 			Transform:      transform,
 		})
@@ -273,6 +277,7 @@ func handleMachinesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines:ssh delete",
 		Transform:      transform,
 	})

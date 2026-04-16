@@ -226,6 +226,7 @@ func handleMachinesCreate(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines create",
 		Transform:      transform,
 	})
@@ -268,6 +269,7 @@ func handleMachinesRetrieve(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines retrieve",
 		Transform:      transform,
 	})
@@ -310,6 +312,7 @@ func handleMachinesUpdate(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines update",
 		Transform:      transform,
 	})
@@ -350,6 +353,7 @@ func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSON(obj, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines list",
 			Transform:      transform,
 		})
@@ -362,6 +366,7 @@ func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
 		return ShowJSONIterator(iter, maxItems, ShowJSONOpts{
 			ExplicitFormat: explicitFormat,
 			Format:         format,
+			RawOutput:      cmd.Root().Bool("raw-output"),
 			Title:          "machines list",
 			Transform:      transform,
 		})
@@ -405,6 +410,7 @@ func handleMachinesDelete(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines delete",
 		Transform:      transform,
 	})
@@ -447,6 +453,7 @@ func handleMachinesSleep(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines sleep",
 		Transform:      transform,
 	})
@@ -489,6 +496,7 @@ func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines wake",
 		Transform:      transform,
 	})
@@ -528,6 +536,7 @@ func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {
 	return ShowJSONIterator(stream, maxItems, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines watch",
 		Transform:      transform,
 	})

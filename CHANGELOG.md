@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.2.0 (2026-04-17)
+
+Full Changelog: [v0.1.0...v0.2.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.1.0...v0.2.0)
+
+### Features
+
+* allow `-` as value representing stdin to binary-only file parameters in CLIs ([7da15e2](https://github.com/dedalus-labs/dedalus-cli/commit/7da15e2f6c1d715fc55e26fa2bd7be95eba5ff0e))
+* better error message if scheme forgotten in CLI `*_BASE_URL`/`--base-url` ([5edec04](https://github.com/dedalus-labs/dedalus-cli/commit/5edec044b3dda53824fa2981ffe94b557fc3ce65))
+* binary-only parameters become CLI flags that take filenames only ([0875d6c](https://github.com/dedalus-labs/dedalus-cli/commit/0875d6c6e2426509185f56022f763b2927b07af2))
+* **cli:** add `--raw-output`/`-r` option to print raw (non-JSON) strings ([d7201c6](https://github.com/dedalus-labs/dedalus-cli/commit/d7201c60f8794ec1c0fe6fcfdd85ece68996c7f9))
+* **cli:** alias parameters in data with `x-stainless-cli-data-alias` ([5a62637](https://github.com/dedalus-labs/dedalus-cli/commit/5a6263723604bb1a35fbc53c5f99e7fd7fd0463a))
+* **cli:** send filename and content type when reading input from files ([21ec6dd](https://github.com/dedalus-labs/dedalus-cli/commit/21ec6dd8f92d9feafd9e43abd08f9f9fddddf64a))
+
+
+### Bug Fixes
+
+* fall back to main branch if linking fails in CI ([87613ec](https://github.com/dedalus-labs/dedalus-cli/commit/87613ecfe5030a1a76be6dcfdb29161ff58a2550))
+* fix for failing to drop invalid module replace in link script ([547c3e1](https://github.com/dedalus-labs/dedalus-cli/commit/547c3e146cf035cee1b466a85a06529c0117edf2))
+* fix quoting typo ([575418c](https://github.com/dedalus-labs/dedalus-cli/commit/575418c4b4a58aa2496fef880d038c59da9e7fb8))
+
+
+### Chores
+
+* add documentation for ./scripts/link ([6d33e1a](https://github.com/dedalus-labs/dedalus-cli/commit/6d33e1af76dc27b3c70c252b1d28894050b0a7dc))
+* **ci:** add github env support for goreleaser ([158e705](https://github.com/dedalus-labs/dedalus-cli/commit/158e705d900c2cda1e52b8984e821044a7ac38fe))
+* **ci:** remove release-doctor workflow ([2a1a9d8](https://github.com/dedalus-labs/dedalus-cli/commit/2a1a9d8c0b94a6c06c2ab828c1c8a6fbf1382f39))
+* **ci:** support manually triggering release workflow ([cf0bd76](https://github.com/dedalus-labs/dedalus-cli/commit/cf0bd764b2563d4ab838a99c6ebbf1c45b7ae3e3))
+* **cli:** additional test cases for `ShowJSONIterator` ([c64d07c](https://github.com/dedalus-labs/dedalus-cli/commit/c64d07ce2e2819b489ee60e500379bb3d3b4fc67))
+* **cli:** fall back to JSON when using default "explore" with non-TTY ([3b62e8d](https://github.com/dedalus-labs/dedalus-cli/commit/3b62e8d1b6b6305b4cb36aec45abf4f88d3b6a2c))
+* **cli:** let `--format raw` be used in conjunction with `--transform` ([c913d27](https://github.com/dedalus-labs/dedalus-cli/commit/c913d2739ca2f58b5498e7aea3b644b4068a1fe8))
+* **cli:** switch long lists of positional args over to param structs ([86bdc85](https://github.com/dedalus-labs/dedalus-cli/commit/86bdc85c82d6f81d2d0614cb7e705b55ece80fe7))
+* **cli:** use `ShowJSONOpts` as argument to `formatJSON` instead of many positionals ([a19782c](https://github.com/dedalus-labs/dedalus-cli/commit/a19782cd7fed5d41883ed7800b6d2c4c0bde7ced))
+* mark all CLI-related tests in Go with `t.Parallel()` ([7d1a565](https://github.com/dedalus-labs/dedalus-cli/commit/7d1a565862ae3190b48e40ff892073eca20a5480))
+* modify CLI tests to inject stdout so mutating `os.Stdout` isn't necessary ([6073189](https://github.com/dedalus-labs/dedalus-cli/commit/6073189d85a64ac3d53c0f8b08899a2b617740b8))
+* switch some CLI Go tests from `os.Chdir` to `t.Chdir` ([ba52bbe](https://github.com/dedalus-labs/dedalus-cli/commit/ba52bbea1667ea208f169c8b1b768e714ad3eeb7))
+* **tests:** bump steady to v0.22.1 ([544f575](https://github.com/dedalus-labs/dedalus-cli/commit/544f575622b41ceb09a9491a1c28898e09142757))
+
 ## 0.1.0 (2026-04-02)
 
 Full Changelog: [v0.0.4...v0.1.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.0.4...v0.1.0)

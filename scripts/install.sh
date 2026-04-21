@@ -4,6 +4,7 @@ set -euo pipefail
 REPO="dedalus-labs/dedalus-cli"
 BINARY="dedalus"
 INSTALL_DIR="${DEDALUS_INSTALL_DIR:-$HOME/.local/bin}"
+TMPDIR_CLEANUP=""
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -15,6 +16,15 @@ error()   { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[OK]${NC} $1"; }
 warning() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+
+cleanup_tmpdir() {
+    if [[ -n "${TMPDIR_CLEANUP:-}" ]]; then
+        rm -rf -- "${TMPDIR_CLEANUP}"
+        TMPDIR_CLEANUP=""
+    fi
+}
+
+trap cleanup_tmpdir EXIT
 
 detect_platform() {
     local os arch
@@ -65,9 +75,10 @@ download_and_install() {
     fi
 
     local url="https://github.com/${REPO}/releases/download/${VERSION}/${archive_name}.${ext}"
-    local tmpdir
-    tmpdir=$(mktemp -d)
-    trap 'rm -rf "$tmpdir"' EXIT
+
+    cleanup_tmpdir
+    TMPDIR_CLEANUP=$(mktemp -d)
+    local tmpdir="${TMPDIR_CLEANUP}"
 
     info "Downloading ${url}..."
     if ! curl -fsSL "$url" -o "${tmpdir}/archive.${ext}"; then

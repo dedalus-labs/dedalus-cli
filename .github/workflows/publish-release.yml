@@ -10,9 +10,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch: {}
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    environment: production
     steps:
     - name: Checkout
       uses: actions/checkout@v6

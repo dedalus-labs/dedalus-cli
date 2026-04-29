@@ -48,8 +48,9 @@ var machinesRetrieve = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 	},
 	Action:          handleMachinesRetrieve,
@@ -62,8 +63,9 @@ var machinesUpdate = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:       "if-match",
@@ -118,8 +120,9 @@ var machinesDelete = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:       "if-match",
@@ -137,8 +140,9 @@ var machinesSleep = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:       "if-match",
@@ -156,8 +160,9 @@ var machinesWake = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:       "if-match",
@@ -175,8 +180,9 @@ var machinesWatch = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:       "last-event-id",
@@ -199,8 +205,6 @@ func handleMachinesCreate(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineNewParams{}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -211,6 +215,8 @@ func handleMachinesCreate(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+
+	params := dedalus.MachineNewParams{}
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
@@ -240,10 +246,6 @@ func handleMachinesRetrieve(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineGetParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -253,6 +255,10 @@ func handleMachinesRetrieve(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineGetParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -283,10 +289,6 @@ func handleMachinesUpdate(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineUpdateParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -296,6 +298,10 @@ func handleMachinesUpdate(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineUpdateParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -326,8 +332,6 @@ func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineListParams{}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -338,6 +342,8 @@ func handleMachinesList(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+
+	params := dedalus.MachineListParams{}
 
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
@@ -381,10 +387,6 @@ func handleMachinesDelete(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineDeleteParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -394,6 +396,10 @@ func handleMachinesDelete(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineDeleteParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -424,10 +430,6 @@ func handleMachinesSleep(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineSleepParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -437,6 +439,10 @@ func handleMachinesSleep(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineSleepParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -467,10 +473,6 @@ func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineWakeParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -480,6 +482,10 @@ func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineWakeParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -510,10 +516,6 @@ func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineWatchParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -523,6 +525,10 @@ func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineWatchParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	format := cmd.Root().String("format")

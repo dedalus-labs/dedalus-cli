@@ -20,12 +20,14 @@ var machinesArtifactsRetrieve = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "artifact-id",
-			Required: true,
+			Name:      "artifact-id",
+			Required:  true,
+			PathParam: "artifact_id",
 		},
 	},
 	Action:          handleMachinesArtifactsRetrieve,
@@ -38,8 +40,9 @@ var machinesArtifactsList = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
@@ -64,12 +67,14 @@ var machinesArtifactsDelete = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "artifact-id",
-			Required: true,
+			Name:      "artifact-id",
+			Required:  true,
+			PathParam: "artifact_id",
 		},
 	},
 	Action:          handleMachinesArtifactsDelete,
@@ -84,11 +89,6 @@ func handleMachinesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) erro
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineArtifactGetParams{
-		MachineID:  cmd.Value("machine-id").(string),
-		ArtifactID: cmd.Value("artifact-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -98,6 +98,11 @@ func handleMachinesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) erro
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineArtifactGetParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		ArtifactID: cmd.Value("artifact-id").(string),
 	}
 
 	var res []byte
@@ -128,10 +133,6 @@ func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineArtifactListParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -141,6 +142,10 @@ func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineArtifactListParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	format := cmd.Root().String("format")
@@ -185,11 +190,6 @@ func handleMachinesArtifactsDelete(ctx context.Context, cmd *cli.Command) error 
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineArtifactDeleteParams{
-		MachineID:  cmd.Value("machine-id").(string),
-		ArtifactID: cmd.Value("artifact-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -199,6 +199,11 @@ func handleMachinesArtifactsDelete(ctx context.Context, cmd *cli.Command) error 
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineArtifactDeleteParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		ArtifactID: cmd.Value("artifact-id").(string),
 	}
 
 	var res []byte

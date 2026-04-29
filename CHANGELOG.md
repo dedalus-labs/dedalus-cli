@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 (2026-04-29)
+
+Full Changelog: [v0.2.0...v0.2.1](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.0...v0.2.1)
+
+### Bug Fixes
+
+* **cli:** correctly load zsh autocompletion ([53e9ec6](https://github.com/dedalus-labs/dedalus-cli/commit/53e9ec62582857ca55d3c7d14fb68caf8812f76a))
+
 ## 0.2.0 (2026-04-22)
 
 Full Changelog: [v0.1.0...v0.2.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.1.0...v0.2.0)

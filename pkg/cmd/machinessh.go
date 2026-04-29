@@ -20,8 +20,9 @@ var machinesSSHCreate = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:     "public-key",
@@ -39,12 +40,14 @@ var machinesSSHRetrieve = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "session-id",
-			Required: true,
+			Name:      "session-id",
+			Required:  true,
+			PathParam: "session_id",
 		},
 	},
 	Action:          handleMachinesSSHRetrieve,
@@ -57,8 +60,9 @@ var machinesSSHList = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
@@ -83,12 +87,14 @@ var machinesSSHDelete = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "session-id",
-			Required: true,
+			Name:      "session-id",
+			Required:  true,
+			PathParam: "session_id",
 		},
 	},
 	Action:          handleMachinesSSHDelete,
@@ -103,10 +109,6 @@ func handleMachinesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineSSHNewParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -116,6 +118,10 @@ func handleMachinesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineSSHNewParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -146,11 +152,6 @@ func handleMachinesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineSSHGetParams{
-		MachineID: cmd.Value("machine-id").(string),
-		SessionID: cmd.Value("session-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -160,6 +161,11 @@ func handleMachinesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineSSHGetParams{
+		MachineID: cmd.Value("machine-id").(string),
+		SessionID: cmd.Value("session-id").(string),
 	}
 
 	var res []byte
@@ -190,10 +196,6 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineSSHListParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -203,6 +205,10 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineSSHListParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	format := cmd.Root().String("format")
@@ -247,11 +253,6 @@ func handleMachinesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineSSHDeleteParams{
-		MachineID: cmd.Value("machine-id").(string),
-		SessionID: cmd.Value("session-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -261,6 +262,11 @@ func handleMachinesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineSSHDeleteParams{
+		MachineID: cmd.Value("machine-id").(string),
+		SessionID: cmd.Value("session-id").(string),
 	}
 
 	var res []byte

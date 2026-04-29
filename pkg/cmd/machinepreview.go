@@ -20,8 +20,9 @@ var machinesPreviewsCreate = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[int64]{
 			Name:     "port",
@@ -49,12 +50,14 @@ var machinesPreviewsRetrieve = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "preview-id",
-			Required: true,
+			Name:      "preview-id",
+			Required:  true,
+			PathParam: "preview_id",
 		},
 	},
 	Action:          handleMachinesPreviewsRetrieve,
@@ -67,8 +70,9 @@ var machinesPreviewsList = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
@@ -93,12 +97,14 @@ var machinesPreviewsDelete = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "preview-id",
-			Required: true,
+			Name:      "preview-id",
+			Required:  true,
+			PathParam: "preview_id",
 		},
 	},
 	Action:          handleMachinesPreviewsDelete,
@@ -113,10 +119,6 @@ func handleMachinesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachinePreviewNewParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -126,6 +128,10 @@ func handleMachinesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachinePreviewNewParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -156,11 +162,6 @@ func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachinePreviewGetParams{
-		MachineID: cmd.Value("machine-id").(string),
-		PreviewID: cmd.Value("preview-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -170,6 +171,11 @@ func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachinePreviewGetParams{
+		MachineID: cmd.Value("machine-id").(string),
+		PreviewID: cmd.Value("preview-id").(string),
 	}
 
 	var res []byte
@@ -200,10 +206,6 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachinePreviewListParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -213,6 +215,10 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachinePreviewListParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	format := cmd.Root().String("format")
@@ -257,11 +263,6 @@ func handleMachinesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachinePreviewDeleteParams{
-		MachineID: cmd.Value("machine-id").(string),
-		PreviewID: cmd.Value("preview-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -271,6 +272,11 @@ func handleMachinesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachinePreviewDeleteParams{
+		MachineID: cmd.Value("machine-id").(string),
+		PreviewID: cmd.Value("preview-id").(string),
 	}
 
 	var res []byte

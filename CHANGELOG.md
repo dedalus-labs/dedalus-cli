@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 (2026-04-29)
+
+Full Changelog: [v0.2.1...v0.2.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.1...v0.2.2)
+
+### Chores
+
+* drop stale dedalus-go v0.1.0 custom-code pin ([f6646d2](https://github.com/dedalus-labs/dedalus-cli/commit/f6646d2614ca8eb8bea5f7a2da8bbb77b48681ae))
+
 ## 0.2.1 (2026-04-29)
 
 Full Changelog: [v0.2.0...v0.2.1](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.0...v0.2.1)

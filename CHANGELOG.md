@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 (2026-04-30)
+
+Full Changelog: [v0.2.2...v0.3.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.2...v0.3.0)
+
+### Features
+
+* support passing path and query params over stdin ([489489f](https://github.com/dedalus-labs/dedalus-cli/commit/489489fd3b0dac53c3c00beeb6e9586d719ae467))
+
+
+### Bug Fixes
+
+* flags for nullable body scalar fields are strictly typed ([9de27f3](https://github.com/dedalus-labs/dedalus-cli/commit/9de27f38d039b110aa5620f0ca835de8421b5eda))
+
 ## 0.2.2 (2026-04-29)
 
 Full Changelog: [v0.2.1...v0.2.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.1...v0.2.2)

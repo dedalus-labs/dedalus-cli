@@ -20,8 +20,9 @@ var machinesTerminalsCreate = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[int64]{
 			Name:     "height",
@@ -56,12 +57,14 @@ var machinesTerminalsRetrieve = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "terminal-id",
-			Required: true,
+			Name:      "terminal-id",
+			Required:  true,
+			PathParam: "terminal_id",
 		},
 	},
 	Action:          handleMachinesTerminalsRetrieve,
@@ -74,8 +77,9 @@ var machinesTerminalsList = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
@@ -100,12 +104,14 @@ var machinesTerminalsDelete = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "terminal-id",
-			Required: true,
+			Name:      "terminal-id",
+			Required:  true,
+			PathParam: "terminal_id",
 		},
 	},
 	Action:          handleMachinesTerminalsDelete,
@@ -120,10 +126,6 @@ func handleMachinesTerminalsCreate(ctx context.Context, cmd *cli.Command) error 
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineTerminalNewParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -133,6 +135,10 @@ func handleMachinesTerminalsCreate(ctx context.Context, cmd *cli.Command) error 
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineTerminalNewParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -163,11 +169,6 @@ func handleMachinesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) erro
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineTerminalGetParams{
-		MachineID:  cmd.Value("machine-id").(string),
-		TerminalID: cmd.Value("terminal-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -177,6 +178,11 @@ func handleMachinesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) erro
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineTerminalGetParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		TerminalID: cmd.Value("terminal-id").(string),
 	}
 
 	var res []byte
@@ -207,10 +213,6 @@ func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineTerminalListParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -220,6 +222,10 @@ func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineTerminalListParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	format := cmd.Root().String("format")
@@ -264,11 +270,6 @@ func handleMachinesTerminalsDelete(ctx context.Context, cmd *cli.Command) error 
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineTerminalDeleteParams{
-		MachineID:  cmd.Value("machine-id").(string),
-		TerminalID: cmd.Value("terminal-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -278,6 +279,11 @@ func handleMachinesTerminalsDelete(ctx context.Context, cmd *cli.Command) error 
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineTerminalDeleteParams{
+		MachineID:  cmd.Value("machine-id").(string),
+		TerminalID: cmd.Value("terminal-id").(string),
 	}
 
 	var res []byte

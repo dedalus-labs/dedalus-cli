@@ -58,7 +58,11 @@ dedalus machines create \
   --api-key 'My API Key' \
   --memory-mib 2048 \
   --storage-gib 10 \
-  --vcpu 1
+  --vcpu 1 \
+  --autosleep 30m
+
+Use `--autosleep off` to keep the machine running until you explicitly sleep
+or destroy it.
 ```
 
 For details about specific commands, use the `--help` flag.

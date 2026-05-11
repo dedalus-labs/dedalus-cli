@@ -13,7 +13,7 @@ func TestMachinesExecutionsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:executions", "create",
+			"machines", "executions", "create",
 			"--machine-id", "machine_id",
 			"--command", "[string]",
 			"--cwd", "cwd",
@@ -36,7 +36,7 @@ func TestMachinesExecutionsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"machines:executions", "create",
+			"machines", "executions", "create",
 			"--machine-id", "machine_id",
 		)
 	})
@@ -47,7 +47,7 @@ func TestMachinesExecutionsRetrieve(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:executions", "retrieve",
+			"machines", "executions", "retrieve",
 			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 		)
@@ -59,7 +59,7 @@ func TestMachinesExecutionsList(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:executions", "list",
+			"machines", "executions", "list",
 			"--max-items", "10",
 			"--machine-id", "machine_id",
 			"--cursor", "cursor",
@@ -73,7 +73,7 @@ func TestMachinesExecutionsDelete(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:executions", "delete",
+			"machines", "executions", "delete",
 			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 		)
@@ -85,7 +85,7 @@ func TestMachinesExecutionsEvents(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:executions", "events",
+			"machines", "executions", "events",
 			"--max-items", "10",
 			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
@@ -100,7 +100,7 @@ func TestMachinesExecutionsOutput(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:executions", "output",
+			"machines", "executions", "output",
 			"--machine-id", "machine_id",
 			"--execution-id", "execution_id",
 		)

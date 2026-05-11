@@ -133,7 +133,7 @@ func handleMachinesSSHCreate(ctx context.Context, cmd *cli.Command) error {
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:ssh create",
+		Title:          "machines ssh create",
 		Transform:      transform,
 	})
 }
@@ -177,7 +177,7 @@ func handleMachinesSSHRetrieve(ctx context.Context, cmd *cli.Command) error {
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:ssh retrieve",
+		Title:          "machines ssh retrieve",
 		Transform:      transform,
 	})
 }
@@ -220,7 +220,7 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:ssh list",
+			Title:          "machines ssh list",
 			Transform:      transform,
 		})
 	} else {
@@ -233,7 +233,7 @@ func handleMachinesSSHList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:ssh list",
+			Title:          "machines ssh list",
 			Transform:      transform,
 		})
 	}
@@ -278,7 +278,7 @@ func handleMachinesSSHDelete(ctx context.Context, cmd *cli.Command) error {
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:ssh delete",
+		Title:          "machines ssh delete",
 		Transform:      transform,
 	})
 }

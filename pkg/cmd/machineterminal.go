@@ -150,7 +150,7 @@ func handleMachinesTerminalsCreate(ctx context.Context, cmd *cli.Command) error 
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:terminals create",
+		Title:          "machines terminals create",
 		Transform:      transform,
 	})
 }
@@ -194,7 +194,7 @@ func handleMachinesTerminalsRetrieve(ctx context.Context, cmd *cli.Command) erro
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:terminals retrieve",
+		Title:          "machines terminals retrieve",
 		Transform:      transform,
 	})
 }
@@ -237,7 +237,7 @@ func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:terminals list",
+			Title:          "machines terminals list",
 			Transform:      transform,
 		})
 	} else {
@@ -250,7 +250,7 @@ func handleMachinesTerminalsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:terminals list",
+			Title:          "machines terminals list",
 			Transform:      transform,
 		})
 	}
@@ -295,7 +295,7 @@ func handleMachinesTerminalsDelete(ctx context.Context, cmd *cli.Command) error 
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:terminals delete",
+		Title:          "machines terminals delete",
 		Transform:      transform,
 	})
 }

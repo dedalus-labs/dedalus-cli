@@ -14,7 +14,7 @@ func TestMachinesTerminalsCreate(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:terminals", "create",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--height", "0",
 			"--width", "0",
 			"--cwd", "cwd",
@@ -36,7 +36,7 @@ func TestMachinesTerminalsCreate(t *testing.T) {
 			t, pipeData,
 			"--api-key", "string",
 			"machines:terminals", "create",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -47,7 +47,7 @@ func TestMachinesTerminalsRetrieve(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:terminals", "retrieve",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--terminal-id", "terminal_id",
 		)
 	})
@@ -60,7 +60,7 @@ func TestMachinesTerminalsList(t *testing.T) {
 			"--api-key", "string",
 			"machines:terminals", "list",
 			"--max-items", "10",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--cursor", "cursor",
 			"--limit", "0",
 		)
@@ -73,7 +73,7 @@ func TestMachinesTerminalsDelete(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:terminals", "delete",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--terminal-id", "terminal_id",
 		)
 	})

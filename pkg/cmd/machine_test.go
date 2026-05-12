@@ -17,6 +17,7 @@ func TestMachinesCreate(t *testing.T) {
 			"--memory-mib", "0",
 			"--storage-gib", "0",
 			"--vcpu", "0",
+			"--autosleep", "autosleep",
 		)
 	})
 
@@ -25,7 +26,8 @@ func TestMachinesCreate(t *testing.T) {
 		pipeData := []byte("" +
 			"memory_mib: 0\n" +
 			"storage_gib: 0\n" +
-			"vcpu: 0\n")
+			"vcpu: 0\n" +
+			"autosleep: autosleep\n")
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
@@ -40,7 +42,7 @@ func TestMachinesRetrieve(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines", "retrieve",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -51,8 +53,8 @@ func TestMachinesUpdate(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines", "update",
-			"--machine-id", "machine_id",
-			"--if-match", "If-Match",
+			"--machine-id", "dm-3",
+			"--autosleep", "autosleep",
 			"--memory-mib", "0",
 			"--storage-gib", "0",
 			"--vcpu", "0",
@@ -62,6 +64,7 @@ func TestMachinesUpdate(t *testing.T) {
 	t.Run("piping data", func(t *testing.T) {
 		// Test piping YAML data over stdin
 		pipeData := []byte("" +
+			"autosleep: autosleep\n" +
 			"memory_mib: 0\n" +
 			"storage_gib: 0\n" +
 			"vcpu: 0\n")
@@ -69,8 +72,7 @@ func TestMachinesUpdate(t *testing.T) {
 			t, pipeData,
 			"--api-key", "string",
 			"machines", "update",
-			"--machine-id", "machine_id",
-			"--if-match", "If-Match",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -94,8 +96,7 @@ func TestMachinesDelete(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines", "delete",
-			"--machine-id", "machine_id",
-			"--if-match", "If-Match",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -106,8 +107,7 @@ func TestMachinesSleep(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines", "sleep",
-			"--machine-id", "machine_id",
-			"--if-match", "If-Match",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -118,8 +118,7 @@ func TestMachinesWake(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines", "wake",
-			"--machine-id", "machine_id",
-			"--if-match", "If-Match",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -131,7 +130,7 @@ func TestMachinesWatch(t *testing.T) {
 			"--api-key", "string",
 			"machines", "watch",
 			"--max-items", "10",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--last-event-id", "Last-Event-ID",
 		)
 	})

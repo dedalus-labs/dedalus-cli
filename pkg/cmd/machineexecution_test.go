@@ -14,7 +14,7 @@ func TestMachinesExecutionsCreate(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:executions", "create",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--command", "[string]",
 			"--cwd", "cwd",
 			"--env", "{foo: string}",
@@ -37,7 +37,7 @@ func TestMachinesExecutionsCreate(t *testing.T) {
 			t, pipeData,
 			"--api-key", "string",
 			"machines:executions", "create",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 		)
 	})
 }
@@ -48,7 +48,7 @@ func TestMachinesExecutionsRetrieve(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:executions", "retrieve",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--execution-id", "execution_id",
 		)
 	})
@@ -61,7 +61,7 @@ func TestMachinesExecutionsList(t *testing.T) {
 			"--api-key", "string",
 			"machines:executions", "list",
 			"--max-items", "10",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--cursor", "cursor",
 			"--limit", "0",
 		)
@@ -74,7 +74,7 @@ func TestMachinesExecutionsDelete(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:executions", "delete",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--execution-id", "execution_id",
 		)
 	})
@@ -87,7 +87,7 @@ func TestMachinesExecutionsEvents(t *testing.T) {
 			"--api-key", "string",
 			"machines:executions", "events",
 			"--max-items", "10",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--execution-id", "execution_id",
 			"--cursor", "cursor",
 			"--limit", "0",
@@ -101,7 +101,7 @@ func TestMachinesExecutionsOutput(t *testing.T) {
 			t,
 			"--api-key", "string",
 			"machines:executions", "output",
-			"--machine-id", "machine_id",
+			"--machine-id", "dm-3",
 			"--execution-id", "execution_id",
 		)
 	})

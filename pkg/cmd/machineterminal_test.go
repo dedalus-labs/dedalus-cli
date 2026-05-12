@@ -13,7 +13,7 @@ func TestMachinesTerminalsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:terminals", "create",
+			"machines", "terminals", "create",
 			"--machine-id", "machine_id",
 			"--height", "0",
 			"--width", "0",
@@ -35,7 +35,7 @@ func TestMachinesTerminalsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"machines:terminals", "create",
+			"machines", "terminals", "create",
 			"--machine-id", "machine_id",
 		)
 	})
@@ -46,7 +46,7 @@ func TestMachinesTerminalsRetrieve(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:terminals", "retrieve",
+			"machines", "terminals", "retrieve",
 			"--machine-id", "machine_id",
 			"--terminal-id", "terminal_id",
 		)
@@ -58,7 +58,7 @@ func TestMachinesTerminalsList(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:terminals", "list",
+			"machines", "terminals", "list",
 			"--max-items", "10",
 			"--machine-id", "machine_id",
 			"--cursor", "cursor",
@@ -72,7 +72,7 @@ func TestMachinesTerminalsDelete(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:terminals", "delete",
+			"machines", "terminals", "delete",
 			"--machine-id", "machine_id",
 			"--terminal-id", "terminal_id",
 		)

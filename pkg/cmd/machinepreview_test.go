@@ -13,7 +13,7 @@ func TestMachinesPreviewsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:previews", "create",
+			"machines", "previews", "create",
 			"--machine-id", "machine_id",
 			"--port", "0",
 			"--protocol", "http",
@@ -30,7 +30,7 @@ func TestMachinesPreviewsCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"machines:previews", "create",
+			"machines", "previews", "create",
 			"--machine-id", "machine_id",
 		)
 	})
@@ -41,7 +41,7 @@ func TestMachinesPreviewsRetrieve(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:previews", "retrieve",
+			"machines", "previews", "retrieve",
 			"--machine-id", "machine_id",
 			"--preview-id", "preview_id",
 		)
@@ -53,7 +53,7 @@ func TestMachinesPreviewsList(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:previews", "list",
+			"machines", "previews", "list",
 			"--max-items", "10",
 			"--machine-id", "machine_id",
 			"--cursor", "cursor",
@@ -67,7 +67,7 @@ func TestMachinesPreviewsDelete(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:previews", "delete",
+			"machines", "previews", "delete",
 			"--machine-id", "machine_id",
 			"--preview-id", "preview_id",
 		)

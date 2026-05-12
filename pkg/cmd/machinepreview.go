@@ -149,7 +149,7 @@ func handleMachinesPreviewsCreate(ctx context.Context, cmd *cli.Command) error {
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:previews create",
+		Title:          "machines previews create",
 		Transform:      transform,
 	})
 }
@@ -193,7 +193,7 @@ func handleMachinesPreviewsRetrieve(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:previews retrieve",
+		Title:          "machines previews retrieve",
 		Transform:      transform,
 	})
 }
@@ -236,7 +236,7 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:previews list",
+			Title:          "machines previews list",
 			Transform:      transform,
 		})
 	} else {
@@ -249,7 +249,7 @@ func handleMachinesPreviewsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:previews list",
+			Title:          "machines previews list",
 			Transform:      transform,
 		})
 	}
@@ -294,7 +294,7 @@ func handleMachinesPreviewsDelete(ctx context.Context, cmd *cli.Command) error {
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:previews delete",
+		Title:          "machines previews delete",
 		Transform:      transform,
 	})
 }

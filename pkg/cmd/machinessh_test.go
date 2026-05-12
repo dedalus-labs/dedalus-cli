@@ -13,7 +13,7 @@ func TestMachinesSSHCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:ssh", "create",
+			"machines", "ssh", "create",
 			"--machine-id", "machine_id",
 			"--public-key", "public_key",
 		)
@@ -25,7 +25,7 @@ func TestMachinesSSHCreate(t *testing.T) {
 		mocktest.TestRunMockTestWithPipeAndFlags(
 			t, pipeData,
 			"--api-key", "string",
-			"machines:ssh", "create",
+			"machines", "ssh", "create",
 			"--machine-id", "machine_id",
 		)
 	})
@@ -36,7 +36,7 @@ func TestMachinesSSHRetrieve(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:ssh", "retrieve",
+			"machines", "ssh", "retrieve",
 			"--machine-id", "machine_id",
 			"--session-id", "session_id",
 		)
@@ -48,7 +48,7 @@ func TestMachinesSSHList(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:ssh", "list",
+			"machines", "ssh", "list",
 			"--max-items", "10",
 			"--machine-id", "machine_id",
 			"--cursor", "cursor",
@@ -62,7 +62,7 @@ func TestMachinesSSHDelete(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"machines:ssh", "delete",
+			"machines", "ssh", "delete",
 			"--machine-id", "machine_id",
 			"--session-id", "session_id",
 		)

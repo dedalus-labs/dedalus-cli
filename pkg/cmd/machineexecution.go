@@ -207,7 +207,7 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions create",
+		Title:          "machines executions create",
 		Transform:      transform,
 	})
 }
@@ -251,7 +251,7 @@ func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) err
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions retrieve",
+		Title:          "machines executions retrieve",
 		Transform:      transform,
 	})
 }
@@ -294,7 +294,7 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions list",
+			Title:          "machines executions list",
 			Transform:      transform,
 		})
 	} else {
@@ -307,7 +307,7 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions list",
+			Title:          "machines executions list",
 			Transform:      transform,
 		})
 	}
@@ -352,7 +352,7 @@ func handleMachinesExecutionsDelete(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions delete",
+		Title:          "machines executions delete",
 		Transform:      transform,
 	})
 }
@@ -396,7 +396,7 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions events",
+			Title:          "machines executions events",
 			Transform:      transform,
 		})
 	} else {
@@ -409,7 +409,7 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions events",
+			Title:          "machines executions events",
 			Transform:      transform,
 		})
 	}
@@ -454,7 +454,7 @@ func handleMachinesExecutionsOutput(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions output",
+		Title:          "machines executions output",
 		Transform:      transform,
 	})
 }

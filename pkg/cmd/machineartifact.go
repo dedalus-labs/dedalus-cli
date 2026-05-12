@@ -120,7 +120,7 @@ func handleMachinesArtifactsRetrieve(ctx context.Context, cmd *cli.Command) erro
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:artifacts retrieve",
+		Title:          "machines artifacts retrieve",
 		Transform:      transform,
 	})
 }
@@ -163,7 +163,7 @@ func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:artifacts list",
+			Title:          "machines artifacts list",
 			Transform:      transform,
 		})
 	} else {
@@ -176,7 +176,7 @@ func handleMachinesArtifactsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:artifacts list",
+			Title:          "machines artifacts list",
 			Transform:      transform,
 		})
 	}
@@ -221,7 +221,7 @@ func handleMachinesArtifactsDelete(ctx context.Context, cmd *cli.Command) error 
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:artifacts delete",
+		Title:          "machines artifacts delete",
 		Transform:      transform,
 	})
 }

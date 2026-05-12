@@ -8,25 +8,24 @@ import (
 	"github.com/dedalus-labs/dedalus-cli/internal/mocktest"
 )
 
-func TestOrgsUsageRetrieve(t *testing.T) {
+func TestUsageRetrieve(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"orgs:usage", "retrieve",
-			"--org-id", "org_id",
+			"usage", "retrieve",
 			"--period-start", "period_start",
 		)
 	})
 }
 
-func TestOrgsUsageGetMachineStorageUsage(t *testing.T) {
+func TestUsageMachineCompute(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"orgs:usage", "get-machine-storage-usage",
-			"--org-id", "org_id",
+			"usage", "machine-compute",
+			"--granularity", "granularity",
 			"--machine-id", "machine_id",
 			"--period-end", "period_end",
 			"--period-start", "period_start",
@@ -34,14 +33,12 @@ func TestOrgsUsageGetMachineStorageUsage(t *testing.T) {
 	})
 }
 
-func TestOrgsUsageGetMachineUsage(t *testing.T) {
+func TestUsageMachineStorage(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--api-key", "string",
-			"orgs:usage", "get-machine-usage",
-			"--org-id", "org_id",
-			"--granularity", "granularity",
+			"usage", "machine-storage",
 			"--machine-id", "machine_id",
 			"--period-end", "period_end",
 			"--period-start", "period_start",

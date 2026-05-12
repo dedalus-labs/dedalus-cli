@@ -14,69 +14,29 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var orgsUsageRetrieve = cli.Command{
+var usageRetrieve = cli.Command{
 	Name:    "retrieve",
-	Usage:   "Get org billed machine usage",
+	Usage:   "Get usage summary",
 	Suggest: true,
 	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:      "org-id",
-			Required:  true,
-			PathParam: "org_id",
-		},
 		&requestflag.Flag[string]{
 			Name:      "period-start",
 			Usage:     "Billing period start (YYYY-MM-DD). Defaults to first of current month.",
 			QueryPath: "period_start",
 		},
 	},
-	Action:          handleOrgsUsageRetrieve,
+	Action:          handleUsageRetrieve,
 	HideHelpCommand: true,
 }
 
-var orgsUsageGetMachineStorageUsage = cli.Command{
-	Name:    "get-machine-storage-usage",
-	Usage:   "List machine storage usage evidence",
+var usageMachineCompute = cli.Command{
+	Name:    "machine-compute",
+	Usage:   "List machine compute usage breakdown",
 	Suggest: true,
 	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:      "org-id",
-			Required:  true,
-			PathParam: "org_id",
-		},
-		&requestflag.Flag[string]{
-			Name:      "machine-id",
-			Usage:     "Optional machine ID filter.",
-			QueryPath: "machine_id",
-		},
-		&requestflag.Flag[string]{
-			Name:      "period-end",
-			Usage:     "Last UTC evidence date to include (YYYY-MM-DD). Defaults to current time.",
-			QueryPath: "period_end",
-		},
-		&requestflag.Flag[string]{
-			Name:      "period-start",
-			Usage:     "Evidence period start (YYYY-MM-DD). Defaults to first of current month.",
-			QueryPath: "period_start",
-		},
-	},
-	Action:          handleOrgsUsageGetMachineStorageUsage,
-	HideHelpCommand: true,
-}
-
-var orgsUsageGetMachineUsage = cli.Command{
-	Name:    "get-machine-usage",
-	Usage:   "List machine usage evidence",
-	Suggest: true,
-	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:      "org-id",
-			Required:  true,
-			PathParam: "org_id",
-		},
 		&requestflag.Flag[string]{
 			Name:      "granularity",
-			Usage:     "Evidence granularity: hour or day. Defaults to hour.",
+			Usage:     "Usage breakdown granularity: hour or day. Defaults to hour.",
 			QueryPath: "granularity",
 		},
 		&requestflag.Flag[string]{
@@ -86,20 +46,45 @@ var orgsUsageGetMachineUsage = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:      "period-end",
-			Usage:     "Last UTC evidence date to include (YYYY-MM-DD). Defaults to current time.",
+			Usage:     "Last UTC usage date to include (YYYY-MM-DD). Defaults to current time.",
 			QueryPath: "period_end",
 		},
 		&requestflag.Flag[string]{
 			Name:      "period-start",
-			Usage:     "Evidence period start (YYYY-MM-DD). Defaults to first of current month.",
+			Usage:     "Usage period start (YYYY-MM-DD). Defaults to first of current month.",
 			QueryPath: "period_start",
 		},
 	},
-	Action:          handleOrgsUsageGetMachineUsage,
+	Action:          handleUsageMachineCompute,
 	HideHelpCommand: true,
 }
 
-func handleOrgsUsageRetrieve(ctx context.Context, cmd *cli.Command) error {
+var usageMachineStorage = cli.Command{
+	Name:    "machine-storage",
+	Usage:   "List machine storage usage breakdown",
+	Suggest: true,
+	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:      "machine-id",
+			Usage:     "Optional machine ID filter.",
+			QueryPath: "machine_id",
+		},
+		&requestflag.Flag[string]{
+			Name:      "period-end",
+			Usage:     "Last UTC usage date to include (YYYY-MM-DD). Defaults to current time.",
+			QueryPath: "period_end",
+		},
+		&requestflag.Flag[string]{
+			Name:      "period-start",
+			Usage:     "Usage period start (YYYY-MM-DD). Defaults to first of current month.",
+			QueryPath: "period_start",
+		},
+	},
+	Action:          handleUsageMachineStorage,
+	HideHelpCommand: true,
+}
+
+func handleUsageRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
 
@@ -118,13 +103,11 @@ func handleOrgsUsageRetrieve(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	params := dedalus.OrgUsageGetParams{
-		OrgID: cmd.Value("org-id").(string),
-	}
+	params := dedalus.UsageGetParams{}
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Orgs.Usage.Get(ctx, params, options...)
+	_, err = client.Usage.Get(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -137,12 +120,12 @@ func handleOrgsUsageRetrieve(ctx context.Context, cmd *cli.Command) error {
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "orgs:usage retrieve",
+		Title:          "usage retrieve",
 		Transform:      transform,
 	})
 }
 
-func handleOrgsUsageGetMachineStorageUsage(ctx context.Context, cmd *cli.Command) error {
+func handleUsageMachineCompute(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
 
@@ -161,13 +144,11 @@ func handleOrgsUsageGetMachineStorageUsage(ctx context.Context, cmd *cli.Command
 		return err
 	}
 
-	params := dedalus.OrgUsageGetMachineStorageUsageParams{
-		OrgID: cmd.Value("org-id").(string),
-	}
+	params := dedalus.UsageMachineComputeParams{}
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Orgs.Usage.GetMachineStorageUsage(ctx, params, options...)
+	_, err = client.Usage.MachineCompute(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -180,12 +161,12 @@ func handleOrgsUsageGetMachineStorageUsage(ctx context.Context, cmd *cli.Command
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "orgs:usage get-machine-storage-usage",
+		Title:          "usage machine-compute",
 		Transform:      transform,
 	})
 }
 
-func handleOrgsUsageGetMachineUsage(ctx context.Context, cmd *cli.Command) error {
+func handleUsageMachineStorage(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
 
@@ -204,13 +185,11 @@ func handleOrgsUsageGetMachineUsage(ctx context.Context, cmd *cli.Command) error
 		return err
 	}
 
-	params := dedalus.OrgUsageGetMachineUsageParams{
-		OrgID: cmd.Value("org-id").(string),
-	}
+	params := dedalus.UsageMachineStorageParams{}
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Orgs.Usage.GetMachineUsage(ctx, params, options...)
+	_, err = client.Usage.MachineStorage(ctx, params, options...)
 	if err != nil {
 		return err
 	}
@@ -223,7 +202,7 @@ func handleOrgsUsageGetMachineUsage(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "orgs:usage get-machine-usage",
+		Title:          "usage machine-storage",
 		Transform:      transform,
 	})
 }

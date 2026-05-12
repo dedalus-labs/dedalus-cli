@@ -20,8 +20,9 @@ var machinesExecutionsCreate = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[any]{
 			Name:     "command",
@@ -55,12 +56,14 @@ var machinesExecutionsRetrieve = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "execution-id",
-			Required: true,
+			Name:      "execution-id",
+			Required:  true,
+			PathParam: "execution_id",
 		},
 	},
 	Action:          handleMachinesExecutionsRetrieve,
@@ -73,8 +76,9 @@ var machinesExecutionsList = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
@@ -99,12 +103,14 @@ var machinesExecutionsDelete = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "execution-id",
-			Required: true,
+			Name:      "execution-id",
+			Required:  true,
+			PathParam: "execution_id",
 		},
 	},
 	Action:          handleMachinesExecutionsDelete,
@@ -117,12 +123,14 @@ var machinesExecutionsEvents = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "execution-id",
-			Required: true,
+			Name:      "execution-id",
+			Required:  true,
+			PathParam: "execution_id",
 		},
 		&requestflag.Flag[string]{
 			Name:      "cursor",
@@ -147,12 +155,14 @@ var machinesExecutionsOutput = cli.Command{
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "machine-id",
-			Required: true,
+			Name:      "machine-id",
+			Required:  true,
+			PathParam: "machine_id",
 		},
 		&requestflag.Flag[string]{
-			Name:     "execution-id",
-			Required: true,
+			Name:      "execution-id",
+			Required:  true,
+			PathParam: "execution_id",
 		},
 	},
 	Action:          handleMachinesExecutionsOutput,
@@ -167,10 +177,6 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineExecutionNewParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -180,6 +186,10 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineExecutionNewParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	var res []byte
@@ -197,7 +207,7 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions create",
+		Title:          "machines executions create",
 		Transform:      transform,
 	})
 }
@@ -210,11 +220,6 @@ func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) err
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineExecutionGetParams{
-		MachineID:   cmd.Value("machine-id").(string),
-		ExecutionID: cmd.Value("execution-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -224,6 +229,11 @@ func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) err
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineExecutionGetParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	var res []byte
@@ -241,7 +251,7 @@ func handleMachinesExecutionsRetrieve(ctx context.Context, cmd *cli.Command) err
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions retrieve",
+		Title:          "machines executions retrieve",
 		Transform:      transform,
 	})
 }
@@ -254,10 +264,6 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineExecutionListParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -267,6 +273,10 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineExecutionListParams{
+		MachineID: cmd.Value("machine-id").(string),
 	}
 
 	format := cmd.Root().String("format")
@@ -284,7 +294,7 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions list",
+			Title:          "machines executions list",
 			Transform:      transform,
 		})
 	} else {
@@ -297,7 +307,7 @@ func handleMachinesExecutionsList(ctx context.Context, cmd *cli.Command) error {
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions list",
+			Title:          "machines executions list",
 			Transform:      transform,
 		})
 	}
@@ -311,11 +321,6 @@ func handleMachinesExecutionsDelete(ctx context.Context, cmd *cli.Command) error
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineExecutionDeleteParams{
-		MachineID:   cmd.Value("machine-id").(string),
-		ExecutionID: cmd.Value("execution-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -325,6 +330,11 @@ func handleMachinesExecutionsDelete(ctx context.Context, cmd *cli.Command) error
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineExecutionDeleteParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	var res []byte
@@ -342,7 +352,7 @@ func handleMachinesExecutionsDelete(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions delete",
+		Title:          "machines executions delete",
 		Transform:      transform,
 	})
 }
@@ -355,11 +365,6 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineExecutionEventsParams{
-		MachineID:   cmd.Value("machine-id").(string),
-		ExecutionID: cmd.Value("execution-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -369,6 +374,11 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineExecutionEventsParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	format := cmd.Root().String("format")
@@ -386,7 +396,7 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions events",
+			Title:          "machines executions events",
 			Transform:      transform,
 		})
 	} else {
@@ -399,7 +409,7 @@ func handleMachinesExecutionsEvents(ctx context.Context, cmd *cli.Command) error
 			ExplicitFormat: explicitFormat,
 			Format:         format,
 			RawOutput:      cmd.Root().Bool("raw-output"),
-			Title:          "machines:executions events",
+			Title:          "machines executions events",
 			Transform:      transform,
 		})
 	}
@@ -413,11 +423,6 @@ func handleMachinesExecutionsOutput(ctx context.Context, cmd *cli.Command) error
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
 
-	params := dedalus.MachineExecutionOutputParams{
-		MachineID:   cmd.Value("machine-id").(string),
-		ExecutionID: cmd.Value("execution-id").(string),
-	}
-
 	options, err := flagOptions(
 		cmd,
 		apiquery.NestedQueryFormatBrackets,
@@ -427,6 +432,11 @@ func handleMachinesExecutionsOutput(ctx context.Context, cmd *cli.Command) error
 	)
 	if err != nil {
 		return err
+	}
+
+	params := dedalus.MachineExecutionOutputParams{
+		MachineID:   cmd.Value("machine-id").(string),
+		ExecutionID: cmd.Value("execution-id").(string),
 	}
 
 	var res []byte
@@ -444,7 +454,7 @@ func handleMachinesExecutionsOutput(ctx context.Context, cmd *cli.Command) error
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines:executions output",
+		Title:          "machines executions output",
 		Transform:      transform,
 	})
 }

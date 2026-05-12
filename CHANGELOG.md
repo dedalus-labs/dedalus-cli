@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.0 (2026-05-12)
+
+Full Changelog: [v0.2.2...v0.3.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.2...v0.3.0)
+
+### Features
+
+* **api:** add org usage endpoints, remove ssh command/install scripts, update machines API ([f842f29](https://github.com/dedalus-labs/dedalus-cli/commit/f842f2964d052ab0dae8382f38a2f67fc001a368))
+* **cli:** re-nest colon-flattened subresource commands ([#19](https://github.com/dedalus-labs/dedalus-cli/issues/19)) ([8ea656f](https://github.com/dedalus-labs/dedalus-cli/commit/8ea656f61fb442191facbe14bde0e49d31b630b1))
+* support passing path and query params over stdin ([489489f](https://github.com/dedalus-labs/dedalus-cli/commit/489489fd3b0dac53c3c00beeb6e9586d719ae467))
+
+
+### Bug Fixes
+
+* flags for nullable body scalar fields are strictly typed ([9de27f3](https://github.com/dedalus-labs/dedalus-cli/commit/9de27f38d039b110aa5620f0ca835de8421b5eda))
+
+
+### Chores
+
+* **internal:** codegen related update ([b70e352](https://github.com/dedalus-labs/dedalus-cli/commit/b70e35215e8e9d154835099d800fed21d2460663))
+* redact api-key headers in debug logs ([f274129](https://github.com/dedalus-labs/dedalus-cli/commit/f27412952a2a9e0983a68e86ad5ede9cae75011d))
+
 ## 0.2.2 (2026-04-29)
 
 Full Changelog: [v0.2.1...v0.2.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.2.1...v0.2.2)

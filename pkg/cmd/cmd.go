@@ -46,7 +46,7 @@ func init() {
 			&cli.StringFlag{
 				Name:  "format",
 				Usage: "The format for displaying response data (one of: " + strings.Join(OutputFormats, ", ") + ")",
-				Value: "jsonl",
+				Value: "json",
 				Validator: func(format string) error {
 					if !slices.Contains(OutputFormats, strings.ToLower(format)) {
 						return fmt.Errorf("format must be one of: %s", strings.Join(OutputFormats, ", "))
@@ -57,7 +57,7 @@ func init() {
 			&cli.StringFlag{
 				Name:  "format-error",
 				Usage: "The format for displaying error data (one of: " + strings.Join(OutputFormats, ", ") + ")",
-				Value: "jsonl",
+				Value: "json",
 				Validator: func(format string) error {
 					if !slices.Contains(OutputFormats, strings.ToLower(format)) {
 						return fmt.Errorf("format must be one of: %s", strings.Join(OutputFormats, ", "))
@@ -95,6 +95,16 @@ func init() {
 			},
 		},
 		Commands: []*cli.Command{
+			{
+				Name:     "orgs:usage",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&orgsUsageRetrieve,
+					&orgsUsageGetMachineStorageUsage,
+					&orgsUsageGetMachineUsage,
+				},
+			},
 			{
 				Name:     "machines",
 				Category: "API RESOURCE",

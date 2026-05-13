@@ -96,13 +96,13 @@ func init() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:     "orgs:usage",
+				Name:     "usage",
 				Category: "API RESOURCE",
 				Suggest:  true,
 				Commands: []*cli.Command{
-					&orgsUsageRetrieve,
-					&orgsUsageGetMachineStorageUsage,
-					&orgsUsageGetMachineUsage,
+					&usageRetrieve,
+					&usageMachineCompute,
+					&usageMachineStorage,
 				},
 			},
 			{

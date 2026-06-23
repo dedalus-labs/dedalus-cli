@@ -126,38 +126,26 @@ function Get-Arch {
 }
 
 function Get-LatestVersion {
-    # The /releases/latest URL 302-redirects to /releases/tag/<version>.
-    # PowerShell treats a 302 as terminating when MaximumRedirection is 0, so wrap in try/catch.
-    $url = "https://github.com/$Repo/releases/latest"
+    $url = "https://api.github.com/repos/$Repo/releases/latest"
+    $headers = @{
+        'Accept'     = 'application/vnd.github+json'
+        'User-Agent' = 'dedalus-cli-installer'
+    }
+
     try {
-        $response = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
+        $release = Invoke-RestMethod -Uri $url -Headers $headers -ErrorAction Stop
     } catch {
-        $response = $_.Exception.Response
-    }
-
-    $location = $null
-    if ($response -and $response.Headers) {
-        if ($response.Headers -is [System.Collections.IDictionary]) {
-            $location = $response.Headers['Location']
-        } else {
-            $location = $response.Headers.Location
-        }
-    }
-
-    if ($location -is [System.Array]) { $location = $location[0] }
-    if ($location -is [System.Uri])   { $location = $location.ToString() }
-
-    if (-not $location) {
         Write-Err "Could not determine latest version from $url"
+        Write-Err $_.Exception.Message
         exit 1
     }
 
-    $tag = ($location -split '/tag/')[-1].Trim()
+    $tag = $release.tag_name
     if (-not $tag) {
-        Write-Err "Could not parse version tag from redirect: $location"
+        Write-Err "Could not parse version tag from GitHub API response: $url"
         exit 1
     }
-    return $tag
+    return $tag.Trim()
 }
 
 function Install-Dedalus {

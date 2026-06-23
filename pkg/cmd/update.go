@@ -1,0 +1,339 @@
+package cmd
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/urfave/cli/v3"
+)
+
+const (
+	installScriptURL  = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.sh"
+	installPS1URL     = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.ps1"
+	latestReleaseURL  = "https://github.com/dedalus-labs/dedalus-cli/releases/latest"
+	defaultUnixBinDir = ".local/bin"
+)
+
+var updateCommand = cli.Command{
+	Name:      "update",
+	Usage:     "Update the Dedalus CLI",
+	UsageText: "dedalus update [--check]",
+	Category:  "CLI",
+	Suggest:   true,
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "check",
+			Usage: "Check for the latest release without installing it.",
+		},
+	},
+	Action:          handleUpdate,
+	HideHelpCommand: true,
+}
+
+func init() {
+	Command.Commands = append(Command.Commands, &updateCommand)
+}
+
+type updateOptions struct {
+	checkOnly bool
+}
+
+type installMethod int
+
+const (
+	installMethodCurl installMethod = iota
+	installMethodHomebrewCask
+	installMethodWindows
+	installMethodUnknown
+)
+
+type updater struct {
+	goos          string
+	stdout        io.Writer
+	stderr        io.Writer
+	executable    func() (string, error)
+	lookPath      func(string) (string, error)
+	commandOutput func(context.Context, string, ...string) (string, error)
+	runCommand    func(context.Context, []string, string, ...string) error
+	httpClient    *http.Client
+	latestURL     string
+}
+
+type detectedInstall struct {
+	method installMethod
+	exe    string
+}
+
+func handleUpdate(ctx context.Context, c *cli.Command) error {
+	return newUpdater(c.Root().Writer, c.Root().ErrWriter).update(ctx, updateOptions{
+		checkOnly: c.Bool("check"),
+	})
+}
+
+func newUpdater(stdout, stderr io.Writer) *updater {
+	if stdout == nil {
+		stdout = os.Stdout
+	}
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+	u := &updater{
+		goos:       runtime.GOOS,
+		stdout:     stdout,
+		stderr:     stderr,
+		executable: os.Executable,
+		lookPath:   exec.LookPath,
+		httpClient: http.DefaultClient,
+		latestURL:  latestReleaseURL,
+	}
+	u.commandOutput = u.defaultCommandOutput
+	u.runCommand = u.defaultRunCommand
+	return u
+}
+
+func (u *updater) update(ctx context.Context, opts updateOptions) error {
+	latest, err := u.latestVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	current := versionTag(Version)
+	fmt.Fprintf(u.stdout, "Current version: %s\n", current)
+	fmt.Fprintf(u.stdout, "Latest version:  %s\n", latest)
+
+	if sameVersion(current, latest) {
+		fmt.Fprintf(u.stdout, "dedalus is already at %s\n", current)
+		return nil
+	}
+	if opts.checkOnly {
+		return nil
+	}
+
+	install, err := u.detectInstall(ctx)
+	if err != nil {
+		return err
+	}
+
+	switch install.method {
+	case installMethodHomebrewCask:
+		return u.updateWithHomebrew(ctx)
+	case installMethodWindows:
+		return u.printWindowsUpdateCommand(install.exe)
+	case installMethodCurl:
+		return u.updateWithInstallScript(ctx, install.exe)
+	case installMethodUnknown:
+		return u.printManualUpdate()
+	default:
+		return fmt.Errorf("unknown install method %d", install.method)
+	}
+}
+
+func (u *updater) latestVersion(ctx context.Context) (string, error) {
+	client := *u.httpClient
+	client.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, u.latestURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("build latest release request: %w", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("fetch latest release: %w", err)
+	}
+	defer resp.Body.Close()
+
+	location := resp.Header.Get("Location")
+	if location == "" {
+		return "", fmt.Errorf("fetch latest release: got %s without a Location header", resp.Status)
+	}
+	tag := releaseTagFromLocation(location)
+	if tag == "" {
+		return "", fmt.Errorf("fetch latest release: could not parse release tag from %q", location)
+	}
+	return versionTag(tag), nil
+}
+
+func (u *updater) detectInstall(ctx context.Context) (detectedInstall, error) {
+	exe, err := u.executablePath()
+	if err != nil {
+		if u.goos == "windows" {
+			return detectedInstall{method: installMethodWindows}, nil
+		}
+		return detectedInstall{method: installMethodUnknown}, nil
+	}
+
+	if u.goos == "windows" {
+		return detectedInstall{method: installMethodWindows, exe: exe}, nil
+	}
+	if u.isHomebrewCask(ctx, exe) {
+		return detectedInstall{method: installMethodHomebrewCask, exe: exe}, nil
+	}
+	if u.isLikelyCurlInstall(exe) {
+		return detectedInstall{method: installMethodCurl, exe: exe}, nil
+	}
+	return detectedInstall{method: installMethodUnknown, exe: exe}, nil
+}
+
+func (u *updater) isHomebrewCask(ctx context.Context, exe string) bool {
+	if u.goos != "darwin" {
+		return false
+	}
+	brew, err := u.lookPath("brew")
+	if err != nil {
+		return false
+	}
+	prefix, err := u.commandOutput(ctx, brew, "--prefix")
+	if err != nil || !pathWithin(exe, strings.TrimSpace(prefix)) {
+		return false
+	}
+	return u.commandSucceeds(ctx, brew, "list", "--cask", "--versions", "dedalus")
+}
+
+func (u *updater) isLikelyCurlInstall(exe string) bool {
+	if u.goos == "windows" {
+		return false
+	}
+	if filepath.Base(exe) != "dedalus" {
+		return false
+	}
+	home, err := os.UserHomeDir()
+	if err == nil && pathWithin(exe, filepath.Join(home, defaultUnixBinDir)) {
+		return true
+	}
+	installDir := os.Getenv("DEDALUS_INSTALL_DIR")
+	return installDir != "" && pathWithin(exe, installDir)
+}
+
+func (u *updater) updateWithHomebrew(ctx context.Context) error {
+	brew, err := u.lookPath("brew")
+	if err != nil {
+		return fmt.Errorf("find brew: %w", err)
+	}
+	args := []string{"upgrade", "--cask", "dedalus"}
+	fmt.Fprintf(u.stdout, "Running: brew %s\n", strings.Join(args, " "))
+	return u.runCommand(ctx, nil, brew, args...)
+}
+
+func (u *updater) updateWithInstallScript(ctx context.Context, exe string) error {
+	installDir := filepath.Dir(exe)
+	fmt.Fprintf(u.stdout, "Running installer with DEDALUS_INSTALL_DIR=%s\n", installDir)
+	return u.runCommand(ctx, []string{"DEDALUS_INSTALL_DIR=" + installDir}, "bash", "-c", "curl -fsSL "+installScriptURL+" | bash")
+}
+
+func (u *updater) printWindowsUpdateCommand(exe string) error {
+	installDir := ""
+	if exe != "" {
+		installDir = filepath.Dir(exe)
+	}
+	fmt.Fprintln(u.stdout, "Windows does not allow replacing the running dedalus.exe process.")
+	fmt.Fprintln(u.stdout, "Run this from a new PowerShell session:")
+	if installDir != "" {
+		fmt.Fprintf(u.stdout, "  $env:DEDALUS_INSTALL_DIR = '%s'; irm %s | iex\n", powerShellSingleQuoted(installDir), installPS1URL)
+		return nil
+	}
+	fmt.Fprintf(u.stdout, "  irm %s | iex\n", installPS1URL)
+	return nil
+}
+
+func (u *updater) printManualUpdate() error {
+	fmt.Fprintln(u.stdout, "Could not determine how this dedalus binary was installed.")
+	fmt.Fprintln(u.stdout, "Update with the package manager or installer you originally used.")
+	return nil
+}
+
+func (u *updater) executablePath() (string, error) {
+	exe, err := u.executable()
+	if err != nil {
+		return "", fmt.Errorf("locate current executable: %w", err)
+	}
+	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = resolved
+	}
+	return exe, nil
+}
+
+func (u *updater) commandSucceeds(ctx context.Context, name string, args ...string) bool {
+	if _, err := u.commandOutput(ctx, name, args...); err != nil {
+		return false
+	}
+	return true
+}
+
+func (u *updater) defaultCommandOutput(ctx context.Context, name string, args ...string) (string, error) {
+	c := exec.CommandContext(ctx, name, args...)
+	out, err := c.Output()
+	return string(out), err
+}
+
+func (u *updater) defaultRunCommand(ctx context.Context, env []string, name string, args ...string) error {
+	c := exec.CommandContext(ctx, name, args...)
+	if len(env) > 0 {
+		c.Env = append(os.Environ(), env...)
+	}
+	c.Stdin = os.Stdin
+	c.Stdout = u.stdout
+	c.Stderr = u.stderr
+	return c.Run()
+}
+
+func releaseTagFromLocation(location string) string {
+	i := strings.LastIndex(location, "/tag/")
+	if i < 0 {
+		return ""
+	}
+	return strings.TrimSpace(location[i+len("/tag/"):])
+}
+
+func versionTag(version string) string {
+	version = strings.TrimSpace(version)
+	if version == "" || strings.HasPrefix(version, "v") {
+		return version
+	}
+	return "v" + version
+}
+
+func sameVersion(a, b string) bool {
+	return strings.TrimPrefix(versionTag(a), "v") == strings.TrimPrefix(versionTag(b), "v")
+}
+
+func pathWithin(path, dir string) bool {
+	if strings.TrimSpace(dir) == "" {
+		return false
+	}
+	absPath, ok := comparablePath(path)
+	if !ok {
+		return false
+	}
+	absDir, ok := comparablePath(dir)
+	if !ok {
+		return false
+	}
+	rel, err := filepath.Rel(absDir, absPath)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
+}
+
+func comparablePath(path string) (string, bool) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", false
+	}
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		abs = resolved
+	}
+	return abs, true
+}
+
+func powerShellSingleQuoted(value string) string {
+	return strings.ReplaceAll(value, "'", "''")
+}

@@ -19,6 +19,7 @@ const (
 	installPS1URL     = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.ps1"
 	latestReleaseURL  = "https://github.com/dedalus-labs/dedalus-cli/releases/latest"
 	defaultUnixBinDir = ".local/bin"
+	installMarkerFile = ".dedalus-cli-install"
 )
 
 var updateCommand = cli.Command{
@@ -205,6 +206,9 @@ func (u *updater) isLikelyCurlInstall(exe string) bool {
 	if err == nil && pathWithin(exe, filepath.Join(home, defaultUnixBinDir)) {
 		return true
 	}
+	if hasInstallScriptMarker(exe) {
+		return true
+	}
 	installDir := os.Getenv("DEDALUS_INSTALL_DIR")
 	return installDir != "" && pathWithin(exe, installDir)
 }
@@ -327,6 +331,11 @@ func comparablePath(path string) (string, bool) {
 		abs = resolved
 	}
 	return abs, true
+}
+
+func hasInstallScriptMarker(exe string) bool {
+	info, err := os.Stat(filepath.Join(filepath.Dir(exe), installMarkerFile))
+	return err == nil && !info.IsDir()
 }
 
 func powerShellSingleQuoted(value string) string {

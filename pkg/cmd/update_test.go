@@ -177,6 +177,43 @@ func TestUpdateCurlInstall(t *testing.T) {
 	}
 }
 
+func TestUpdateCustomCurlInstallWithMarker(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	exe := filepath.Join(t.TempDir(), "bin", "dedalus")
+	writeExecutable(t, exe)
+	writeInstallMarker(t, filepath.Dir(exe))
+
+	server := latestVersionServer(t, "v9.9.9")
+	defer server.Close()
+
+	var ranEnv []string
+	var ranName string
+	updater := newTestUpdater(t)
+	updater.executable = func() (string, error) { return exe, nil }
+	updater.latestURL = server.URL + "/latest"
+	updater.runCommand = func(_ context.Context, env []string, name string, args ...string) error {
+		ranEnv = slices.Clone(env)
+		ranName = name
+		return nil
+	}
+
+	if err := updater.update(context.Background(), updateOptions{}); err != nil {
+		t.Fatalf("update() returned unexpected error: %v", err)
+	}
+	resolvedExe, err := filepath.EvalSymlinks(exe)
+	if err != nil {
+		t.Fatalf("EvalSymlinks(%q) returned unexpected error: %v", exe, err)
+	}
+	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(resolvedExe)}; !slices.Equal(ranEnv, want) {
+		t.Errorf("update() env = %v, want %v", ranEnv, want)
+	}
+	if ranName != "bash" {
+		t.Errorf("update() command name = %q, want bash", ranName)
+	}
+}
+
 func TestWindowsUpdatePrintsInstallerCommand(t *testing.T) {
 	t.Parallel()
 
@@ -264,5 +301,13 @@ func writeExecutable(t *testing.T, path string) {
 	}
 	if err := os.WriteFile(path, []byte("old"), 0755); err != nil {
 		t.Fatalf("WriteFile(%q) returned unexpected error: %v", path, err)
+	}
+}
+
+func writeInstallMarker(t *testing.T, dir string) {
+	t.Helper()
+
+	if err := os.WriteFile(filepath.Join(dir, installMarkerFile), []byte("method=install-script\n"), 0644); err != nil {
+		t.Fatalf("WriteFile(%q) returned unexpected error: %v", installMarkerFile, err)
 	}
 }

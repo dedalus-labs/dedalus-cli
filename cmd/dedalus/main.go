@@ -18,6 +18,7 @@ import (
 
 func main() {
 	app := cmd.Command
+	ctx := context.Background()
 
 	if slices.Contains(os.Args, "__complete") {
 		prepareForAutocomplete(app)
@@ -30,7 +31,15 @@ func main() {
 		}
 	}
 
-	if err := app.Run(context.Background(), os.Args); err != nil {
+	updated, err := cmd.MaybeRunStartupUpdate(ctx, os.Args, os.Stdin, os.Stdout, os.Stderr)
+	if err == nil && updated {
+		return
+	}
+
+	if err == nil {
+		err = app.Run(ctx, os.Args)
+	}
+	if err != nil {
 		exitCode := 1
 
 		// Check if error has a custom exit code

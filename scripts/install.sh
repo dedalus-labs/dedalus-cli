@@ -53,13 +53,14 @@ get_latest_version() {
         exit 1
     fi
 
-    VERSION=$(curl -sI "https://github.com/${REPO}/releases/latest" \
-        | grep -i '^location:' \
-        | sed 's|.*/tag/||' \
-        | tr -d '\r\n')
+    VERSION=$(curl -fsSL \
+        -H 'Accept: application/vnd.github+json' \
+        -H 'User-Agent: dedalus-cli-installer' \
+        "https://api.github.com/repos/${REPO}/releases/latest" \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 
     if [[ -z "$VERSION" ]]; then
-        error "Could not determine latest version"
+        error "Could not determine latest version from GitHub API"
         exit 1
     fi
 

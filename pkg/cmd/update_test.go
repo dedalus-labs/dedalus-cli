@@ -18,10 +18,19 @@ func TestLatestVersion(t *testing.T) {
 	t.Parallel()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("latestVersion request method = %q, want GET", r.Method)
+		}
 		if r.URL.Path != "/latest" {
 			t.Errorf("latestVersion request path = %q, want /latest", r.URL.Path)
 		}
-		http.Redirect(w, r, "/dedalus-labs/dedalus-cli/releases/tag/v9.8.7", http.StatusFound)
+		if got := r.Header.Get("Accept"); got != "application/vnd.github+json" {
+			t.Errorf("latestVersion Accept header = %q, want application/vnd.github+json", got)
+		}
+		if got := r.Header.Get("User-Agent"); got == "" {
+			t.Error("latestVersion User-Agent header is empty")
+		}
+		io.WriteString(w, `{"tag_name":"v9.8.7"}`)
 	}))
 	defer server.Close()
 
@@ -289,7 +298,8 @@ func latestVersionServer(t *testing.T, tag string) *httptest.Server {
 			http.NotFound(w, r)
 			return
 		}
-		http.Redirect(w, r, "/dedalus-labs/dedalus-cli/releases/tag/"+tag, http.StatusFound)
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"tag_name":"`+tag+`"}`)
 	}))
 }
 

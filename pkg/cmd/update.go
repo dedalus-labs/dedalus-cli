@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,7 @@ import (
 const (
 	installScriptURL  = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.sh"
 	installPS1URL     = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.ps1"
-	latestReleaseURL  = "https://github.com/dedalus-labs/dedalus-cli/releases/latest"
+	latestReleaseURL  = "https://api.github.com/repos/dedalus-labs/dedalus-cli/releases/latest"
 	defaultUnixBinDir = ".local/bin"
 	installMarkerFile = ".dedalus-cli-install"
 )
@@ -70,6 +71,10 @@ type updater struct {
 type detectedInstall struct {
 	method installMethod
 	exe    string
+}
+
+type latestRelease struct {
+	TagName string `json:"tag_name"`
 }
 
 func handleUpdate(ctx context.Context, c *cli.Command) error {
@@ -134,27 +139,30 @@ func (u *updater) update(ctx context.Context, opts updateOptions) error {
 }
 
 func (u *updater) latestVersion(ctx context.Context) (string, error) {
-	client := *u.httpClient
-	client.CheckRedirect = func(*http.Request, []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, u.latestURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.latestURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("build latest release request: %w", err)
 	}
-	resp, err := client.Do(req)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", fmt.Sprintf("Dedalus/CLI %s", Version))
+
+	resp, err := u.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetch latest release: %w", err)
 	}
 	defer resp.Body.Close()
 
-	location := resp.Header.Get("Location")
-	if location == "" {
-		return "", fmt.Errorf("fetch latest release: got %s without a Location header", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("fetch latest release: got %s", resp.Status)
 	}
-	tag := releaseTagFromLocation(location)
+
+	var release latestRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", fmt.Errorf("decode latest release: %w", err)
+	}
+	tag := strings.TrimSpace(release.TagName)
 	if tag == "" {
-		return "", fmt.Errorf("fetch latest release: could not parse release tag from %q", location)
+		return "", fmt.Errorf("fetch latest release: missing tag_name")
 	}
 	return versionTag(tag), nil
 }
@@ -281,14 +289,6 @@ func (u *updater) defaultRunCommand(ctx context.Context, env []string, name stri
 	c.Stdout = u.stdout
 	c.Stderr = u.stderr
 	return c.Run()
-}
-
-func releaseTagFromLocation(location string) string {
-	i := strings.LastIndex(location, "/tag/")
-	if i < 0 {
-		return ""
-	}
-	return strings.TrimSpace(location[i+len("/tag/"):])
 }
 
 func versionTag(version string) string {

@@ -116,10 +116,7 @@ func (u *updater) update(ctx context.Context, opts updateOptions) error {
 		return nil
 	}
 
-	install, err := u.detectInstall(ctx)
-	if err != nil {
-		return err
-	}
+	install := u.detectInstall(ctx)
 
 	switch install.method {
 	case installMethodHomebrewCask:
@@ -161,25 +158,25 @@ func (u *updater) latestVersion(ctx context.Context) (string, error) {
 	return versionTag(tag), nil
 }
 
-func (u *updater) detectInstall(ctx context.Context) (detectedInstall, error) {
+func (u *updater) detectInstall(ctx context.Context) detectedInstall {
 	exe, err := u.executablePath()
 	if err != nil {
 		if u.goos == "windows" {
-			return detectedInstall{method: installMethodWindows}, nil
+			return detectedInstall{method: installMethodWindows}
 		}
-		return detectedInstall{method: installMethodUnknown}, nil
+		return detectedInstall{method: installMethodUnknown}
 	}
 
 	if u.goos == "windows" {
-		return detectedInstall{method: installMethodWindows, exe: exe}, nil
+		return detectedInstall{method: installMethodWindows, exe: exe}
 	}
 	if u.isHomebrewCask(ctx, exe) {
-		return detectedInstall{method: installMethodHomebrewCask, exe: exe}, nil
+		return detectedInstall{method: installMethodHomebrewCask, exe: exe}
 	}
 	if u.isLikelyCurlInstall(exe) {
-		return detectedInstall{method: installMethodCurl, exe: exe}, nil
+		return detectedInstall{method: installMethodCurl, exe: exe}
 	}
-	return detectedInstall{method: installMethodUnknown, exe: exe}, nil
+	return detectedInstall{method: installMethodUnknown, exe: exe}
 }
 
 func (u *updater) isHomebrewCask(ctx context.Context, exe string) bool {
@@ -261,10 +258,8 @@ func (u *updater) executablePath() (string, error) {
 }
 
 func (u *updater) commandSucceeds(ctx context.Context, name string, args ...string) bool {
-	if _, err := u.commandOutput(ctx, name, args...); err != nil {
-		return false
-	}
-	return true
+	_, err := u.commandOutput(ctx, name, args...)
+	return err == nil
 }
 
 func (u *updater) defaultCommandOutput(ctx context.Context, name string, args ...string) (string, error) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -91,12 +92,7 @@ func TestUpdateHomebrewCask(t *testing.T) {
 
 	prefix := t.TempDir()
 	exe := filepath.Join(prefix, "bin", "dedalus")
-	if err := os.MkdirAll(filepath.Dir(exe), 0755); err != nil {
-		t.Fatalf("MkdirAll(%q) returned unexpected error: %v", filepath.Dir(exe), err)
-	}
-	if err := os.WriteFile(exe, []byte("old"), 0755); err != nil {
-		t.Fatalf("WriteFile(%q) returned unexpected error: %v", exe, err)
-	}
+	writeExecutable(t, exe)
 
 	server := latestVersionServer(t, "v9.9.9")
 	defer server.Close()
@@ -145,12 +141,7 @@ func TestUpdateCurlInstall(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	exe := filepath.Join(home, ".local", "bin", "dedalus")
-	if err := os.MkdirAll(filepath.Dir(exe), 0755); err != nil {
-		t.Fatalf("MkdirAll(%q) returned unexpected error: %v", filepath.Dir(exe), err)
-	}
-	if err := os.WriteFile(exe, []byte("old"), 0755); err != nil {
-		t.Fatalf("WriteFile(%q) returned unexpected error: %v", exe, err)
-	}
+	writeExecutable(t, exe)
 
 	server := latestVersionServer(t, "v9.9.9")
 	defer server.Close()
@@ -236,7 +227,7 @@ func TestUnknownInstallPrintsManualInstructions(t *testing.T) {
 func newTestUpdater(t *testing.T) *updater {
 	t.Helper()
 
-	updater := newUpdater(ioDiscard{}, ioDiscard{})
+	updater := newUpdater(io.Discard, io.Discard)
 	updater.goos = "linux"
 	updater.executable = func() (string, error) {
 		return filepath.Join(t.TempDir(), "dedalus"), nil
@@ -253,12 +244,6 @@ func newTestUpdater(t *testing.T) *updater {
 	return updater
 }
 
-type ioDiscard struct{}
-
-func (ioDiscard) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
 func latestVersionServer(t *testing.T, tag string) *httptest.Server {
 	t.Helper()
 
@@ -269,4 +254,15 @@ func latestVersionServer(t *testing.T, tag string) *httptest.Server {
 		}
 		http.Redirect(w, r, "/dedalus-labs/dedalus-cli/releases/tag/"+tag, http.StatusFound)
 	}))
+}
+
+func writeExecutable(t *testing.T, path string) {
+	t.Helper()
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatalf("MkdirAll(%q) returned unexpected error: %v", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, []byte("old"), 0755); err != nil {
+		t.Fatalf("WriteFile(%q) returned unexpected error: %v", path, err)
+	}
 }

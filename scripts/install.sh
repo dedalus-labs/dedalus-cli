@@ -4,6 +4,7 @@ set -euo pipefail
 REPO="dedalus-labs/dedalus-cli"
 BINARY="dedalus"
 INSTALL_DIR="${DEDALUS_INSTALL_DIR:-$HOME/.local/bin}"
+INSTALL_MARKER=".dedalus-cli-install"
 TMPDIR_CLEANUP=""
 
 RED='\033[0;31m'
@@ -52,13 +53,14 @@ get_latest_version() {
         exit 1
     fi
 
-    VERSION=$(curl -sI "https://github.com/${REPO}/releases/latest" \
-        | grep -i '^location:' \
-        | sed 's|.*/tag/||' \
-        | tr -d '\r\n')
+    VERSION=$(curl -fsSL \
+        -H 'Accept: application/vnd.github+json' \
+        -H 'User-Agent: dedalus-cli-installer' \
+        "https://api.github.com/repos/${REPO}/releases/latest" \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 
     if [[ -z "$VERSION" ]]; then
-        error "Could not determine latest version"
+        error "Could not determine latest version from GitHub API"
         exit 1
     fi
 
@@ -96,6 +98,7 @@ download_and_install() {
     mkdir -p "$INSTALL_DIR"
     mv "${tmpdir}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
     chmod +x "${INSTALL_DIR}/${BINARY}"
+    printf 'method=install-script\nversion=%s\n' "$VERSION" > "${INSTALL_DIR}/${INSTALL_MARKER}"
     success "Installed ${BINARY} to ${INSTALL_DIR}/${BINARY}"
 }
 

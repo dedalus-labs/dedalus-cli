@@ -36,6 +36,23 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 
 <!-- x-release-please-end -->
 
+### Updating
+
+```sh
+dedalus update
+```
+
+To check the latest available release without installing it:
+
+```sh
+dedalus update --check
+```
+
+The updater respects how the CLI was installed. Homebrew installs delegate to
+`brew upgrade`, macOS/Linux curl installs rerun the install script for the
+current executable directory, and Windows installs print the PowerShell installer
+command because Windows cannot replace the running `dedalus.exe` process.
+
 ### Running Locally
 
 After cloning the git repository for this project, you can use the

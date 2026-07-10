@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 (2026-07-10)
+
+Full Changelog: [v0.4.0...v0.5.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.4.0...v0.5.0)
+
+### Features
+
+* **cli:** add self-update command ([#23](https://github.com/dedalus-labs/dedalus-cli/issues/23)) ([732a207](https://github.com/dedalus-labs/dedalus-cli/commit/732a20710b4749ea2aabc1dc2700142ddbb5013c))
+
 ## 0.4.0 (2026-05-12)
 
 Full Changelog: [v0.3.0...v0.4.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.3.0...v0.4.0)

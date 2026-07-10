@@ -15,6 +15,23 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+/*
+The update command delegates installation to the mechanism that owns the
+running binary. Its control flow is:
+
+  1. Fetch the newest GitHub release and stop if it matches the current build.
+  2. Stop after reporting versions when --check is set.
+  3. Classify the executable from its platform, resolved path, and installer
+     evidence.
+  4. Run the matching installer, or print manual instructions when ownership
+     cannot be proved.
+
+Homebrew ownership requires both a path inside Homebrew's prefix and an
+installed dedalus cask. Direct installs are recognized by their default path,
+the marker written by install.sh, or DEDALUS_INSTALL_DIR. Detection checks
+Homebrew first because its cask also installs a binary named dedalus.
+*/
+
 const (
 	installScriptURL  = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.sh"
 	installPS1URL     = "https://raw.githubusercontent.com/dedalus-labs/dedalus-cli/main/scripts/install.ps1"
@@ -47,6 +64,7 @@ type updateOptions struct {
 	checkOnly bool
 }
 
+// installMethod identifies the update action selected for the running binary.
 type installMethod int
 
 const (
@@ -56,6 +74,8 @@ const (
 	installMethodUnknown
 )
 
+// updater owns release discovery, install detection, and command execution.
+// Function fields isolate operating-system effects so tests can replace them.
 type updater struct {
 	goos          string
 	stdout        io.Writer
@@ -68,6 +88,7 @@ type updater struct {
 	latestURL     string
 }
 
+// detectedInstall records the selected action and the executable, when available.
 type detectedInstall struct {
 	method installMethod
 	exe    string
@@ -167,6 +188,8 @@ func (u *updater) latestVersion(ctx context.Context) (string, error) {
 	return versionTag(tag), nil
 }
 
+// detectInstall returns unknown unless one install mechanism has enough evidence.
+// The checks are ordered from strongest ownership evidence to weakest.
 func (u *updater) detectInstall(ctx context.Context) detectedInstall {
 	exe, err := u.executablePath()
 	if err != nil {
@@ -188,6 +211,8 @@ func (u *updater) detectInstall(ctx context.Context) detectedInstall {
 	return detectedInstall{method: installMethodUnknown, exe: exe}
 }
 
+// isHomebrewCask requires the executable path and Homebrew's cask database to
+// agree. Merely finding brew on PATH does not establish ownership.
 func (u *updater) isHomebrewCask(ctx context.Context, exe string) bool {
 	if u.goos != "darwin" {
 		return false
@@ -203,6 +228,9 @@ func (u *updater) isHomebrewCask(ctx context.Context, exe string) bool {
 	return u.commandSucceeds(ctx, brew, "list", "--cask", "--versions", "dedalus")
 }
 
+// isLikelyCurlInstall recognizes direct installer layouts. The default path
+// covers installs created before the marker existed. The marker persists custom
+// install directories; the environment recognizes an active installer override.
 func (u *updater) isLikelyCurlInstall(exe string) bool {
 	if u.goos == "windows" {
 		return false
@@ -231,6 +259,8 @@ func (u *updater) updateWithHomebrew(ctx context.Context) error {
 	return u.runCommand(ctx, nil, brew, args...)
 }
 
+// updateWithInstallScript pins the published installer to the executable's
+// current directory so a custom direct install is updated in place.
 func (u *updater) updateWithInstallScript(ctx context.Context, exe string) error {
 	installDir := filepath.Dir(exe)
 	fmt.Fprintf(u.stdout, "Running installer with DEDALUS_INSTALL_DIR=%s\n", installDir)
@@ -258,6 +288,8 @@ func (u *updater) printManualUpdate() error {
 	return nil
 }
 
+// executablePath resolves symlinks when possible so detection inspects the
+// installation path instead of the path of a launcher or shim.
 func (u *updater) executablePath() (string, error) {
 	exe, err := u.executable()
 	if err != nil {
@@ -303,6 +335,8 @@ func sameVersion(a, b string) bool {
 	return strings.TrimPrefix(versionTag(a), "v") == strings.TrimPrefix(versionTag(b), "v")
 }
 
+// pathWithin uses path components instead of string prefixes, so directories
+// such as /opt/homebrew-old cannot match /opt/homebrew.
 func pathWithin(path, dir string) bool {
 	if strings.TrimSpace(dir) == "" {
 		return false

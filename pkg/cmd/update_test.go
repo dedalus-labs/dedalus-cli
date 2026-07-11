@@ -223,7 +223,71 @@ func TestUpdateCustomCurlInstallWithMarker(t *testing.T) {
 	}
 }
 
-func TestWindowsUpdatePrintsInstallerCommand(t *testing.T) {
+func TestWindowsUpdateRunsInstaller(t *testing.T) {
+	t.Parallel()
+
+	server := latestVersionServer(t, "v9.9.9")
+	defer server.Close()
+
+	exe := filepath.Join("C:", "Users", "me", ".local", "bin", "dedalus.exe")
+	var ranEnv []string
+	var ranName string
+	var ranArgs []string
+	updater := newTestUpdater(t)
+	updater.goos = "windows"
+	updater.latestURL = server.URL + "/latest"
+	updater.executable = func() (string, error) { return exe, nil }
+	updater.runCommand = func(_ context.Context, env []string, name string, args ...string) error {
+		ranEnv = slices.Clone(env)
+		ranName = name
+		ranArgs = slices.Clone(args)
+		return nil
+	}
+
+	if err := updater.update(context.Background(), updateOptions{}); err != nil {
+		t.Fatalf("update() returned unexpected error: %v", err)
+	}
+	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(exe)}; !slices.Equal(ranEnv, want) {
+		t.Errorf("update() env = %v, want %v", ranEnv, want)
+	}
+	if ranName != "powershell" {
+		t.Errorf("update() command name = %q, want powershell", ranName)
+	}
+	if want := []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "irm " + installPS1URL + " | iex"}; !slices.Equal(ranArgs, want) {
+		t.Errorf("update() command args = %v, want %v", ranArgs, want)
+	}
+}
+
+func TestWindowsUpdateInstallerFailureShowsManualCommand(t *testing.T) {
+	t.Parallel()
+
+	server := latestVersionServer(t, "v9.9.9")
+	defer server.Close()
+
+	var stderr bytes.Buffer
+	updater := newTestUpdater(t)
+	updater.goos = "windows"
+	updater.stderr = &stderr
+	updater.latestURL = server.URL + "/latest"
+	updater.executable = func() (string, error) {
+		return filepath.Join("C:", "Users", "me", ".local", "bin", "dedalus.exe"), nil
+	}
+	updater.runCommand = func(context.Context, []string, string, ...string) error {
+		return errors.New("exit status 1")
+	}
+
+	if err := updater.update(context.Background(), updateOptions{}); err == nil {
+		t.Fatal("update() did not surface installer failure")
+	}
+	got := stderr.String()
+	for _, want := range []string{"$env:DEDALUS_INSTALL_DIR", "install.ps1"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("installer failure output = %q, want substring %q", got, want)
+		}
+	}
+}
+
+func TestWindowsUpdateWithoutExecutablePrintsCommand(t *testing.T) {
 	t.Parallel()
 
 	server := latestVersionServer(t, "v9.9.9")
@@ -234,18 +298,17 @@ func TestWindowsUpdatePrintsInstallerCommand(t *testing.T) {
 	updater.goos = "windows"
 	updater.stdout = &stdout
 	updater.latestURL = server.URL + "/latest"
-	updater.executable = func() (string, error) {
-		return filepath.Join("C:", "Users", "me", ".local", "bin", "dedalus.exe"), nil
+	updater.executable = func() (string, error) { return "", errors.New("no executable") }
+	updater.runCommand = func(context.Context, []string, string, ...string) error {
+		t.Fatal("unknown executable location should not run the installer")
+		return nil
 	}
 
 	if err := updater.update(context.Background(), updateOptions{}); err != nil {
 		t.Fatalf("update() returned unexpected error: %v", err)
 	}
-	got := stdout.String()
-	for _, want := range []string{"Windows does not allow replacing the running dedalus.exe process.", "install.ps1", "DEDALUS_INSTALL_DIR"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("windows update output = %q, want substring %q", got, want)
-		}
+	if got, want := stdout.String(), "irm "+installPS1URL+" | iex"; !strings.Contains(got, want) {
+		t.Errorf("windows update output = %q, want substring %q", got, want)
 	}
 }
 

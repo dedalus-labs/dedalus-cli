@@ -185,7 +185,25 @@ function Install-Dedalus {
         }
 
         $target = Join-Path $Destination "$Binary.exe"
+
+        # Clear backups from earlier in-place updates. Removal fails only while
+        # that old binary is still running; the next install retries.
+        Get-ChildItem -Path $Destination -Filter "$Binary.exe.old-*" -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+
+        # Windows locks a running exe against deletion and overwrite but allows
+        # renaming it, so move any existing binary aside before installing. This
+        # lets `dedalus update` replace itself while it is running.
+        $backup = $null
+        if (Test-Path -LiteralPath $target) {
+            $backup = "$target.old-" + [guid]::NewGuid().ToString('N')
+            Move-Item -LiteralPath $target -Destination $backup -Force
+        }
+
         Move-Item -Path $extracted -Destination $target -Force
+        if ($backup) {
+            Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue
+        }
         Write-Ok "Installed $Binary to $target"
     } finally {
         Remove-Item -Path $tmpdir.FullName -Recurse -Force -ErrorAction SilentlyContinue

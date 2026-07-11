@@ -175,7 +175,7 @@ func TestUpdateCurlInstall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EvalSymlinks(%q) returned unexpected error: %v", exe, err)
 	}
-	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(resolvedExe)}; !slices.Equal(ranEnv, want) {
+	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(resolvedExe), "DEDALUS_VERSION=v9.9.9"}; !slices.Equal(ranEnv, want) {
 		t.Errorf("update() env = %v, want %v", ranEnv, want)
 	}
 	if ranName != "bash" {
@@ -215,7 +215,7 @@ func TestUpdateCustomCurlInstallWithMarker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EvalSymlinks(%q) returned unexpected error: %v", exe, err)
 	}
-	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(resolvedExe)}; !slices.Equal(ranEnv, want) {
+	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(resolvedExe), "DEDALUS_VERSION=v9.9.9"}; !slices.Equal(ranEnv, want) {
 		t.Errorf("update() env = %v, want %v", ranEnv, want)
 	}
 	if ranName != "bash" {
@@ -247,7 +247,7 @@ func TestWindowsUpdateRunsInstaller(t *testing.T) {
 	if err := updater.update(context.Background(), updateOptions{}); err != nil {
 		t.Fatalf("update() returned unexpected error: %v", err)
 	}
-	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(exe)}; !slices.Equal(ranEnv, want) {
+	if want := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(exe), "DEDALUS_NO_MODIFY_PATH=1", "DEDALUS_VERSION=v9.9.9"}; !slices.Equal(ranEnv, want) {
 		t.Errorf("update() env = %v, want %v", ranEnv, want)
 	}
 	if ranName != "powershell" {
@@ -280,7 +280,7 @@ func TestWindowsUpdateInstallerFailureShowsManualCommand(t *testing.T) {
 		t.Fatal("update() did not surface installer failure")
 	}
 	got := stderr.String()
-	for _, want := range []string{"$env:DEDALUS_INSTALL_DIR", "install.ps1"} {
+	for _, want := range []string{"$env:DEDALUS_INSTALL_DIR", "$env:DEDALUS_NO_MODIFY_PATH = '1'", "$env:DEDALUS_VERSION = 'v9.9.9'", "install.ps1"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("installer failure output = %q, want substring %q", got, want)
 		}

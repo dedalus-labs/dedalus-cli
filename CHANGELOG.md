@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 (2026-07-17)
+
+Full Changelog: [v0.5.0...v0.6.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.5.0...v0.6.0)
+
+### Features
+
+* **stlc:** configurable CI runner and private-production-repo support in workflow templates ([760f22d](https://github.com/dedalus-labs/dedalus-cli/commit/760f22d9a9058c7ad67c80e288109d8fcad1a0e4))
+
 ## 0.5.0 (2026-07-10)
 
 Full Changelog: [v0.4.0...v0.5.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.4.0...v0.5.0)

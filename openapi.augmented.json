@@ -160,7 +160,7 @@
         ],
         "type": "object"
       },
-      "CreatePreviewRequest": {
+      "CreatePortRequest": {
         "additionalProperties": false,
         "properties": {
           "port": {
@@ -171,14 +171,6 @@
             "enum": [
               "http",
               "https"
-            ],
-            "type": "string"
-          },
-          "visibility": {
-            "enum": [
-              "public",
-              "private",
-              "org"
             ],
             "type": "string"
           }
@@ -601,8 +593,19 @@
             "format": "int64",
             "type": "integer"
           },
-          "status": {
-            "$ref": "#/components/schemas/LifecycleStatus"
+          "phase": {
+            "enum": [
+              "accepted",
+              "placement_pending",
+              "starting",
+              "running",
+              "stopping",
+              "sleeping",
+              "destroying",
+              "destroyed",
+              "failed"
+            ],
+            "type": "string"
           },
           "storage_gib": {
             "format": "int64",
@@ -621,7 +624,7 @@
           "storage_gib",
           "autosleep_seconds",
           "desired_state",
-          "status"
+          "phase"
         ],
         "type": "object"
       },
@@ -737,8 +740,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "latest_stripe_emitted_at": {
-            "description": "Latest Stripe emission timestamp for linked org buckets, when emitted.",
+          "latest_meter_emitted_at": {
+            "description": "Latest meter emission timestamp for linked org buckets, when emitted.",
             "format": "date-time",
             "type": "string"
           },
@@ -780,28 +783,8 @@
             "description": "Stable fingerprint for the requested machine shape.",
             "type": "string"
           },
-          "stripe_cpu_identifiers": {
-            "description": "Stripe CPU meter event identifiers linked to those org buckets.",
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "stripe_memory_identifiers": {
-            "description": "Stripe memory meter event identifiers linked to those org buckets.",
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
           "window_count": {
-            "description": "Raw usage windows compacted into this row.",
+            "description": "Raw metering events compacted into this row.",
             "format": "int64",
             "type": "integer"
           }
@@ -819,19 +802,11 @@
           "memory_mib_seconds",
           "window_count",
           "last_window_end",
-          "org_metering_bucket_ids",
-          "stripe_cpu_identifiers",
-          "stripe_memory_identifiers"
+          "org_metering_bucket_ids"
         ],
         "type": "object"
       },
-      "MachineIDPathSegment": {
-        "maxLength": 253,
-        "minLength": 4,
-        "pattern": "^dm-[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
-        "type": "string"
-      },
-      "MachineListItem": {
+      "MachineDetailResponse": {
         "additionalProperties": false,
         "properties": {
           "autosleep_seconds": {
@@ -840,10 +815,6 @@
             "maximum": 9223372036,
             "minimum": 0,
             "type": "integer"
-          },
-          "created_at": {
-            "format": "date-time",
-            "type": "string"
           },
           "desired_state": {
             "enum": [
@@ -881,7 +852,78 @@
           "storage_gib",
           "autosleep_seconds",
           "desired_state",
-          "status",
+          "status"
+        ],
+        "type": "object"
+      },
+      "MachineIDPathSegment": {
+        "maxLength": 253,
+        "minLength": 4,
+        "pattern": "^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "type": "string"
+      },
+      "MachineListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "autosleep_seconds": {
+            "description": "Seconds of inactivity before autosleep. 0 disables autosleep.",
+            "format": "int64",
+            "maximum": 9223372036,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "desired_state": {
+            "enum": [
+              "running",
+              "sleeping",
+              "destroyed"
+            ],
+            "type": "string"
+          },
+          "machine_id": {
+            "type": "string"
+          },
+          "memory_mib": {
+            "description": "Memory in MiB.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "phase": {
+            "enum": [
+              "accepted",
+              "placement_pending",
+              "starting",
+              "running",
+              "stopping",
+              "sleeping",
+              "destroying",
+              "destroyed",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "storage_gib": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "vcpu": {
+            "description": "CPU in vCPUs.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "machine_id",
+          "vcpu",
+          "memory_mib",
+          "storage_gib",
+          "autosleep_seconds",
+          "desired_state",
+          "phase",
           "created_at"
         ],
         "type": "object"
@@ -904,6 +946,38 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "MachineNetworkResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "machine_id": {
+            "type": "string"
+          },
+          "network_id": {
+            "type": "string"
+          },
+          "network_name": {
+            "type": "string"
+          },
+          "private_ipv4": {
+            "type": "string"
+          },
+          "private_ipv6": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "machine_id",
+          "network_id",
+          "network_name",
+          "private_ipv4",
+          "private_ipv6",
+          "hostname"
         ],
         "type": "object"
       },
@@ -951,8 +1025,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "latest_stripe_emitted_at": {
-            "description": "Latest Stripe emission timestamp for the linked org bucket, when emitted.",
+          "latest_meter_emitted_at": {
+            "description": "Latest meter emission timestamp for the linked org bucket, when emitted.",
             "format": "date-time",
             "type": "string"
           },
@@ -973,10 +1047,6 @@
             "description": "Allocated logical MiB-seconds for this machine.",
             "format": "int64",
             "type": "integer"
-          },
-          "stripe_storage_identifier": {
-            "description": "Stripe storage meter event identifier linked to that org bucket.",
-            "type": "string"
           }
         },
         "required": [
@@ -985,8 +1055,7 @@
           "bucket_end",
           "logical_storage_bytes",
           "storage_mib_seconds",
-          "org_metering_bucket_id",
-          "stripe_storage_identifier"
+          "org_metering_bucket_id"
         ],
         "type": "object"
       },
@@ -1038,6 +1107,16 @@
             "format": "date-time",
             "type": "string"
           },
+          "meter_outbox": {
+            "description": "Pending meter outbox buckets grouped by resource.",
+            "items": {
+              "$ref": "#/components/schemas/MeteringOutboxBody"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "oldest_logical_storage_observed_at": {
             "description": "Oldest logical storage observation timestamp across current machine specs.",
             "format": "date-time",
@@ -1047,32 +1126,27 @@
             "description": "Machine storage gauges missing or older than the freshness window.",
             "format": "int64",
             "type": "integer"
-          },
-          "stripe_outbox": {
-            "description": "Pending Stripe outbox buckets grouped by resource.",
-            "items": {
-              "$ref": "#/components/schemas/MeteringStripeOutboxBody"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
           }
         },
         "required": [
           "generated_at",
           "clickhouse_raw_rows_near_ttl",
           "closed_through",
-          "stripe_outbox",
+          "meter_outbox",
           "stale_logical_storage_gauge_count"
         ],
         "type": "object"
       },
-      "MeteringStripeOutboxBody": {
+      "MeteringOutboxBody": {
         "additionalProperties": false,
         "properties": {
           "claimed_not_submitted_buckets": {
-            "description": "Pending org buckets claimed by a sweeper but not marked submitted to Stripe.",
+            "description": "Pending org buckets claimed by a sweeper but not marked submitted to the provider.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "meter_emission_lag_seconds": {
+            "description": "Seconds since the oldest pending bucket ended.",
             "format": "int64",
             "type": "integer"
           },
@@ -1095,13 +1169,8 @@
             "description": "Org metering bucket resource.",
             "type": "string"
           },
-          "stripe_emission_lag_seconds": {
-            "description": "Seconds since the oldest pending bucket ended.",
-            "format": "int64",
-            "type": "integer"
-          },
           "submitted_not_emitted_buckets": {
-            "description": "Pending org buckets marked submitted to Stripe but not marked emitted.",
+            "description": "Pending org buckets marked submitted to the provider but not marked emitted.",
             "format": "int64",
             "type": "integer"
           }
@@ -1112,16 +1181,76 @@
           "pending_unclaimed_buckets",
           "claimed_not_submitted_buckets",
           "submitted_not_emitted_buckets",
-          "stripe_emission_lag_seconds"
+          "meter_emission_lag_seconds"
         ],
         "type": "object"
       },
-      "PreviewListResponse": {
+      "NetworkGateway": {
+        "additionalProperties": false,
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ssh",
+              "port"
+            ],
+            "type": "string"
+          },
+          "port": {
+            "format": "int64",
+            "maximum": 65535,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "protocol": {
+            "enum": [
+              "ssh",
+              "https"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "protocol",
+          "hostname"
+        ],
+        "type": "object"
+      },
+      "NetworkResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "gateways": {
+            "items": {
+              "$ref": "#/components/schemas/NetworkGateway"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "network_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "network_id",
+          "name",
+          "gateways"
+        ],
+        "type": "object"
+      },
+      "PortListResponse": {
         "additionalProperties": false,
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/PreviewResponse"
+              "$ref": "#/components/schemas/PortResponse"
             },
             "type": [
               "array",
@@ -1137,7 +1266,7 @@
         ],
         "type": "object"
       },
-      "PreviewResponse": {
+      "PortResponse": {
         "additionalProperties": false,
         "properties": {
           "created_at": {
@@ -1161,7 +1290,7 @@
             "format": "int64",
             "type": "integer"
           },
-          "preview_id": {
+          "port_id": {
             "type": "string"
           },
           "protocol": {
@@ -1191,22 +1320,13 @@
           },
           "url": {
             "type": "string"
-          },
-          "visibility": {
-            "enum": [
-              "public",
-              "private",
-              "org"
-            ],
-            "type": "string"
           }
         },
         "required": [
-          "preview_id",
+          "port_id",
           "machine_id",
           "status",
           "port",
-          "visibility",
           "created_at"
         ],
         "type": "object"
@@ -1652,7 +1772,7 @@
             "type": "integer"
           },
           "billed_logical_storage_mib_seconds": {
-            "description": "Closed billable logical MiB-seconds for the period, matching the Stripe storage meter.",
+            "description": "Closed billable logical MiB-seconds for the period.",
             "format": "int64",
             "type": "integer"
           },
@@ -1867,6 +1987,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -1877,7 +2004,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -1981,10 +2108,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -2045,23 +2171,6 @@
         "summary": "List machines",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list()\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst list = await client.machineLifecycle.list();\nconsole.log(list);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.List(context.Background(), sdk.MachineLifecycleListParams{})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "post": {
@@ -2201,6 +2310,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -2211,7 +2327,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -2365,10 +2481,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -2429,23 +2544,6 @@
         "summary": "Create machine",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.create(\n    memory_mib=0,\n    storage_gib=0,\n    vcpu=0,\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst create = await client.machineLifecycle.create({\n  memory_mib: 0,\n  storage_gib: 0,\n  vcpu: 0,\n});\nconsole.log(create);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.New(context.Background(), sdk.MachineLifecycleNewParams{\n\t\tCreateMachineRequest: sdk.CreateMachineRequest{\n\t\tMemoryMib: sdk.F[int64](0),\n\t\tStorageGib: sdk.F[int64](0),\n\t\tVcpu: sdk.F[float64](0),\n\t},\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -2585,6 +2683,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -2595,7 +2700,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -2749,10 +2854,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -2813,23 +2917,6 @@
         "summary": "Destroy machine",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.delete(\n    machine_id=\"machineID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst delete_ = await client.machineLifecycle.delete({\n  machine_id: \"machineID\",\n});\nconsole.log(delete_);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.Delete(context.Background(), sdk.MachineLifecycleDeleteParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "get": {
@@ -2856,7 +2943,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LifecycleResponse"
+                  "$ref": "#/components/schemas/MachineDetailResponse"
                 }
               }
             },
@@ -2926,6 +3013,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -2936,7 +3030,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -3040,10 +3134,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -3104,23 +3197,6 @@
         "summary": "Get machine",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.retrieve(\n    machine_id=\"machineID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst retrieve = await client.machineLifecycle.retrieve({\n  machine_id: \"machineID\",\n});\nconsole.log(retrieve);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.Get(context.Background(), sdk.MachineLifecycleGetParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "patch": {
@@ -3268,6 +3344,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -3278,7 +3361,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -3456,10 +3539,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -3474,10 +3556,9 @@
                   "sleep_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "sleep_lifecycle_routes"
                       }
                     }
@@ -3531,23 +3612,6 @@
         "summary": "Update machine",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.patch(\n    machine_id=\"machineID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst patch = await client.machineLifecycle.patch({\n  machine_id: \"machineID\",\n});\nconsole.log(patch);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.Patch(context.Background(), sdk.MachineLifecyclePatchParams{\n\t\tMachineID: \"machineID\",\n\t\tUpdateMachineRequest: sdk.UpdateMachineRequest{},\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -3656,6 +3720,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -3666,7 +3737,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -3770,10 +3841,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -3835,23 +3905,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Artifacts"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_artifacts(\n    machine_id=\"machineID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listArtifacts = await client.machineLifecycle.listArtifacts({\n  machine_id: \"machineID\",\n});\nconsole.log(listArtifacts);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListArtifacts(context.Background(), sdk.MachineLifecycleListArtifactsParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -3951,6 +4004,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -3961,7 +4021,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -4065,10 +4125,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -4130,23 +4189,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Artifacts"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.delete_artifact(\n    machine_id=\"machineID\",\n    artifact_id=\"artifactID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst deleteArtifact = await client.machineLifecycle.deleteArtifact({\n  machine_id: \"machineID\",\n  artifact_id: \"artifactID\",\n});\nconsole.log(deleteArtifact);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.DeleteArtifact(context.Background(), sdk.MachineLifecycleDeleteArtifactParams{\n\t\tArtifactID: \"artifactID\",\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "get": {
@@ -4244,6 +4286,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -4254,7 +4303,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -4358,10 +4407,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -4423,23 +4471,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Artifacts"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.retrieve_artifact(\n    machine_id=\"machineID\",\n    artifact_id=\"artifactID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst retrieveArtifact = await client.machineLifecycle.retrieveArtifact({\n  machine_id: \"machineID\",\n  artifact_id: \"artifactID\",\n});\nconsole.log(retrieveArtifact);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.GetArtifact(context.Background(), sdk.MachineLifecycleGetArtifactParams{\n\t\tArtifactID: \"artifactID\",\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -4548,6 +4579,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -4558,7 +4596,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -4662,10 +4700,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -4727,23 +4764,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Executions"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_executions(\n    machine_id=\"machineID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listExecutions = await client.machineLifecycle.listExecutions({\n  machine_id: \"machineID\",\n});\nconsole.log(listExecutions);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListExecutions(context.Background(), sdk.MachineLifecycleListExecutionsParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "post": {
@@ -4851,6 +4871,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -4861,7 +4888,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -5015,10 +5042,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -5080,23 +5106,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Executions"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.create_execution(\n    machine_id=\"machineID\",\n    command=[],\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst createExecution = await client.machineLifecycle.createExecution({\n  machine_id: \"machineID\",\n  command: [],\n});\nconsole.log(createExecution);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.NewExecution(context.Background(), sdk.MachineLifecycleNewExecutionParams{\n\t\tMachineID: \"machineID\",\n\t\tCreateExecutionRequest: sdk.CreateExecutionRequest{\n\t\tCommand: sdk.F[[]string]([]string{\"\"}),\n\t},\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -5196,6 +5205,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -5206,7 +5222,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -5310,10 +5326,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -5375,23 +5390,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Executions"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.delete_execution(\n    machine_id=\"machineID\",\n    execution_id=\"executionID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst deleteExecution = await client.machineLifecycle.deleteExecution({\n  machine_id: \"machineID\",\n  execution_id: \"executionID\",\n});\nconsole.log(deleteExecution);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.DeleteExecution(context.Background(), sdk.MachineLifecycleDeleteExecutionParams{\n\t\tExecutionID: \"executionID\",\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "get": {
@@ -5489,6 +5487,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -5499,7 +5504,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -5603,10 +5608,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -5668,23 +5672,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Executions"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.retrieve_execution(\n    machine_id=\"machineID\",\n    execution_id=\"executionID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst retrieveExecution = await client.machineLifecycle.retrieveExecution({\n  machine_id: \"machineID\",\n  execution_id: \"executionID\",\n});\nconsole.log(retrieveExecution);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.GetExecution(context.Background(), sdk.MachineLifecycleGetExecutionParams{\n\t\tExecutionID: \"executionID\",\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -5801,6 +5788,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -5811,7 +5805,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -5915,10 +5909,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -5980,23 +5973,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Executions"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_execution_events(\n    machine_id=\"machineID\",\n    execution_id=\"executionID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listExecutionEvents = await client.machineLifecycle.listExecutionEvents({\n  machine_id: \"machineID\",\n  execution_id: \"executionID\",\n});\nconsole.log(listExecutionEvents);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListExecutionEvents(context.Background(), sdk.MachineLifecycleListExecutionEventsParams{\n\t\tExecutionID: \"executionID\",\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -6096,6 +6072,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -6106,7 +6089,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -6210,10 +6193,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -6275,29 +6257,12 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Executions"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_execution_output(\n    machine_id=\"machineID\",\n    execution_id=\"executionID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listExecutionOutput = await client.machineLifecycle.listExecutionOutput({\n  machine_id: \"machineID\",\n  execution_id: \"executionID\",\n});\nconsole.log(listExecutionOutput);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListExecutionOutput(context.Background(), sdk.MachineLifecycleListExecutionOutputParams{\n\t\tExecutionID: \"executionID\",\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
-    "/v1/machines/{machine_id}/previews": {
+    "/v1/machines/{machine_id}/network": {
       "get": {
-        "operationId": "listMachinePreviews",
+        "operationId": "getMachineNetwork",
         "parameters": [
           {
             "in": "header",
@@ -6313,23 +6278,6 @@
             "schema": {
               "$ref": "#/components/schemas/MachineIDPathSegment"
             }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "format": "int64",
-              "type": "integer"
-            }
-          },
-          {
-            "explode": false,
-            "in": "query",
-            "name": "cursor",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -6337,7 +6285,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewListResponse"
+                  "$ref": "#/components/schemas/MachineNetworkResponse"
                 }
               }
             },
@@ -6400,6 +6348,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -6410,7 +6365,185 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
+                      "retryable": false
+                    }
+                  }
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "error_code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "retry_after_ms": {
+                      "format": "int64",
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "error_code",
+                    "message",
+                    "retryable"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get machine network identity",
+        "tags": [
+          "Machine Lifecycle"
+        ]
+      }
+    },
+    "/v1/machines/{machine_id}/ports": {
+      "get": {
+        "operationId": "listMachinePorts",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Dedalus-Org-Id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "machine_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MachineIDPathSegment"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortListResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_key": {
+                    "value": {
+                      "error_code": "AUTH_INVALID",
+                      "message": "invalid Dedalus API key",
+                      "retryable": false
+                    }
+                  },
+                  "missing_key": {
+                    "value": {
+                      "error_code": "AUTH_REQUIRED",
+                      "message": "missing Dedalus API key",
+                      "retryable": false
+                    }
+                  }
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "error_code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "retry_after_ms": {
+                      "format": "int64",
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "error_code",
+                    "message",
+                    "retryable"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authentication required"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
+                  "org_mismatch": {
+                    "value": {
+                      "error_code": "AUTH_ORG_MISMATCH",
+                      "message": "org scope does not match API key ownership",
+                      "retryable": false
+                    }
+                  },
+                  "scope_forbidden": {
+                    "value": {
+                      "error_code": "AUTH_SCOPE_FORBIDDEN",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -6514,10 +6647,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -6575,31 +6707,14 @@
             "description": "Error"
           }
         },
-        "summary": "List previews",
+        "summary": "List ports",
         "tags": [
           "Machine Lifecycle",
-          "Machine Previews"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_previews(\n    machine_id=\"machineID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listPreviews = await client.machineLifecycle.listPreviews({\n  machine_id: \"machineID\",\n});\nconsole.log(listPreviews);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListPreviews(context.Background(), sdk.MachineLifecycleListPreviewsParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
+          "Machine Ports"
         ]
       },
       "post": {
-        "operationId": "createMachinePreview",
+        "operationId": "createMachinePort",
         "parameters": [
           {
             "in": "header",
@@ -6629,7 +6744,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreatePreviewRequest"
+                "$ref": "#/components/schemas/CreatePortRequest"
               }
             }
           },
@@ -6640,7 +6755,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewResponse"
+                  "$ref": "#/components/schemas/PortResponse"
                 }
               }
             },
@@ -6703,6 +6818,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -6713,7 +6835,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -6867,10 +6989,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -6928,33 +7049,16 @@
             "description": "Error"
           }
         },
-        "summary": "Create preview",
+        "summary": "Create port",
         "tags": [
           "Machine Lifecycle",
-          "Machine Previews"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.create_preview(\n    machine_id=\"machineID\",\n    port=0,\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst createPreview = await client.machineLifecycle.createPreview({\n  machine_id: \"machineID\",\n  port: 0,\n});\nconsole.log(createPreview);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.NewPreview(context.Background(), sdk.MachineLifecycleNewPreviewParams{\n\t\tMachineID: \"machineID\",\n\t\tCreatePreviewRequest: sdk.CreatePreviewRequest{\n\t\tPort: sdk.F[int64](0),\n\t},\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
+          "Machine Ports"
         ]
       }
     },
-    "/v1/machines/{machine_id}/previews/{preview_id}": {
+    "/v1/machines/{machine_id}/ports/{port_id}": {
       "delete": {
-        "operationId": "deleteMachinePreview",
+        "operationId": "deleteMachinePort",
         "parameters": [
           {
             "in": "header",
@@ -6973,7 +7077,7 @@
           },
           {
             "in": "path",
-            "name": "preview_id",
+            "name": "port_id",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/PublicPathSegment"
@@ -6985,7 +7089,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewResponse"
+                  "$ref": "#/components/schemas/PortResponse"
                 }
               }
             },
@@ -7048,6 +7152,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -7058,7 +7169,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -7162,10 +7273,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -7223,31 +7333,14 @@
             "description": "Error"
           }
         },
-        "summary": "Delete preview",
+        "summary": "Delete port",
         "tags": [
           "Machine Lifecycle",
-          "Machine Previews"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.delete_preview(\n    machine_id=\"machineID\",\n    preview_id=\"previewID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst deletePreview = await client.machineLifecycle.deletePreview({\n  machine_id: \"machineID\",\n  preview_id: \"previewID\",\n});\nconsole.log(deletePreview);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.DeletePreview(context.Background(), sdk.MachineLifecycleDeletePreviewParams{\n\t\tMachineID: \"machineID\",\n\t\tPreviewID: \"previewID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
+          "Machine Ports"
         ]
       },
       "get": {
-        "operationId": "getMachinePreview",
+        "operationId": "getMachinePort",
         "parameters": [
           {
             "in": "header",
@@ -7266,7 +7359,7 @@
           },
           {
             "in": "path",
-            "name": "preview_id",
+            "name": "port_id",
             "required": true,
             "schema": {
               "$ref": "#/components/schemas/PublicPathSegment"
@@ -7278,7 +7371,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreviewResponse"
+                  "$ref": "#/components/schemas/PortResponse"
                 }
               }
             },
@@ -7341,6 +7434,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -7351,7 +7451,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -7455,10 +7555,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -7516,27 +7615,10 @@
             "description": "Error"
           }
         },
-        "summary": "Get preview",
+        "summary": "Get port",
         "tags": [
           "Machine Lifecycle",
-          "Machine Previews"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.retrieve_preview(\n    machine_id=\"machineID\",\n    preview_id=\"previewID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst retrievePreview = await client.machineLifecycle.retrievePreview({\n  machine_id: \"machineID\",\n  preview_id: \"previewID\",\n});\nconsole.log(retrievePreview);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.GetPreview(context.Background(), sdk.MachineLifecycleGetPreviewParams{\n\t\tMachineID: \"machineID\",\n\t\tPreviewID: \"previewID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
+          "Machine Ports"
         ]
       }
     },
@@ -7676,6 +7758,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -7686,7 +7775,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -7860,10 +7949,9 @@
                   "sleep_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "sleep_lifecycle_routes"
                       }
                     }
@@ -7917,23 +8005,6 @@
         "summary": "Sleep a running machine",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.sleep(\n    machine_id=\"machineID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst sleep = await client.machineLifecycle.sleep({\n  machine_id: \"machineID\",\n});\nconsole.log(sleep);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.Sleep(context.Background(), sdk.MachineLifecycleSleepParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -8042,6 +8113,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -8052,7 +8130,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -8156,10 +8234,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -8221,23 +8298,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine SSH"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_ssh_sessions(\n    machine_id=\"machineID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listSSHSessions = await client.machineLifecycle.listSSHSessions({\n  machine_id: \"machineID\",\n});\nconsole.log(listSSHSessions);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListSSHSessions(context.Background(), sdk.MachineLifecycleListSSHSessionsParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "post": {
@@ -8345,6 +8405,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -8355,7 +8422,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -8509,10 +8576,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -8574,23 +8640,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine SSH"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.create_ssh_session(\n    machine_id=\"machineID\",\n    public_key=\"\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst createSSHSession = await client.machineLifecycle.createSSHSession({\n  machine_id: \"machineID\",\n  public_key: \"\",\n});\nconsole.log(createSSHSession);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.NewSSHSession(context.Background(), sdk.MachineLifecycleNewSSHSessionParams{\n\t\tMachineID: \"machineID\",\n\t\tCreateSSHSessionRequest: sdk.CreateSSHSessionRequest{\n\t\tPublicKey: sdk.F[string](\"\"),\n\t},\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -8690,6 +8739,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -8700,7 +8756,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -8804,10 +8860,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -8869,23 +8924,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine SSH"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.delete_ssh_session(\n    machine_id=\"machineID\",\n    session_id=\"sessionID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst deleteSSHSession = await client.machineLifecycle.deleteSSHSession({\n  machine_id: \"machineID\",\n  session_id: \"sessionID\",\n});\nconsole.log(deleteSSHSession);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.DeleteSSHSession(context.Background(), sdk.MachineLifecycleDeleteSSHSessionParams{\n\t\tMachineID: \"machineID\",\n\t\tSessionID: \"sessionID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "get": {
@@ -8983,6 +9021,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -8993,7 +9038,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -9097,10 +9142,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -9162,23 +9206,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine SSH"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.retrieve_ssh_session(\n    machine_id=\"machineID\",\n    session_id=\"sessionID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst retrieveSSHSession = await client.machineLifecycle.retrieveSSHSession({\n  machine_id: \"machineID\",\n  session_id: \"sessionID\",\n});\nconsole.log(retrieveSSHSession);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.GetSSHSession(context.Background(), sdk.MachineLifecycleGetSSHSessionParams{\n\t\tMachineID: \"machineID\",\n\t\tSessionID: \"sessionID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -9282,6 +9309,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -9292,7 +9326,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -9335,23 +9369,6 @@
         "summary": "Watch machine lifecycle status",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nstream = client.machine_lifecycle.watch_status(\n    machine_id=\"machineID\",\n)\nfor event in stream:\n    print(event)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst stream = await client.machineLifecycle.watchStatus({\n  machine_id: \"machineID\",\n});\nfor await (const event of stream) {\n  console.log(event);\n}"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tstream := client.MachineLifecycle.WatchStatusStreaming(context.Background(), sdk.MachineLifecycleWatchStatusParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tdefer stream.Close()\n\tfor stream.Next() {\n\t\tevent := stream.Current()\n\t\tfmt.Println(event)\n\t}\n\tif err := stream.Err(); err != nil {\n\t\tpanic(err)\n\t}\n}"
-          }
         ]
       }
     },
@@ -9460,6 +9477,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -9470,7 +9494,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -9574,10 +9598,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -9639,23 +9662,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Terminals"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.list_terminals(\n    machine_id=\"machineID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listTerminals = await client.machineLifecycle.listTerminals({\n  machine_id: \"machineID\",\n});\nconsole.log(listTerminals);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.ListTerminals(context.Background(), sdk.MachineLifecycleListTerminalsParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "post": {
@@ -9763,6 +9769,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -9773,7 +9786,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -9927,10 +9940,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -9992,23 +10004,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Terminals"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.create_terminal(\n    machine_id=\"machineID\",\n    height=0,\n    width=0,\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst createTerminal = await client.machineLifecycle.createTerminal({\n  machine_id: \"machineID\",\n  height: 0,\n  width: 0,\n});\nconsole.log(createTerminal);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.NewTerminal(context.Background(), sdk.MachineLifecycleNewTerminalParams{\n\t\tMachineID: \"machineID\",\n\t\tCreateTerminalRequest: sdk.CreateTerminalRequest{\n\t\tHeight: sdk.F[int64](0),\n\t\tWidth: sdk.F[int64](0),\n\t},\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -10108,6 +10103,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -10118,7 +10120,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -10222,10 +10224,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -10287,23 +10288,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Terminals"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.delete_terminal(\n    machine_id=\"machineID\",\n    terminal_id=\"terminalID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst deleteTerminal = await client.machineLifecycle.deleteTerminal({\n  machine_id: \"machineID\",\n  terminal_id: \"terminalID\",\n});\nconsole.log(deleteTerminal);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.DeleteTerminal(context.Background(), sdk.MachineLifecycleDeleteTerminalParams{\n\t\tMachineID: \"machineID\",\n\t\tTerminalID: \"terminalID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       },
       "get": {
@@ -10401,6 +10385,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -10411,7 +10402,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -10515,10 +10506,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -10580,23 +10570,6 @@
         "tags": [
           "Machine Lifecycle",
           "Machine Terminals"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.retrieve_terminal(\n    machine_id=\"machineID\",\n    terminal_id=\"terminalID\",\n)\nprint(machine_lifecycle)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst retrieveTerminal = await client.machineLifecycle.retrieveTerminal({\n  machine_id: \"machineID\",\n  terminal_id: \"terminalID\",\n});\nconsole.log(retrieveTerminal);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.GetTerminal(context.Background(), sdk.MachineLifecycleGetTerminalParams{\n\t\tMachineID: \"machineID\",\n\t\tTerminalID: \"terminalID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
-          }
         ]
       }
     },
@@ -10694,6 +10667,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -10704,7 +10684,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -10870,10 +10850,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "read_lifecycle_routes"
                       }
                     }
@@ -11064,6 +11043,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -11074,7 +11060,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -11241,10 +11227,9 @@
                   "mutation_limiter_unavailable": {
                     "value": {
                       "error_code": "DEPENDENCY_UNAVAILABLE",
-                      "message": "mutation rate limiter unavailable",
+                      "message": "mutation rate limit check is unavailable",
                       "retryable": true,
                       "details": {
-                        "rate_limit_backend": "redis",
                         "rate_limit_scope": "mutating_lifecycle_routes"
                       }
                     }
@@ -11305,23 +11290,167 @@
         "summary": "Wake a sleeping machine",
         "tags": [
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
+        ]
+      }
+    },
+    "/v1/networks/{network_id}": {
+      "get": {
+        "operationId": "getNetwork",
+        "parameters": [
           {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine_lifecycle = client.machine_lifecycle.wake(\n    machine_id=\"machineID\",\n    idempotency_key=\"\",\n)\nprint(machine_lifecycle)"
+            "in": "header",
+            "name": "X-Dedalus-Org-Id",
+            "schema": {
+              "type": "string"
+            }
           },
           {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst wake = await client.machineLifecycle.wake({\n  machine_id: \"machineID\",\n});\nconsole.log(wake);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachineLifecycle, err := client.MachineLifecycle.Wake(context.Background(), sdk.MachineLifecycleWakeParams{\n\t\tMachineID: \"machineID\",\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machineLifecycle)\n}"
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PublicPathSegment"
+            }
           }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "invalid_key": {
+                    "value": {
+                      "error_code": "AUTH_INVALID",
+                      "message": "invalid Dedalus API key",
+                      "retryable": false
+                    }
+                  },
+                  "missing_key": {
+                    "value": {
+                      "error_code": "AUTH_REQUIRED",
+                      "message": "missing Dedalus API key",
+                      "retryable": false
+                    }
+                  }
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "error_code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "retry_after_ms": {
+                      "format": "int64",
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "error_code",
+                    "message",
+                    "retryable"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authentication required"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
+                  "org_mismatch": {
+                    "value": {
+                      "error_code": "AUTH_ORG_MISMATCH",
+                      "message": "org scope does not match API key ownership",
+                      "retryable": false
+                    }
+                  },
+                  "scope_forbidden": {
+                    "value": {
+                      "error_code": "AUTH_SCOPE_FORBIDDEN",
+                      "message": "required authorization scope is missing",
+                      "retryable": false
+                    }
+                  }
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "error_code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "retry_after_ms": {
+                      "format": "int64",
+                      "type": "integer"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "error_code",
+                    "message",
+                    "retryable"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get network details",
+        "tags": [
+          "Machine Lifecycle"
         ]
       }
     },
@@ -11445,6 +11574,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -11455,7 +11591,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -11583,23 +11719,6 @@
         "tags": [
           "Usage",
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nusage = client.usage.list()\nprint(usage)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst list = await client.usage.list();\nconsole.log(list);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tusage, err := client.Usage.List(context.Background(), sdk.UsageListParams{})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(usage)\n}"
-          }
         ]
       }
     },
@@ -11753,6 +11872,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -11763,7 +11889,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -11891,23 +12017,6 @@
         "tags": [
           "Usage",
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine = client.usage.machines.list_compute_usage()\nprint(machine)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listComputeUsage = await client.usage.machines.listComputeUsage();\nconsole.log(listComputeUsage);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachine, err := client.Usage.Machines.ListComputeUsage(context.Background(), sdk.UsageMachineListComputeUsageParams{})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machine)\n}"
-          }
         ]
       }
     },
@@ -12051,6 +12160,13 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "beta_access_required": {
+                    "value": {
+                      "error_code": "BETA_ACCESS_REQUIRED",
+                      "message": "DCS is in private beta; this org has not been admitted",
+                      "retryable": false
+                    }
+                  },
                   "org_mismatch": {
                     "value": {
                       "error_code": "AUTH_ORG_MISMATCH",
@@ -12061,7 +12177,7 @@
                   "scope_forbidden": {
                     "value": {
                       "error_code": "AUTH_SCOPE_FORBIDDEN",
-                      "message": "internal service authorization is required",
+                      "message": "required authorization scope is missing",
                       "retryable": false
                     }
                   }
@@ -12189,23 +12305,6 @@
         "tags": [
           "Usage",
           "Machine Lifecycle"
-        ],
-        "x-scalar-examples": [
-          {
-            "lang": "Python",
-            "label": "Python",
-            "source": "import os\n\nfrom dedalus import Dedalus\n\nclient = Dedalus(\n    bearer=os.environ.get(\"BEARER\"),\n)\n\nmachine = client.usage.machines.list_storage_usage()\nprint(machine)"
-          },
-          {
-            "lang": "TypeScript",
-            "label": "TypeScript",
-            "source": "import Dedalus from \"dedalus\";\n\nconst client = new Dedalus({\n  bearer: process.env[\"BEARER\"], // defaults to the BEARER env var\n  environment: \"production\",\n});\n\nconst listStorageUsage = await client.usage.machines.listStorageUsage();\nconsole.log(listStorageUsage);"
-          },
-          {
-            "lang": "Go",
-            "label": "Go",
-            "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\n\tsdk \"dedalus\"\n\t\"dedalus/option\"\n)\n\nfunc main() {\n\tclient := sdk.NewClient(\n\t\toption.WithBearer(os.Getenv(\"BEARER\")),\n\t\toption.WithAPIKey(os.Getenv(\"DEDALUS_API_KEY\")),\n\t)\n\n\tmachine, err := client.Usage.Machines.ListStorageUsage(context.Background(), sdk.UsageMachineListStorageUsageParams{})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(machine)\n}"
-          }
         ]
       }
     }

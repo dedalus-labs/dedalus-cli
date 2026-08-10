@@ -1,7 +1,6 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-import { APIPromise } from './api-promise';
-import type { APIResponseProps } from './internal/parse';
+import { APIPromise, type APIResponseProps } from './api-promise';
 import * as Errors from './error';
 import { uuid4 } from './internal/utils/uuid';
 import { validatePositiveInteger, isAbsoluteURL, safeJSON, isEmptyObj } from './internal/utils/values';
@@ -17,39 +16,27 @@ import type { RequestInit, RequestInfo, BodyInit, Fetch } from './internal/built
 import { buildHeaders, type HeadersLike } from './internal/headers';
 import type { FinalRequestOptions, RequestOptions } from './internal/request-options';
 import type { HTTPMethod, FinalizedRequestInit, MergedRequestInit, PromiseOrValue } from './internal/types';
-import { stringify as stringifyQuery } from './internal/qs/stringify';
-import type { StringifyOptions } from './internal/qs/types';
+import { stringifyQuery } from './internal/utils/query';
 import { toFile } from './core/uploads';
 import { VERSION } from './version';
-import { MachineLifecycle, type CreateMachineRequest, type UpdateMachineRequest, type CreateExecutionRequest, type CreatePreviewRequest, type CreateSSHSessionRequest, type CreateTerminalRequest, type MachineLifecycleListResponse, type MachineLifecycleCreateResponse, type MachineLifecycleDeleteResponse, type MachineLifecycleRetrieveResponse, type MachineLifecyclePatchResponse, type MachineLifecycleListArtifactsResponse, type MachineLifecycleDeleteArtifactResponse, type MachineLifecycleRetrieveArtifactResponse, type MachineLifecycleListExecutionsResponse, type MachineLifecycleCreateExecutionResponse, type MachineLifecycleDeleteExecutionResponse, type MachineLifecycleRetrieveExecutionResponse, type MachineLifecycleListExecutionEventsResponse, type MachineLifecycleListExecutionOutputResponse, type MachineLifecycleListPreviewsResponse, type MachineLifecycleCreatePreviewResponse, type MachineLifecycleDeletePreviewResponse, type MachineLifecycleRetrievePreviewResponse, type MachineLifecycleSleepResponse, type MachineLifecycleListSSHSessionsResponse, type MachineLifecycleCreateSSHSessionResponse, type MachineLifecycleDeleteSSHSessionResponse, type MachineLifecycleRetrieveSSHSessionResponse, type MachineLifecycleWatchStatusResponse, type MachineLifecycleListTerminalsResponse, type MachineLifecycleCreateTerminalResponse, type MachineLifecycleDeleteTerminalResponse, type MachineLifecycleRetrieveTerminalResponse, type MachineLifecycleWakeResponse, type MachineLifecycleListParams, type MachineLifecycleCreateParams, type MachineLifecycleDeleteParams, type MachineLifecycleRetrieveParams, type MachineLifecyclePatchParams, type MachineLifecycleListArtifactsParams, type MachineLifecycleDeleteArtifactParams, type MachineLifecycleRetrieveArtifactParams, type MachineLifecycleListExecutionsParams, type MachineLifecycleCreateExecutionParams, type MachineLifecycleDeleteExecutionParams, type MachineLifecycleRetrieveExecutionParams, type MachineLifecycleListExecutionEventsParams, type MachineLifecycleListExecutionOutputParams, type MachineLifecycleListPreviewsParams, type MachineLifecycleCreatePreviewParams, type MachineLifecycleDeletePreviewParams, type MachineLifecycleRetrievePreviewParams, type MachineLifecycleSleepParams, type MachineLifecycleListSSHSessionsParams, type MachineLifecycleCreateSSHSessionParams, type MachineLifecycleDeleteSSHSessionParams, type MachineLifecycleRetrieveSSHSessionParams, type MachineLifecycleWatchStatusParams, type MachineLifecycleListTerminalsParams, type MachineLifecycleCreateTerminalParams, type MachineLifecycleDeleteTerminalParams, type MachineLifecycleRetrieveTerminalParams, type MachineLifecycleConnectTerminalParams, type MachineLifecycleWakeParams } from "./resources/machine-lifecycle/machine-lifecycle";
-import { Usage, type UsageListResponse, type UsageListParams } from "./resources/usage/usage";
 
 export type AuthTokenProvider = () => string | Promise<string>;
 
-const queryArrayFormat: NonNullable<StringifyOptions["arrayFormat"]> = "comma";
-const queryAllowDots = false;
-
-const environments = {
-  production: "https://api.dedaluslabs.ai",
-  official_dcs_api: "https://dcs.dedaluslabs.ai",
-};
-type Environment = keyof typeof environments;
-
 export interface ClientOptions {
   /**
-   * API key authentication using X-API-Key header
+   * Dedalus API key for Bearer token authentication.
    */
-  apiKeyAuth?: string | AuthTokenProvider | undefined;
+  apiKey?: string | AuthTokenProvider | null | undefined;
+
+  /**
+   * Dedalus API key for X-API-Key header authentication.
+   */
+  xAPIKey?: string | AuthTokenProvider | null | undefined;
 
   /**
    * Dedalus API key in Authorization: Bearer <key>.
    */
   bearerAuth?: string | AuthTokenProvider | undefined;
-
-  /**
-   * API key authentication using Bearer token
-   */
-  bearer?: string | AuthTokenProvider | undefined;
 
   /**
    * Provider name for BYOK mode.
@@ -75,15 +62,6 @@ export interface ClientOptions {
    * Organization ID for request scoping.
    */
   dedalusOrgID?: string | null | undefined;
-
-  /**
-   * Specifies the environment to use for the API.
-   *
-   * Each environment maps to a different base URL:
-   * - `production` corresponds to `https://api.dedaluslabs.ai`
-   * - `official_dcs_api` corresponds to `https://dcs.dedaluslabs.ai`
-   */
-  environment?: Environment | undefined;
 
   /**
    * Override the default base URL for the API, e.g., "https://api.example.com/v2/"
@@ -161,9 +139,9 @@ export type DedalusOptions = ClientOptions;
  * API Client for interfacing with the Dedalus API.
  */
 export class Dedalus {
-  apiKeyAuth: string | AuthTokenProvider | undefined;
+  apiKey: string | AuthTokenProvider | null;
+  xAPIKey: string | AuthTokenProvider | null;
   bearerAuth: string | AuthTokenProvider | undefined;
-  bearer: string | AuthTokenProvider | undefined;
   provider: string | null;
   providerKey: string | null;
   providerModel: string | null;
@@ -186,15 +164,14 @@ export class Dedalus {
   /**
    * API Client for interfacing with the Dedalus API.
    *
-   * @param {string | AuthTokenProvider | undefined} [opts.apiKeyAuth=process.env["API_KEY_AUTH"] ?? undefined]
-   * @param {string | AuthTokenProvider | undefined} [opts.bearerAuth=process.env["BEARER_AUTH"] ?? undefined]
-   * @param {string | AuthTokenProvider | undefined} [opts.bearer=process.env["BEARER"] ?? undefined]
+   * @param {string | AuthTokenProvider | null | undefined} [opts.apiKey=process.env["DEDALUS_API_KEY"] ?? null]
+   * @param {string | AuthTokenProvider | null | undefined} [opts.xAPIKey=process.env["DEDALUS_X_API_KEY"] ?? null]
+   * @param {string | AuthTokenProvider | undefined} [opts.bearerAuth=process.env["DEDALUS_BEARER_AUTH"] ?? undefined]
    * @param {string | null | undefined} [opts.provider=process.env["DEDALUS_PROVIDER"] ?? null]
    * @param {string | null | undefined} [opts.providerKey=process.env["DEDALUS_PROVIDER_KEY"] ?? null]
    * @param {string | null | undefined} [opts.providerModel=process.env["DEDALUS_PROVIDER_MODEL"] ?? null]
-   * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? null]
+   * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string | null | undefined} [opts.dedalusOrgID=process.env["DEDALUS_ORG_ID"] ?? null]
-   * @param {Environment} [opts.environment=production] - Specifies the environment URL to use for the API.
    * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://api.dedaluslabs.ai] - Override the default base URL for the API.
    * @param {number} [opts.timeout=1 minute] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
    * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
@@ -205,32 +182,30 @@ export class Dedalus {
    */
   constructor({
     baseURL = readEnv("DEDALUS_BASE_URL"),
-    apiKeyAuth = readEnv("API_KEY_AUTH"),
-    bearerAuth = readEnv("BEARER_AUTH"),
-    bearer = readEnv("BEARER"),
+    apiKey = readEnv("DEDALUS_API_KEY") ?? null,
+    xAPIKey = readEnv("DEDALUS_X_API_KEY") ?? null,
+    bearerAuth = readEnv("DEDALUS_BEARER_AUTH"),
     provider = readEnv("DEDALUS_PROVIDER") ?? null,
     providerKey = readEnv("DEDALUS_PROVIDER_KEY") ?? null,
     providerModel = readEnv("DEDALUS_PROVIDER_MODEL") ?? null,
-    asBaseURL = readEnv("DEDALUS_AS_URL") ?? null,
+    asBaseURL = readEnv("DEDALUS_AS_URL") ?? "https://as.dedaluslabs.ai",
     dedalusOrgID = readEnv("DEDALUS_ORG_ID") ?? null,
     ...opts
   }: ClientOptions = {}) {
     const options: ClientOptions = {
-      apiKeyAuth,
+      apiKey,
+      xAPIKey,
       bearerAuth,
-      bearer,
       provider,
       providerKey,
       providerModel,
       asBaseURL,
       dedalusOrgID,
       ...opts,
-      baseURL: baseURL || null,
+      baseURL: baseURL || "https://api.dedaluslabs.ai",
     };
-    const environment = options.environment ?? "production";
     const baseURLOverridden = baseURL !== null && baseURL !== undefined && baseURL !== "";
-    if (baseURLOverridden && options.environment) throw new Errors.DedalusError("Ambiguous URL; The `baseURL` option (or DEDALUS_BASE_URL env var) and the `environment` option are given. If you want to use the environment you must pass baseURL: null");
-    const defaultBaseURL = environments[environment];
+    const defaultBaseURL = "https://api.dedaluslabs.ai";
     this.baseURL = options.baseURL || defaultBaseURL;
     this.timeout = options.timeout ?? Dedalus.DEFAULT_TIMEOUT /* 1 minute */;
     this.logger = options.logger ?? console;
@@ -258,14 +233,14 @@ export class Dedalus {
       options.defaultHeaders = { ...parsed, ...options.defaultHeaders };
     }
 
-    this._options = { ...options, baseURL: baseURLOverridden ? this.baseURL : undefined, environment };
+    this._options = { ...options, baseURL: baseURLOverridden ? this.baseURL : undefined };
     this._baseURLOverridden = baseURLOverridden;
     this._defaultBaseURL = defaultBaseURL;
     this.idempotencyHeader = "Idempotency-Key";
 
-    this.apiKeyAuth = apiKeyAuth;
+    this.apiKey = apiKey;
+    this.xAPIKey = xAPIKey;
     this.bearerAuth = bearerAuth;
-    this.bearer = bearer;
     this.provider = provider;
     this.providerKey = providerKey;
     this.providerModel = providerModel;
@@ -283,9 +258,9 @@ export class Dedalus {
       logLevel: this.logLevel,
       fetch: this.fetch,
       fetchOptions: this.fetchOptions,
-      apiKeyAuth: this.apiKeyAuth,
+      apiKey: this.apiKey,
+      xAPIKey: this.xAPIKey,
       bearerAuth: this.bearerAuth,
-      bearer: this.bearer,
       provider: this.provider,
       providerKey: this.providerKey,
       providerModel: this.providerModel,
@@ -306,7 +281,7 @@ export class Dedalus {
   }
 
   protected stringifyQuery(query: object | Record<string, unknown>): string {
-    return stringifyQuery(query, { arrayFormat: queryArrayFormat, allowDots: queryAllowDots });
+    return stringifyQuery(query);
   }
 
   private getUserAgent(): string {
@@ -812,29 +787,29 @@ export class Dedalus {
   }
 
   private validateAuth(url: string, headers: Headers, options: FinalRequestOptions): void {
-    if (headers.has("x-api-key")) return;
-    if (headerExplicitlyOmitted(options.headers, "x-api-key")) return;
     if (headers.has("Authorization")) return;
     if (headerExplicitlyOmitted(options.headers, "Authorization")) return;
-    throw new Errors.AuthenticationError(401, {}, "Could not resolve authentication method. Expected x-api-key or Authorization to be set.", headers);
+    if (headers.has("x-api-key")) return;
+    if (headerExplicitlyOmitted(options.headers, "x-api-key")) return;
+    throw new Errors.AuthenticationError(401, {}, "Could not resolve authentication method. Expected Authorization or x-api-key to be set.", headers);
   }
 
   authHeadersSync(): Record<string, string> {
     const headers: Record<string, string> = {};
-    const apiKeyAuth = this.resolveAuthOptionSync("apiKeyAuth", this.apiKeyAuth);
-    if (apiKeyAuth) headers["x-api-key"] = apiKeyAuth;
+    const apiKey = this.resolveAuthOptionSync("apiKey", this.apiKey);
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    const xAPIKey = this.resolveAuthOptionSync("xAPIKey", this.xAPIKey);
+    if (xAPIKey) headers["x-api-key"] = xAPIKey;
     const bearerAuth = this.resolveAuthOptionSync("bearerAuth", this.bearerAuth);
     if (bearerAuth) headers['Authorization'] = `Bearer ${bearerAuth}`;
-    const bearer = this.resolveAuthOptionSync("bearer", this.bearer);
-    if (bearer) headers['Authorization'] = `Bearer ${bearer}`;
     return headers;
   }
 
   webSocketAuthHeaders(): Record<string, string> {
-    const bearerAuth = this.resolveAuthOptionSync("bearerAuth", this.bearerAuth);
-    if (bearerAuth) return { Authorization: `Bearer ${bearerAuth}` };
-    const apiKeyAuth = this.resolveAuthOptionSync("apiKeyAuth", this.apiKeyAuth);
-    if (apiKeyAuth) return { "x-api-key": apiKeyAuth };
+    const apiKey = this.resolveAuthOptionSync("apiKey", this.apiKey);
+    if (apiKey) return { Authorization: `Bearer ${apiKey}` };
+    const xAPIKey = this.resolveAuthOptionSync("xAPIKey", this.xAPIKey);
+    if (xAPIKey) return { "x-api-key": xAPIKey };
     return {};
   }
 
@@ -854,12 +829,12 @@ export class Dedalus {
 
   private async authHeadersAsync(): Promise<Record<string, string>> {
     const headers: Record<string, string> = {};
-    const apiKeyAuth = await this.resolveAuthOption("apiKeyAuth", this.apiKeyAuth);
-    if (apiKeyAuth) headers["x-api-key"] = apiKeyAuth;
+    const apiKey = await this.resolveAuthOption("apiKey", this.apiKey);
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    const xAPIKey = await this.resolveAuthOption("xAPIKey", this.xAPIKey);
+    if (xAPIKey) headers["x-api-key"] = xAPIKey;
     const bearerAuth = await this.resolveAuthOption("bearerAuth", this.bearerAuth);
     if (bearerAuth) headers['Authorization'] = `Bearer ${bearerAuth}`;
-    const bearer = await this.resolveAuthOption("bearer", this.bearer);
-    if (bearer) headers['Authorization'] = `Bearer ${bearer}`;
     return headers;
   }
 
@@ -896,89 +871,10 @@ export class Dedalus {
 
   static toFile = toFile;
 
-  machineLifecycle: MachineLifecycle = new MachineLifecycle(this);
-  usage: Usage = new Usage(this);
 }
-
-Dedalus.MachineLifecycle = MachineLifecycle;
-Dedalus.Usage = Usage;
 
 export declare namespace Dedalus {
   export type RequestOptions = Opts.RequestOptions;
-  export {
-    MachineLifecycle as MachineLifecycle,
-    type CreateMachineRequest as CreateMachineRequest,
-    type UpdateMachineRequest as UpdateMachineRequest,
-    type CreateExecutionRequest as CreateExecutionRequest,
-    type CreatePreviewRequest as CreatePreviewRequest,
-    type CreateSSHSessionRequest as CreateSSHSessionRequest,
-    type CreateTerminalRequest as CreateTerminalRequest,
-    type MachineLifecycleListResponse as MachineLifecycleListResponse,
-    type MachineLifecycleCreateResponse as MachineLifecycleCreateResponse,
-    type MachineLifecycleDeleteResponse as MachineLifecycleDeleteResponse,
-    type MachineLifecycleRetrieveResponse as MachineLifecycleRetrieveResponse,
-    type MachineLifecyclePatchResponse as MachineLifecyclePatchResponse,
-    type MachineLifecycleListArtifactsResponse as MachineLifecycleListArtifactsResponse,
-    type MachineLifecycleDeleteArtifactResponse as MachineLifecycleDeleteArtifactResponse,
-    type MachineLifecycleRetrieveArtifactResponse as MachineLifecycleRetrieveArtifactResponse,
-    type MachineLifecycleListExecutionsResponse as MachineLifecycleListExecutionsResponse,
-    type MachineLifecycleCreateExecutionResponse as MachineLifecycleCreateExecutionResponse,
-    type MachineLifecycleDeleteExecutionResponse as MachineLifecycleDeleteExecutionResponse,
-    type MachineLifecycleRetrieveExecutionResponse as MachineLifecycleRetrieveExecutionResponse,
-    type MachineLifecycleListExecutionEventsResponse as MachineLifecycleListExecutionEventsResponse,
-    type MachineLifecycleListExecutionOutputResponse as MachineLifecycleListExecutionOutputResponse,
-    type MachineLifecycleListPreviewsResponse as MachineLifecycleListPreviewsResponse,
-    type MachineLifecycleCreatePreviewResponse as MachineLifecycleCreatePreviewResponse,
-    type MachineLifecycleDeletePreviewResponse as MachineLifecycleDeletePreviewResponse,
-    type MachineLifecycleRetrievePreviewResponse as MachineLifecycleRetrievePreviewResponse,
-    type MachineLifecycleSleepResponse as MachineLifecycleSleepResponse,
-    type MachineLifecycleListSSHSessionsResponse as MachineLifecycleListSSHSessionsResponse,
-    type MachineLifecycleCreateSSHSessionResponse as MachineLifecycleCreateSSHSessionResponse,
-    type MachineLifecycleDeleteSSHSessionResponse as MachineLifecycleDeleteSSHSessionResponse,
-    type MachineLifecycleRetrieveSSHSessionResponse as MachineLifecycleRetrieveSSHSessionResponse,
-    type MachineLifecycleWatchStatusResponse as MachineLifecycleWatchStatusResponse,
-    type MachineLifecycleListTerminalsResponse as MachineLifecycleListTerminalsResponse,
-    type MachineLifecycleCreateTerminalResponse as MachineLifecycleCreateTerminalResponse,
-    type MachineLifecycleDeleteTerminalResponse as MachineLifecycleDeleteTerminalResponse,
-    type MachineLifecycleRetrieveTerminalResponse as MachineLifecycleRetrieveTerminalResponse,
-    type MachineLifecycleWakeResponse as MachineLifecycleWakeResponse,
-    type MachineLifecycleListParams as MachineLifecycleListParams,
-    type MachineLifecycleCreateParams as MachineLifecycleCreateParams,
-    type MachineLifecycleDeleteParams as MachineLifecycleDeleteParams,
-    type MachineLifecycleRetrieveParams as MachineLifecycleRetrieveParams,
-    type MachineLifecyclePatchParams as MachineLifecyclePatchParams,
-    type MachineLifecycleListArtifactsParams as MachineLifecycleListArtifactsParams,
-    type MachineLifecycleDeleteArtifactParams as MachineLifecycleDeleteArtifactParams,
-    type MachineLifecycleRetrieveArtifactParams as MachineLifecycleRetrieveArtifactParams,
-    type MachineLifecycleListExecutionsParams as MachineLifecycleListExecutionsParams,
-    type MachineLifecycleCreateExecutionParams as MachineLifecycleCreateExecutionParams,
-    type MachineLifecycleDeleteExecutionParams as MachineLifecycleDeleteExecutionParams,
-    type MachineLifecycleRetrieveExecutionParams as MachineLifecycleRetrieveExecutionParams,
-    type MachineLifecycleListExecutionEventsParams as MachineLifecycleListExecutionEventsParams,
-    type MachineLifecycleListExecutionOutputParams as MachineLifecycleListExecutionOutputParams,
-    type MachineLifecycleListPreviewsParams as MachineLifecycleListPreviewsParams,
-    type MachineLifecycleCreatePreviewParams as MachineLifecycleCreatePreviewParams,
-    type MachineLifecycleDeletePreviewParams as MachineLifecycleDeletePreviewParams,
-    type MachineLifecycleRetrievePreviewParams as MachineLifecycleRetrievePreviewParams,
-    type MachineLifecycleSleepParams as MachineLifecycleSleepParams,
-    type MachineLifecycleListSSHSessionsParams as MachineLifecycleListSSHSessionsParams,
-    type MachineLifecycleCreateSSHSessionParams as MachineLifecycleCreateSSHSessionParams,
-    type MachineLifecycleDeleteSSHSessionParams as MachineLifecycleDeleteSSHSessionParams,
-    type MachineLifecycleRetrieveSSHSessionParams as MachineLifecycleRetrieveSSHSessionParams,
-    type MachineLifecycleWatchStatusParams as MachineLifecycleWatchStatusParams,
-    type MachineLifecycleListTerminalsParams as MachineLifecycleListTerminalsParams,
-    type MachineLifecycleCreateTerminalParams as MachineLifecycleCreateTerminalParams,
-    type MachineLifecycleDeleteTerminalParams as MachineLifecycleDeleteTerminalParams,
-    type MachineLifecycleRetrieveTerminalParams as MachineLifecycleRetrieveTerminalParams,
-    type MachineLifecycleConnectTerminalParams as MachineLifecycleConnectTerminalParams,
-    type MachineLifecycleWakeParams as MachineLifecycleWakeParams,
-  };
-
-  export {
-    Usage as Usage,
-    type UsageListResponse as UsageListResponse,
-    type UsageListParams as UsageListParams,
-  };
 }
 
 

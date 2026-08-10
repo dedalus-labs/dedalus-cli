@@ -4,8 +4,7 @@ export { Dedalus as default } from './client.js';
 
 export { type Uploadable, toFile } from './core/uploads';
 export { APIPromise } from './api-promise';
-export { type RawWebSocketData, type ReconnectingEvent, type ReconnectingOverrides, type UnsentMessage } from './internal/ws';
-export { Dedalus, type ClientOptions, type DedalusOptions, type Logger, type LogLevel } from './client.js';
+export { Dedalus, type ClientOptions } from './client.js';
 export {
   DedalusError,
   APIError,

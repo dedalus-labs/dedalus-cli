@@ -2,7 +2,7 @@
 
 import type { Dedalus } from './client';
 
-export class APIResource {
+export abstract class APIResource {
   protected _client: Dedalus;
 
   constructor(client: Dedalus) {

@@ -41,7 +41,7 @@ export type CliCommandDefinition = {
   readonly streaming?: 'sse' | 'jsonl'
   readonly iterable: boolean
   readonly callShape: 'options' | 'params' | 'body'
-  // Param key of a non-flattenable body argument forwarded to the SDK method as a single value.
+  // Param key of a body blob that is forwarded bare or spread into params, depending on callShape.
   readonly bodyParamKey?: string
   readonly positional: readonly CliFlagDefinition[]
   readonly flags: readonly CliFlagDefinition[]
@@ -55,6 +55,10 @@ export type CliClientOptionDefinition = {
   readonly env?: string
   readonly description?: string
   readonly auth: boolean
+  // Documented in --help only. Deliberately NOT registered as a Commander default: a default
+  // would make the flag always look explicitly set, and the forwarded value would shadow the
+  // environment variable the SDK reads before falling back to this same default itself.
+  readonly defaultValue?: string
 }
 
 export type CreateProgramOptions = {
@@ -66,6 +70,9 @@ export type CreateProgramOptions = {
   readonly defaultErrorFormat: OutputFormat
   readonly clientOptions: readonly CliClientOptionDefinition[]
   readonly commands: readonly CliCommandDefinition[]
+  // Completion script per shell, generated alongside the command table. Absent when the SDK
+  // config disables shell completions, in which case no `completion` command is registered.
+  readonly completions?: Readonly<Record<string, string>>
 }
 
 type OutputOptions = {
@@ -92,7 +99,7 @@ type GlobalOptions = {
   readonly maxItems?: string
 }
 
-export const createProgram = ({ SDK, binaryName, version, description, defaultFormat, defaultErrorFormat, clientOptions, commands }: CreateProgramOptions): Command => {
+export const createProgram = ({ SDK, binaryName, version, description, defaultFormat, defaultErrorFormat, clientOptions, commands, completions }: CreateProgramOptions): Command => {
   const program = new Command()
   program
     .enablePositionalOptions()
@@ -118,14 +125,52 @@ export const createProgram = ({ SDK, binaryName, version, description, defaultFo
 
   for (const definition of commands) addGeneratedCommand(program, SDK, clientOptions, definition)
 
+  if (completions) addCompletionCommand(program, binaryName, completions)
+
   return program
 }
 
+// Prints the completion script for one shell. The scripts are generated from the same command
+// table this program is built from, so they always describe the commands and flags below; nothing
+// is derived from the live Commander tree, and no shell code is assembled at runtime.
+const addCompletionCommand = (program: Command, binaryName: string, completions: Readonly<Record<string, string>>): void => {
+  const shells = Object.keys(completions)
+  program
+    .command("completion")
+    .description("Print a shell completion script (" + shells.join(", ") + ")")
+    .argument("<shell>", "Shell to print a completion script for: " + shells.join(", "))
+    .addHelpText("after", completionHelpExamples(binaryName, shells))
+    .action((shell: string) => {
+      // Own-property lookup only: a bare `completions[shell]` would resolve inherited keys like
+      // "constructor" or "__proto__" to something that is not a completion script.
+      const script = Object.prototype.hasOwnProperty.call(completions, shell) ? completions[shell] : undefined
+      if (script === undefined) {
+        process.stderr.write("Unsupported shell '" + shell + "'. Supported shells: " + shells.join(", ") + "\n")
+        process.exitCode = 1
+        return
+      }
+      processStdout.write(script)
+    })
+}
+
+// Shows how to load each script, since every shell wires completions up differently.
+const completionHelpExamples = (binaryName: string, shells: readonly string[]): string => {
+  const examples: Record<string, string> = {
+    bash: "  eval \"$(" + binaryName + " completion bash)\"  # or write it to /etc/bash_completion.d",
+    zsh: "  eval \"$(" + binaryName + " completion zsh)\"  # or write it to a directory on $fpath",
+    fish: "  " + binaryName + " completion fish | source  # or write it to ~/.config/fish/completions",
+  }
+  const lines = shells.map((shell) => examples[shell]).filter((line): line is string => line !== undefined)
+  return lines.length > 0 ? "\nAdd one of these to your shell startup file:\n" + lines.join("\n") : ""
+}
+
 const clientOptionDescription = (option: CliClientOptionDefinition): string => {
-  const base = option.description ?? ""
-  if (!option.env) return base
-  const envHint = "(can also be set with " + option.env + " env var)"
-  return base ? base + " " + envHint : envHint
+  const parts: string[] = []
+  if (option.description) parts.push(option.description)
+  if (option.env) parts.push("(can also be set with " + option.env + " env var)")
+  // Stated last, matching resolution order: the flag wins, then the env var, then this value.
+  if (option.defaultValue !== undefined) parts.push("(defaults to " + option.defaultValue + ")")
+  return parts.join(" ")
 }
 
 const addGeneratedCommand = (
@@ -345,7 +390,17 @@ const callArguments = async (
 
   if (definition.callShape === "options") return { args: [...positionalArgs, undefined], params }
   if (definition.callShape === "body") return { args: [...positionalArgs, bodyValue(sdkParams, definition), undefined], params }
-  return { args: [...positionalArgs, sdkParams, undefined], params }
+  return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params }
+}
+
+const paramsValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {
+  if (definition.bodyParamKey === undefined) return params
+  const body = params[definition.bodyParamKey]
+  if (body === undefined) return params
+  // Scoped union bodies with headers are typed as the params root. A `--body` JSON blob therefore
+  // needs to sit beside header/query flags, or be passed as the root when it cannot be merged.
+  if (!isPlainObject(body)) return body
+  return mergeObjects(body, omitParams(params, [definition.bodyParamKey]))
 }
 
 const bodyValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {

@@ -1,6 +1,6 @@
 {
   "name": "dedalus-cli",
-  "version": "0.1.3",
+  "version": "0.1.0",
   "description": "Controlplane API for Dedalus Cloud Services (DCS).",
   "type": "module",
   "bin": {
@@ -20,7 +20,13 @@
   },
   "files": [
     "dist",
-    "api.md"
+    "api.md",
+    "man",
+    "SKILL.md"
+  ],
+  "man": [
+    "./man/dedalus.1",
+    "./man/dedalus-completion.1"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
@@ -29,21 +35,11 @@
   "dependencies": {
     "ansis": "^4.3.0",
     "commander": "^14.0.3",
-    "yaml": "^2.9.0",
-    "ws": "^8.18.0"
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
-    "@types/ws": "^8.5.13",
     "typescript": "^6.0.0"
-  },
-  "peerDependencies": {
-    "ws": "^8.18.0"
-  },
-  "peerDependenciesMeta": {
-    "ws": {
-      "optional": true
-    }
   },
   "license": "Apache-2.0"
 }

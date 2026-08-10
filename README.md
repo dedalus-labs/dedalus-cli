@@ -1,7 +1,8 @@
 # Dedalus
 
-Generated CLI SDK for Dedalus API.
-Controlplane API for Dedalus Cloud Services (DCS).
+This library provides convenient access to the Dedalus REST API from the command line.
+
+The full API of this library can be found in [api.md](./api.md).
 
 <br />
 
@@ -10,8 +11,8 @@ Controlplane API for Dedalus Cloud Services (DCS).
 - [Installation](#installation)
 - [Usage](#usage)
 - [API Reference](./api.md)
-- [Streaming](#streaming)
-- [WebSockets](#websockets)
+- [Shell Completion](#shell-completion)
+- [Manual Pages](#manual-pages)
 - [Authentication](#authentication)
 - [Errors](#errors)
 - [Client Options](#client-options)
@@ -25,6 +26,7 @@ Controlplane API for Dedalus Cloud Services (DCS).
 ## Installation
 
 ```sh
+# npm (requires Node.js)
 npm install -g dedalus-cli
 ```
 
@@ -34,8 +36,6 @@ npm install -g dedalus-cli
 
 ```sh
 dedalus [resource] [command] [flags]
-
-dedalus machine-lifecycle list --bearer "$BEARER"
 ```
 
 The examples in the following sections assume a `client` configured as shown above.
@@ -44,15 +44,31 @@ See the [API reference](./api.md) for every available operation.
 
 <br />
 
-## Streaming
+## Shell Completion
 
-Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
+`dedalus completion <shell>` prints a completion script for bash, zsh, and fish. Add the matching line to your shell startup file to complete commands, subcommands, and flags with Tab.
+
+```sh
+# bash (~/.bashrc)
+eval "$(dedalus completion bash)"
+
+# zsh (~/.zshrc)
+eval "$(dedalus completion zsh)"
+
+# fish (~/.config/fish/config.fish)
+dedalus completion fish | source
+```
 
 <br />
 
-## WebSockets
+## Manual Pages
 
-WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
+Installing the package globally also installs man pages. `man dedalus` lists every command, and each command has its own page named after the command with spaces and `:` replaced by `-`.
+
+```sh
+man dedalus
+man dedalus-<resource>-<command>
+```
 
 <br />
 
@@ -62,9 +78,9 @@ Pass credentials to the generated client constructor. Environment variables are 
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--api-key-auth` | `string \| provider` | - | API key authentication using X-API-Key header Defaults to API_KEY_AUTH. |
-| `--bearer-auth` | `string \| provider` | - | Dedalus API key in Authorization: Bearer <key>. Defaults to BEARER_AUTH. |
-| `--bearer` | `string \| provider` | - | API key authentication using Bearer token Defaults to BEARER. |
+| `--api-key` | `string \| provider` | - | API key authentication using Bearer token Defaults to DEDALUS_API_KEY. |
+| `--x-api-key` | `string \| provider` | - | API key authentication using X-API-Key header Defaults to DEDALUS_X_API_KEY. |
+| `--bearer-auth` | `string \| provider` | - | Dedalus API key in Authorization: Bearer <key>. Defaults to DEDALUS_BEARER_AUTH. |
 
 Declared schemes:
 
@@ -77,8 +93,6 @@ Declared schemes:
 ## Errors
 
 Non-success responses throw generated API errors. Error objects expose status, headers, response body, and request metadata where the target runtime supports it.
-
-Documented error statuses: `400`, `401`, `403`, `409`, `429`, `500`, `502`, `503`, `default`.
 
 <br />
 
@@ -122,11 +136,3 @@ Generated clients support request timeouts and retry temporary failures such as 
 - Node.js 20 or newer
 
 Powered by Scalar.
-
-
-## Contributions
-
-This SDK is generated programmatically. Manual edits to generated files will be
-overwritten on the next build.
-
-### SDK created by [Scalar](https://www.scalar.com/?utm_source=dedalus-cloud-services-api-cli&utm_campaign=sdk)

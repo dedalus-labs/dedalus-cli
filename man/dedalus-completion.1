@@ -1,0 +1,32 @@
+.\" File generated from our OpenAPI spec by Scalar. Do not edit.
+.TH "DEDALUS\-COMPLETION" "1" "" "dedalus" "Dedalus Manual"
+.SH "NAME"
+dedalus\-completion \- print a shell completion script
+.SH "SYNOPSIS"
+.B dedalus completion
+\fIshell\fR
+.SH "DESCRIPTION"
+Prints a completion script for the named shell to standard output. The script is generated from the same command table dedalus itself is built from, so it always describes this version's commands and flags. Supported shells are bash, zsh, and fish.
+.SH "ARGUMENTS"
+.TP
+\fIshell\fR
+The shell to print a script for: bash, zsh, and fish. Required.
+.SH "EXAMPLES"
+Load completions for the current shell by adding one of these to its startup file:
+.PP
+.RS 4
+.nf
+eval "$(dedalus completion bash)"
+eval "$(dedalus completion zsh)"
+dedalus completion fish | source
+.fi
+.RE
+.SH "EXIT STATUS"
+.TP
+\fB0\fR
+The command completed successfully.
+.TP
+\fB1\fR
+A usage error, or the request failed. The error is printed to standard error.
+.SH "SEE ALSO"
+.BR dedalus (1)

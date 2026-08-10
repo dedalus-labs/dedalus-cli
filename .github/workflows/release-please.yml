@@ -1,0 +1,57 @@
+name: Release Please
+
+on:
+  # Fires when a human merges the platform-managed release PR into main
+  # (the PR's base, so its diff shows the full pending release). Regenerations and
+  # custom-code pushes only touch scalar-next and never run this workflow.
+  push:
+    branches:
+      - main
+  # Manual fallback only; nothing in the automated chain depends on dispatch.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Required to update the merged release PR's autorelease labels after tagging.
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      # Consumed by the publish job's checkout: without this mapping the checkout ref would be
+      # empty and the publish would build the triggering branch head instead of the released
+      # tag's exact commit.
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          target-branch: main
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Release PRs are opened and updated by the Scalar platform with its own
+          # credential (so their CI runs without manual approval); this workflow only
+          # cuts the tag + GitHub Release once a release PR is merged.
+          skip-github-pull-request: true
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        with:
+          fetch-depth: 0
+      # Merging the release PR into main is itself the promotion, but the
+      # version bump and changelog must also land back on scalar-next, or the next
+      # release PR would propose this release again. A real merge (never a plain
+      # commit push) so a squash- or rebase-merged release PR syncs just as well; the
+      # non-conventional message keeps the sync commit out of future changelogs. Plain
+      # (non-force) push on purpose: losing a race against a concurrent regeneration
+      # push fails loudly here, and the platform's next sync re-converges.
+      - name: Sync release back to scalar-next
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin scalar-next
+          git checkout -B scalar-next origin/scalar-next
+          git merge --no-edit -m "Sync release ${{ steps.release.outputs.tag_name }} back to scalar-next" "${{ steps.release.outputs.sha }}"
+          git push origin scalar-next

@@ -1,5 +1,5 @@
-.prism.log
-.stdy.log
+node_modules/
 dist/
-/dedalus
-*.exe
+*.tsbuildinfo
+.env
+.env.*

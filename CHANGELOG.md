@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.5.0...v0.6.0) (2026-08-10)
+
+
+### Features
+
+* **api:** initial SDK generation ([50afe86](https://github.com/dedalus-labs/dedalus-cli/commit/50afe863f2a606f9be967d4c4dbecab89ab36e64))
+
+
+### Chores
+
+* **api:** regenerate SDK ([fd5540f](https://github.com/dedalus-labs/dedalus-cli/commit/fd5540f2220b861f6b36ebf653f954e36d5b069a))
+
 ## 0.5.0 (2026-07-10)
 
 Full Changelog: [v0.4.0...v0.5.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.4.0...v0.5.0)

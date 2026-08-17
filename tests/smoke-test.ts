@@ -1,7 +1,7 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
 // Smoke test: invokes the generated CLI once per operation to confirm each command can reach
-// its endpoint. Build the CLI first (so dist/esm/bin.js exists), then run this from the repo
+// its endpoint. Build the CLI first, then run this from the repo
 // with `bun tests/smoke-test.ts`. Each case below holds the argv for one command, minus the
 // base URL and credentials — the embedded SDK reads those from the environment, so set
 // <PREFIX>_BASE_URL and the auth variables before running.
@@ -898,9 +898,7 @@ const resolveBinPath = (): string => {
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error(
-    'Could not locate the built CLI binary (run the package build first so dist/esm/bin.js exists).',
-  );
+  throw new Error('Could not locate the built CLI binary; run the package build first.');
 };
 
 /**
@@ -957,7 +955,9 @@ const main = async (): Promise<void> => {
       try {
         // Pass the current environment through so the embedded SDK picks up the base URL and
         // credentials; node runs the built bin exactly as the published executable would.
-        await execFileAsync('node', [binPath, ...testCase.args], {
+        // @custom: mirror the public space-separated resource path in the smoke harness.
+        const [resource, ...args] = testCase.args;
+        await execFileAsync('node', [binPath, ...(resource?.split(':') ?? []), ...args], {
           env: process.env,
           timeout: COMMAND_TIMEOUT_MS,
           maxBuffer: 1024 * 1024 * 20,

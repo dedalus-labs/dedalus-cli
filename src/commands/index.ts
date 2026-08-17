@@ -1475,7 +1475,9 @@ const commands = [
   },
 ] as const satisfies readonly CliCommandDefinition[];
 
-export const getProgram = (): Command =>
+// @custom
+// Supply authentication through the generated entry point.
+export const getProgram = (overrides: Partial<Parameters<typeof createProgram>[0]> = {}): Command =>
   createProgram({
     SDK,
     binaryName: 'dedalus',
@@ -1486,4 +1488,5 @@ export const getProgram = (): Command =>
     clientOptions,
     commands,
     completions,
+    ...overrides,
   });

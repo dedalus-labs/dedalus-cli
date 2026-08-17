@@ -3,7 +3,7 @@
 .SH "NAME"
 dedalus\-machines\-terminals\-connect \- Connect to terminal WebSocket stream
 .SH "SYNOPSIS"
-.B dedalus machines:terminals connect
+.B dedalus machines terminals connect
 \fB\-\-machine\-id\fR \fI<value>\fR \fB\-\-terminal\-id\fR \fI<value>\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
 Upgrades to a WebSocket connection for interactive terminal I/O. Clients send JSON `TerminalClientEvent` messages and receive JSON `TerminalServerEvent` messages. Terminal byte streams are base64\-encoded inside `input` and `output` events; `resize` events use integer `width` and `height` fields.
@@ -72,7 +72,7 @@ Model identifier for BYOK provider. Can also be set with the DEDALUS_PROVIDER_MO
 .PP
 .RS 4
 .nf
-dedalus machines:terminals connect \-\-api\-key "$DEDALUS_API_KEY" \-\-machine\-id 'machine_id' \-\-terminal\-id 'terminal_id' \-\-send '{"data":"","type":"input"}' \-\-max\-items 10
+dedalus machines terminals connect \-\-api\-key "$DEDALUS_API_KEY" \-\-machine\-id 'machine_id' \-\-terminal\-id 'terminal_id' \-\-send '{"data":"","type":"input"}' \-\-max\-items 10
 .fi
 .RE
 .SH "ENVIRONMENT"

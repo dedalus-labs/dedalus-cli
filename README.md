@@ -43,7 +43,20 @@ dedalus [resource] [command] [flags]
 dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
-The examples in the following sections assume a `client` configured as shown above.
+Scalar generates the SDK, resource commands, API reference, and manual pages from
+the DCS OpenAPI input. Handwritten code lives with its feature: `src/auth` owns
+login and credentials, while `src/cli/program.ts` assembles the executable.
+
+Mark handwritten modules and modifications with `// @custom`, followed by a normal
+comment explaining the intent. Preserve Scalar's generated provenance headers.
+These markers document ownership; they do not exempt code from review or tests.
+Scalar carries edits on `scalar-next` through its three-way merge.
+
+The CLI registers nested resources as command words (`machines executions list`).
+Completion reads the assembled command tree so nested resources and auth commands
+stay consistent with help. The SDK owns HTTP, pagination, SSE, and WebSocket
+transports. A small authentication subclass adds bounded OAuth recovery and supplies
+the stored bearer token to Scalar 0.32.3's WebSocket transport.
 
 See the [API reference](./api.md) for every available operation.
 
@@ -68,11 +81,11 @@ dedalus completion fish | source
 
 ## Manual Pages
 
-Installing the package globally also installs man pages. `man dedalus` lists every command, and each command has its own page named after the command with spaces and `:` replaced by `-`.
+Installing the package globally also installs man pages. `man dedalus` lists the command groups and global options, while `man dedalus-completion` documents shell completion.
 
 ```sh
 man dedalus
-man dedalus-<resource>-<command>
+man dedalus-completion
 ```
 
 <br />
@@ -91,19 +104,43 @@ WebSocket commands stay connected and stream messages. Use `--send <json>` to se
 
 ## Authentication
 
-Pass credentials to the generated client constructor. Environment variables are read automatically when supported by the target runtime.
+Sign in through the browser with Clerk Authorization Code and S256 Proof Key
+for Code Exchange (PKCE). The command-line interface (CLI) stores Clerk's OAuth
+2.0 token set in protected local storage and uses the access token for
+authenticated requests:
+
+```sh
+dedalus auth login
+dedalus auth status
+dedalus auth status --offline
+dedalus auth logout
+```
+
+Normal resource commands resolve one credential in this order: an explicit
+API-key flag, its environment variable, then the stored browser-login
+OAuth session. Once selected, a rejected credential fails in place and never
+falls back to another source. `--offline` reads only stored status metadata.
+Add `--json` to auth or generated resource commands for structured output that
+excludes secret values.
+
+Browser login defaults to the development environment and also supports the
+configured staging environment. Each OAuth session is restricted to the gateway
+for its configured issuer. Production browser login is not configured in this
+version. See [authentication configuration](./src/auth/README.md#configuration)
+for supported overrides.
+
+Workload credentials may also be supplied explicitly:
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--api-key` | `string \| provider` | - | API key authentication using Bearer token Defaults to DEDALUS_API_KEY. |
-| `--x-api-key` | `string \| provider` | - | API key authentication using X-API-Key header Defaults to DEDALUS_X_API_KEY. |
-| `--bearer-auth` | `string \| provider` | - | Dedalus API key in Authorization: Bearer <key>. Defaults to DEDALUS_BEARER_AUTH. |
+| `--api-key` | `string \| provider` | - | API key authentication using Bearer token. Defaults to `DEDALUS_API_KEY`. |
+| `--x-api-key` | `string \| provider` | - | API key authentication using X-API-Key header. Defaults to `DEDALUS_X_API_KEY`. |
+| `--bearer-auth` | `string \| provider` | - | Reserved for the stored OAuth adapter; direct CLI and environment overrides are rejected. |
 
 Declared schemes:
 
 - `ApiKeyAuth` API key in header `x-api-key`
 - `BearerAuth` bearer token
-- `Bearer` bearer token
 
 <br />
 
@@ -163,3 +200,21 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 - Node.js 20 or newer
 
 Powered by Scalar.
+
+## OAuth request recovery
+
+OAuth commands refresh tokens shortly before expiry. If an HTTP request returns
+401 unexpectedly, the custom client reloads credentials under the lifecycle lock,
+uses a newer token if another process refreshed it, or refreshes once. It retries
+the request once with the same body and idempotency key. Another 401 is returned
+to the caller. API keys, 403 permission denials, and consumed request streams do
+not enter this recovery path. WebSocket reconnection is outside this HTTP retry.
+
+A temporary refresh failure preserves stored credentials so a later command can
+try again. Permanent provider failures are cached for that credential within the
+current process and require signing in again. This does not guarantee recovery
+if a rotated refresh-token response is lost before it can be saved.
+
+Recovery lives in `src/auth/client.ts` and `src/auth/`. The SDK's shared
+request method has one visibility change (`private` to `protected`); Scalar still
+owns request construction, pagination, response parsing, and transient retries.

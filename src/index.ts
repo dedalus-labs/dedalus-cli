@@ -1,6 +1,8 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-import { getProgram } from './commands/index';
+// @custom
+// Assemble authentication around Scalar's generated command tree.
+import { getProgram } from './cli/program.js';
 
 export { getProgram };
 

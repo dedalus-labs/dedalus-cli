@@ -102,6 +102,23 @@ For details about specific commands, use the `--help` flag.
 - `--transform` - Transform the data output using [GJSON syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md)
 - `--transform-error` - Transform the error output using [GJSON syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md)
 
+### Scalar documentation
+
+Repository maintainers can manage the Scalar documentation evaluation through
+the CLI. Run these commands from the Dedalus monorepo, or pass
+`--project-dir /path/to/apps/docs-scalar` explicitly:
+
+```sh
+dedalus docs scalar preview
+dedalus docs scalar preview --port 3100
+dedalus docs scalar check
+dedalus docs scalar publish --preview
+```
+
+The command uses the Scalar CLI pinned by the project through `pnpm exec`.
+Publishing is limited to preview deployments so it cannot cut over the
+production documentation domain.
+
 ### Passing files as arguments
 
 To pass files to your API, you can use the `@myfile.ext` syntax:

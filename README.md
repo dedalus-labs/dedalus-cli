@@ -13,13 +13,10 @@ The full API of this library can be found in [api.md](./api.md).
 - [API Reference](./api.md)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
-- [Streaming](#streaming)
-- [WebSockets](#websockets)
 - [Authentication](#authentication)
 - [Errors](#errors)
 - [Client Options](#client-options)
 - [Retries and Timeouts](#retries-and-timeouts)
-- [Pagination](#pagination)
 - [Helpers](#helpers)
 - [Logging](#logging)
 - [Requirements](#requirements)
@@ -39,24 +36,23 @@ npm install -g dedalus-cli
 
 ```sh
 dedalus [resource] [command] [flags]
-
-dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
-Scalar generates the SDK, resource commands, API reference, and manual pages from
-the DCS OpenAPI input. Handwritten code lives with its feature: `src/auth` owns
-login and credentials, while `src/cli/program.ts` assembles the executable.
+Create a machine with the API defaults and open an interactive SSH shell:
 
-Mark handwritten modules and modifications with `// @custom`, followed by a normal
-comment explaining the intent. Preserve Scalar's generated provenance headers.
-These markers document ownership; they do not exempt code from review or tests.
-Scalar carries edits on `scalar-next` through its three-way merge.
+```sh
+dedalus machines create --connect
+```
 
-The CLI registers nested resources as command words (`machines executions list`).
-Completion reads the assembled command tree so nested resources and auth commands
-stay consistent with help. The SDK owns HTTP, pagination, SSE, and WebSocket
-transports. A small authentication subclass adds bounded OAuth recovery and supplies
-the stored bearer token to Scalar 0.32.3's WebSocket transport.
+Scalar owns the low-level software development kit (SDK), CLI runtime, and its
+generated entry points. The published `dedalus` executable uses the
+Dedalus-owned entry point under `src/custom` and imports Scalar's runtime
+directly. Narrow runtime hooks are maintained on `scalar-next` through Scalar's
+three-way merge; the SDK client and generated entry points remain untouched.
+The resource-command table and API reference are deterministically regenerated
+from `openapi.augmented.json` with `npm run generate:commands`. Keep
+authentication, stored credentials, and other handwritten commands behind the
+`src/custom` boundary.
 
 See the [API reference](./api.md) for every available operation.
 
@@ -90,24 +86,12 @@ man dedalus-completion
 
 <br />
 
-## Streaming
-
-Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
-
-<br />
-
-## WebSockets
-
-WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
-
-<br />
-
 ## Authentication
 
 Sign in through the browser with Clerk Authorization Code and S256 Proof Key
 for Code Exchange (PKCE). The command-line interface (CLI) stores Clerk's OAuth
-2.0 token set in protected local storage and uses the access token for
-authenticated requests:
+2.0 token set in protected local storage. The canonical service-account
+application programming interface (API) key stays on the server:
 
 ```sh
 dedalus auth login
@@ -123,11 +107,11 @@ falls back to another source. `--offline` reads only stored status metadata.
 Add `--json` to auth or generated resource commands for structured output that
 excludes secret values.
 
-Browser login defaults to the development environment and also supports the
-configured staging environment. Each OAuth session is restricted to the gateway
-for its configured issuer. Production browser login is not configured in this
-version. See [authentication configuration](./src/auth/README.md#configuration)
-for supported overrides.
+The checked-in version 1 authentication bundle targets the development Clerk
+application and `https://dev.admin.api.dedaluslabs.ai/dcs`. OAuth sessions are
+accepted only for a Clerk development issuer and are sent only to that exact
+gateway. Production needs its own checked-in issuer, client, and gateway bundle;
+arbitrary HTTPS gateway overrides fail closed.
 
 Workload credentials may also be supplied explicitly:
 
@@ -146,9 +130,7 @@ Declared schemes:
 
 ## Errors
 
-Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
-
-Documented error statuses: `400`, `401`, `403`, `409`, `429`, `500`, `502`, `503`, `default`.
+Non-success responses throw generated API errors. Error objects expose status, headers, response body, and request metadata where the target runtime supports it.
 
 <br />
 
@@ -171,21 +153,13 @@ Generated clients support request timeouts and retry temporary failures such as 
 
 <br />
 
-## Pagination
-
-Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to cap the total number of items returned.
-
-<br />
-
 ## Helpers
 
-- `--format <format>` — output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, `toon`, or `yaml`.
-- `--format-error <format>` — error output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, `toon`, or `yaml`.
-- `--format toon` — token-efficient structured output for AI agents; uniform lists collapse into one header plus a row per item, with a definitive item count.
+- `--format <format>` — output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, or `yaml`.
+- `--format-error <format>` — error output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, or `yaml`.
 - `--transform <path>` and `--transform-error <path>` — dot-path transform for data/error output.
 - `--raw-output`, `-r` — print transformed string values without JSON quotes.
 - `--max-items <count>` — bound iterator, streaming, and WebSocket command output.
-- Errors carry a stable `code` and an actionable `hint` beside the API's own message, and each failure class exits with its own status: `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 <br />
 
@@ -198,23 +172,6 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 ## Requirements
 
 - Node.js 20 or newer
+- OpenSSH (`ssh` and `ssh-keygen`) when using `machines create --connect`
 
 Powered by Scalar.
-
-## OAuth request recovery
-
-OAuth commands refresh tokens shortly before expiry. If an HTTP request returns
-401 unexpectedly, the custom client reloads credentials under the lifecycle lock,
-uses a newer token if another process refreshed it, or refreshes once. It retries
-the request once with the same body and idempotency key. Another 401 is returned
-to the caller. API keys, 403 permission denials, and consumed request streams do
-not enter this recovery path. WebSocket reconnection is outside this HTTP retry.
-
-A temporary refresh failure preserves stored credentials so a later command can
-try again. Permanent provider failures are cached for that credential within the
-current process and require signing in again. This does not guarantee recovery
-if a rotated refresh-token response is lost before it can be saved.
-
-Recovery lives in `src/auth/client.ts` and `src/auth/`. The SDK's shared
-request method has one visibility change (`private` to `protected`); Scalar still
-owns request construction, pagination, response parsing, and transient retries.

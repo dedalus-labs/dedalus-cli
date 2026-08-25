@@ -2,24 +2,19 @@
   "name": "dedalus-cli",
   "version": "0.1.0",
   "description": "Controlplane API for Dedalus Cloud Services (DCS).",
-  "author": "Dedalus",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dedalus-labs/dedalus-cli.git"
-  },
   "type": "module",
   "bin": {
-    "dedalus": "./dist/esm/bin.js"
+    "dedalus": "./dist/esm/custom/bin.js"
   },
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "main": "./dist/cjs/custom/index.js",
+  "module": "./dist/esm/custom/index.js",
+  "types": "./dist/esm/custom/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/esm/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "default": "./dist/esm/index.js"
+      "types": "./dist/esm/custom/index.d.ts",
+      "import": "./dist/esm/custom/index.js",
+      "require": "./dist/cjs/custom/index.js",
+      "default": "./dist/esm/custom/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -31,49 +26,17 @@
   ],
   "man": [
     "./man/dedalus.1",
-    "./man/dedalus-machines-list.1",
-    "./man/dedalus-machines-create.1",
-    "./man/dedalus-machines-retrieve.1",
-    "./man/dedalus-machines-update.1",
-    "./man/dedalus-machines-delete.1",
-    "./man/dedalus-machines-watch.1",
-    "./man/dedalus-machines-sleep.1",
-    "./man/dedalus-machines-wake.1",
-    "./man/dedalus-machines-network-retrieve.1",
-    "./man/dedalus-machines-artifacts-list.1",
-    "./man/dedalus-machines-artifacts-retrieve.1",
-    "./man/dedalus-machines-artifacts-delete.1",
-    "./man/dedalus-machines-ports-list.1",
-    "./man/dedalus-machines-ports-create.1",
-    "./man/dedalus-machines-ports-retrieve.1",
-    "./man/dedalus-machines-ports-delete.1",
-    "./man/dedalus-machines-ssh-list.1",
-    "./man/dedalus-machines-ssh-create.1",
-    "./man/dedalus-machines-ssh-retrieve.1",
-    "./man/dedalus-machines-ssh-delete.1",
-    "./man/dedalus-machines-executions-list.1",
-    "./man/dedalus-machines-executions-create.1",
-    "./man/dedalus-machines-executions-retrieve.1",
-    "./man/dedalus-machines-executions-delete.1",
-    "./man/dedalus-machines-executions-output.1",
-    "./man/dedalus-machines-executions-events.1",
-    "./man/dedalus-machines-terminals-list.1",
-    "./man/dedalus-machines-terminals-create.1",
-    "./man/dedalus-machines-terminals-retrieve.1",
-    "./man/dedalus-machines-terminals-delete.1",
-    "./man/dedalus-machines-terminals-connect.1",
-    "./man/dedalus-networks-retrieve.1",
-    "./man/dedalus-usage-retrieve.1",
-    "./man/dedalus-usage-machine-compute.1",
-    "./man/dedalus-usage-machine-storage.1",
     "./man/dedalus-completion.1"
   ],
   "scripts": {
-    "build": "node --import tsx scripts/prepare-build.ts && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
-    "pack:check": "node --import tsx scripts/check-package.ts",
+    "build": "node scripts/prepare-build.mjs && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
+    "generate:commands": "node scripts/generate-cli-operations.mjs",
+    "generate:check": "node scripts/generate-cli-operations.mjs --check",
+    "scalar:check": "node scripts/check-scalar-boundaries.mjs",
+    "pack:check": "node scripts/check-package.mjs",
     "prepack": "npm run build",
-    "test": "npm run build && node --import tsx --test tests/*.test.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit && tsc -p tsconfig.tests.json && tsc -p tsconfig.tools.json"
+    "test": "npm run generate:check && npm run build && node --test tests/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit"
   },
   "dependencies": {
     "@napi-rs/keyring": "^1.3.0",
@@ -88,16 +51,7 @@
     "@types/node": "^20.17.0",
     "@types/proper-lockfile": "^4.1.4",
     "@types/ws": "^8.5.13",
-    "typescript": "^6.0.0",
-    "tsx": "^4.20.0"
-  },
-  "peerDependencies": {
-    "ws": "^8.18.0"
-  },
-  "peerDependenciesMeta": {
-    "ws": {
-      "optional": true
-    }
+    "typescript": "^6.0.0"
   },
   "license": "Apache-2.0"
 }

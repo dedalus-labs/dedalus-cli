@@ -4,8 +4,7 @@ export { Dedalus as default } from './client.js';
 
 export { type Uploadable, toFile } from './core/uploads';
 export { APIPromise } from './api-promise';
-export { PagePromise } from './core/pagination';
-export { Dedalus, type ClientOptions, type AuthTokenProvider } from './client.js';
+export { Dedalus, type ClientOptions } from './client.js';
 export {
   DedalusError,
   APIError,

@@ -27,27 +27,6 @@ dedalus completion fish | source
 The command completed successfully.
 .TP
 \fB1\fR
-The request failed for an unclassified reason. Reported as error.
-.TP
-\fB2\fR
-The command was invoked incorrectly (missing or invalid arguments).
-.TP
-\fB10\fR
-Authentication or authorization failed (HTTP 401 or 403). Reported as auth\-failed.
-.TP
-\fB11\fR
-The requested resource does not exist (HTTP 404). Reported as not\-found.
-.TP
-\fB12\fR
-The request was rate limited (HTTP 429). Reported as rate\-limited.
-.TP
-\fB13\fR
-The request was rejected (any other HTTP 4xx). Reported as client\-error.
-.TP
-\fB14\fR
-The API failed to handle the request (HTTP 5xx). Reported as server\-error.
-.TP
-\fB15\fR
-The API could not be reached, or the request timed out. Reported as connection\-error.
+A usage error, or the request failed. The error is printed to standard error.
 .SH "SEE ALSO"
 .BR dedalus (1)

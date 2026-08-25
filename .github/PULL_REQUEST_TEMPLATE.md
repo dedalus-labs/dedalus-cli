@@ -1,5 +1,12 @@
 # Pull Request
 
+## Linear Issue
+
+> Use a Linear-recognized reference such as `Closes ENG-123` or `Ref ENG-123`.
+> For incidental work with no issue, write `N/A - <reason>`.
+
+[Delete and type here].
+
 ## Summary
 
 **What:**

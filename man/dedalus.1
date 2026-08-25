@@ -21,10 +21,10 @@ Request timeout in milliseconds.
 Number of retries for retryable failures.
 .TP
 \fB\-\-format\fR \fI<format>\fR
-Output format: auto, json, jsonl, pretty, raw, toon, yaml.
+Output format: auto, json, jsonl, pretty, raw, yaml.
 .TP
 \fB\-\-format\-error\fR \fI<format>\fR
-Error output format: auto, json, jsonl, pretty, raw, toon, yaml.
+Error output format: auto, json, jsonl, pretty, raw, yaml.
 .TP
 \fB\-\-transform\fR \fI<path>\fR
 Dot\-path transform for data output.
@@ -57,110 +57,20 @@ Provider API key for BYOK mode. Can also be set with the DEDALUS_PROVIDER_KEY en
 Model identifier for BYOK provider. Can also be set with the DEDALUS_PROVIDER_MODEL environment variable.
 .SH "COMMANDS"
 .TP
-\fBdedalus machines list\fR
-List machines. See dedalus\-machines\-list(1).
+\fBdedalus machine\-lifecycle\fR
+Create, inspect, update, and operate machines and their artifacts, executions, ports, SSH sessions, and terminals.
 .TP
-\fBdedalus machines create\fR
-Create machine. See dedalus\-machines\-create(1).
+\fBdedalus networks\fR
+Retrieve network details.
 .TP
-\fBdedalus machines retrieve\fR
-Get machine. See dedalus\-machines\-retrieve(1).
+\fBdedalus usage\fR
+Retrieve the usage summary.
 .TP
-\fBdedalus machines update\fR
-Update machine. See dedalus\-machines\-update(1).
+\fBdedalus usage:machines\fR
+List machine compute and storage usage.
 .TP
-\fBdedalus machines delete\fR
-Destroy machine. See dedalus\-machines\-delete(1).
-.TP
-\fBdedalus machines watch\fR
-Watch machine lifecycle status. See dedalus\-machines\-watch(1).
-.TP
-\fBdedalus machines sleep\fR
-Sleep a running machine. See dedalus\-machines\-sleep(1).
-.TP
-\fBdedalus machines wake\fR
-Wake a sleeping machine. See dedalus\-machines\-wake(1).
-.TP
-\fBdedalus machines network retrieve\fR
-Get machine network identity. See dedalus\-machines\-network\-retrieve(1).
-.TP
-\fBdedalus machines artifacts list\fR
-List artifacts. See dedalus\-machines\-artifacts\-list(1).
-.TP
-\fBdedalus machines artifacts retrieve\fR
-Get artifact. See dedalus\-machines\-artifacts\-retrieve(1).
-.TP
-\fBdedalus machines artifacts delete\fR
-Delete artifact. See dedalus\-machines\-artifacts\-delete(1).
-.TP
-\fBdedalus machines ports list\fR
-List ports. See dedalus\-machines\-ports\-list(1).
-.TP
-\fBdedalus machines ports create\fR
-Create port. See dedalus\-machines\-ports\-create(1).
-.TP
-\fBdedalus machines ports retrieve\fR
-Get port. See dedalus\-machines\-ports\-retrieve(1).
-.TP
-\fBdedalus machines ports delete\fR
-Delete port. See dedalus\-machines\-ports\-delete(1).
-.TP
-\fBdedalus machines ssh list\fR
-List SSH sessions. See dedalus\-machines\-ssh\-list(1).
-.TP
-\fBdedalus machines ssh create\fR
-Create SSH session. See dedalus\-machines\-ssh\-create(1).
-.TP
-\fBdedalus machines ssh retrieve\fR
-Get SSH session. See dedalus\-machines\-ssh\-retrieve(1).
-.TP
-\fBdedalus machines ssh delete\fR
-Delete SSH session. See dedalus\-machines\-ssh\-delete(1).
-.TP
-\fBdedalus machines executions list\fR
-List executions. See dedalus\-machines\-executions\-list(1).
-.TP
-\fBdedalus machines executions create\fR
-Create execution. See dedalus\-machines\-executions\-create(1).
-.TP
-\fBdedalus machines executions retrieve\fR
-Get execution. See dedalus\-machines\-executions\-retrieve(1).
-.TP
-\fBdedalus machines executions delete\fR
-Delete execution. See dedalus\-machines\-executions\-delete(1).
-.TP
-\fBdedalus machines executions output\fR
-Get execution output. See dedalus\-machines\-executions\-output(1).
-.TP
-\fBdedalus machines executions events\fR
-List execution events. See dedalus\-machines\-executions\-events(1).
-.TP
-\fBdedalus machines terminals list\fR
-List terminals. See dedalus\-machines\-terminals\-list(1).
-.TP
-\fBdedalus machines terminals create\fR
-Create terminal. See dedalus\-machines\-terminals\-create(1).
-.TP
-\fBdedalus machines terminals retrieve\fR
-Get terminal. See dedalus\-machines\-terminals\-retrieve(1).
-.TP
-\fBdedalus machines terminals delete\fR
-Delete terminal. See dedalus\-machines\-terminals\-delete(1).
-.TP
-\fBdedalus machines terminals connect\fR
-Connect to terminal WebSocket stream. See dedalus\-machines\-terminals\-connect(1).
-.TP
-\fBdedalus networks retrieve\fR
-Get network details. See dedalus\-networks\-retrieve(1).
-.TP
-\fBdedalus usage retrieve\fR
-Get usage summary. See dedalus\-usage\-retrieve(1).
-.TP
-\fBdedalus usage machine\-compute\fR
-List machine compute usage breakdown. See dedalus\-usage\-machine\-compute(1).
-.TP
-\fBdedalus usage machine\-storage\fR
-List machine storage usage breakdown. See dedalus\-usage\-machine\-storage(1).
+\fBdedalus auth\fR
+Manage the stored Dedalus CLI login.
 .TP
 \fBdedalus completion\fR
 Print a shell completion script. See dedalus\-completion(1).
@@ -199,25 +109,4 @@ Fallback for \-\-provider\-model when the flag is not passed.
 The command completed successfully.
 .TP
 \fB1\fR
-The request failed for an unclassified reason. Reported as error.
-.TP
-\fB2\fR
-The command was invoked incorrectly (missing or invalid arguments).
-.TP
-\fB10\fR
-Authentication or authorization failed (HTTP 401 or 403). Reported as auth\-failed.
-.TP
-\fB11\fR
-The requested resource does not exist (HTTP 404). Reported as not\-found.
-.TP
-\fB12\fR
-The request was rate limited (HTTP 429). Reported as rate\-limited.
-.TP
-\fB13\fR
-The request was rejected (any other HTTP 4xx). Reported as client\-error.
-.TP
-\fB14\fR
-The API failed to handle the request (HTTP 5xx). Reported as server\-error.
-.TP
-\fB15\fR
-The API could not be reached, or the request timed out. Reported as connection\-error.
+A usage error, or the request failed. The error is printed to standard error.

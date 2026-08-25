@@ -1,282 +1,225 @@
 # Dedalus CLI API
 
-Complete reference of every operation, grouped by resource. See [the README](./README.md) for usage and configuration.
+Complete reference of every operation, grouped by resource. See [the README](./README.md) for usage and authentication.
 
-## Contents
+## machine-lifecycle
 
-- [`Machines`](#machines)
-  - [List machines](#list-machines)
-  - [Create machine](#create-machine)
-  - [Get machine](#get-machine)
-  - [Update machine](#update-machine)
-  - [Destroy machine](#destroy-machine)
-  - [Watch machine lifecycle status](#watch-machine-lifecycle-status)
-  - [Sleep a running machine](#sleep-a-running-machine)
-  - [Wake a sleeping machine](#wake-a-sleeping-machine)
-  - [`Machines Network`](#machines-network)
-    - [Get machine network identity](#get-machine-network-identity)
-  - [`Machines Artifacts`](#machines-artifacts)
-    - [List artifacts](#list-artifacts)
-    - [Get artifact](#get-artifact)
-    - [Delete artifact](#delete-artifact)
-  - [`Machines Ports`](#machines-ports)
-    - [List ports](#list-ports)
-    - [Create port](#create-port)
-    - [Get port](#get-port)
-    - [Delete port](#delete-port)
-  - [`Machines Ssh`](#machines-ssh)
-    - [List SSH sessions](#list-ssh-sessions)
-    - [Create SSH session](#create-ssh-session)
-    - [Get SSH session](#get-ssh-session)
-    - [Delete SSH session](#delete-ssh-session)
-  - [`Machines Executions`](#machines-executions)
-    - [List executions](#list-executions)
-    - [Create execution](#create-execution)
-    - [Get execution](#get-execution)
-    - [Delete execution](#delete-execution)
-    - [Get execution output](#get-execution-output)
-    - [List execution events](#list-execution-events)
-  - [`Machines Terminals`](#machines-terminals)
-    - [List terminals](#list-terminals)
-    - [Create terminal](#create-terminal)
-    - [Get terminal](#get-terminal)
-    - [Delete terminal](#delete-terminal)
-    - [Connect to terminal WebSocket stream](#connect-to-terminal-websocket-stream)
-- [`Networks`](#networks)
-  - [Get network details](#get-network-details)
-- [`Usage`](#usage)
-  - [Get usage summary](#get-usage-summary)
-  - [List machine compute usage breakdown](#list-machine-compute-usage-breakdown)
-  - [List machine storage usage breakdown](#list-machine-storage-usage-breakdown)
+### `dedalus machine-lifecycle list`
 
-## `Machines`
+`GET /v1/machines` — List machines
 
-### List machines
+Flags: `--x-dedalus-org-id`, `--limit`, `--cursor`
 
-```sh
-dedalus machines list --api-key "$DEDALUS_API_KEY" --max-items 10
-```
+### `dedalus machine-lifecycle create`
 
-### Create machine
+`POST /v1/machines` — Create machine
 
-```sh
-dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
-```
+Flags: `--x-dedalus-org-id`, `--idempotency-key` (required), `--autosleep`, `--memory-mib` (required), `--storage-gib` (required), `--vcpu` (required)
 
-### Get machine
+### `dedalus machine-lifecycle delete`
 
-```sh
-dedalus machines retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id'
-```
+`DELETE /v1/machines/{machine_id}` — Destroy machine
 
-### Update machine
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required)
 
-```sh
-dedalus machines update --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id'
-```
+### `dedalus machine-lifecycle retrieve`
 
-### Destroy machine
+`GET /v1/machines/{machine_id}` — Get machine
 
-```sh
-dedalus machines delete --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id'
-```
+Flags: `--x-dedalus-org-id`, `--machine-id` (required)
 
-### Watch machine lifecycle status
+### `dedalus machine-lifecycle patch`
+
+`PATCH /v1/machines/{machine_id}` — Update machine
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required), `--autosleep`, `--memory-mib`, `--storage-gib`, `--vcpu`
+
+### `dedalus machine-lifecycle list-artifacts`
+
+`GET /v1/machines/{machine_id}/artifacts` — List artifacts
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--limit`, `--cursor`
+
+### `dedalus machine-lifecycle delete-artifact`
+
+`DELETE /v1/machines/{machine_id}/artifacts/{artifact_id}` — Delete artifact
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--artifact-id` (required)
+
+### `dedalus machine-lifecycle retrieve-artifact`
+
+`GET /v1/machines/{machine_id}/artifacts/{artifact_id}` — Get artifact
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--artifact-id` (required)
+
+### `dedalus machine-lifecycle list-executions`
+
+`GET /v1/machines/{machine_id}/executions` — List executions
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--limit`, `--cursor`
+
+### `dedalus machine-lifecycle create-execution`
+
+`POST /v1/machines/{machine_id}/executions` — Create execution
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required), `--command` (required), `--cwd`, `--env`, `--stdin`, `--timeout-ms`
+
+### `dedalus machine-lifecycle delete-execution`
+
+`DELETE /v1/machines/{machine_id}/executions/{execution_id}` — Delete execution
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--execution-id` (required)
+
+### `dedalus machine-lifecycle retrieve-execution`
+
+`GET /v1/machines/{machine_id}/executions/{execution_id}` — Get execution
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--execution-id` (required)
+
+### `dedalus machine-lifecycle list-execution-events`
+
+`GET /v1/machines/{machine_id}/executions/{execution_id}/events` — List execution events
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--execution-id` (required), `--limit`, `--cursor`
+
+### `dedalus machine-lifecycle list-execution-output`
+
+`GET /v1/machines/{machine_id}/executions/{execution_id}/output` — Get execution output
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--execution-id` (required)
+
+### `dedalus machine-lifecycle get-network`
+
+`GET /v1/machines/{machine_id}/network` — Get machine network identity
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required)
+
+### `dedalus machine-lifecycle list-ports`
+
+`GET /v1/machines/{machine_id}/ports` — List ports
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--limit`, `--cursor`
+
+### `dedalus machine-lifecycle create-port`
+
+`POST /v1/machines/{machine_id}/ports` — Create port
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required), `--port` (required), `--protocol`
+
+### `dedalus machine-lifecycle delete-port`
+
+`DELETE /v1/machines/{machine_id}/ports/{port_id}` — Delete port
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--port-id` (required)
+
+### `dedalus machine-lifecycle retrieve-port`
+
+`GET /v1/machines/{machine_id}/ports/{port_id}` — Get port
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--port-id` (required)
+
+### `dedalus machine-lifecycle sleep`
+
+`POST /v1/machines/{machine_id}/sleep` — Sleep a running machine
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required)
+
+### `dedalus machine-lifecycle list-ssh-sessions`
+
+`GET /v1/machines/{machine_id}/ssh` — List SSH sessions
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--limit`, `--cursor`
+
+### `dedalus machine-lifecycle create-ssh-session`
+
+`POST /v1/machines/{machine_id}/ssh` — Create SSH session
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required), `--public-key` (required)
+
+### `dedalus machine-lifecycle delete-ssh-session`
+
+`DELETE /v1/machines/{machine_id}/ssh/{session_id}` — Delete SSH session
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--session-id` (required)
+
+### `dedalus machine-lifecycle retrieve-ssh-session`
+
+`GET /v1/machines/{machine_id}/ssh/{session_id}` — Get SSH session
+
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--session-id` (required)
+
+### `dedalus machine-lifecycle watch-status`
+
+`GET /v1/machines/{machine_id}/status/stream` — Watch machine lifecycle status
 
 Streams machine lifecycle updates over Server-Sent Events. Each `status` event contains a full `LifecycleResponse` payload. The stream closes after the machine reaches its current desired state.
 
-```sh
-dedalus machines watch --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --max-items 10
-```
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--last-event-id`
 
-### Sleep a running machine
+### `dedalus machine-lifecycle list-terminals`
 
-```sh
-dedalus machines sleep --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id'
-```
+`GET /v1/machines/{machine_id}/terminals` — List terminals
 
-### Wake a sleeping machine
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--limit`, `--cursor`
 
-```sh
-dedalus machines wake --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id'
-```
+### `dedalus machine-lifecycle create-terminal`
 
-### `Machines Network`
+`POST /v1/machines/{machine_id}/terminals` — Create terminal
 
-#### Get machine network identity
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required), `--cwd`, `--env`, `--height` (required), `--shell`, `--width` (required)
 
-```sh
-dedalus machines network retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id'
-```
+### `dedalus machine-lifecycle delete-terminal`
 
-### `Machines Artifacts`
+`DELETE /v1/machines/{machine_id}/terminals/{terminal_id}` — Delete terminal
 
-#### List artifacts
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--terminal-id` (required)
 
-```sh
-dedalus machines artifacts list --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --max-items 10
-```
+### `dedalus machine-lifecycle retrieve-terminal`
 
-#### Get artifact
+`GET /v1/machines/{machine_id}/terminals/{terminal_id}` — Get terminal
 
-```sh
-dedalus machines artifacts retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --artifact-id 'artifact_id'
-```
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--terminal-id` (required)
 
-#### Delete artifact
+### `dedalus machine-lifecycle connect-terminal`
 
-```sh
-dedalus machines artifacts delete --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --artifact-id 'artifact_id'
-```
-
-### `Machines Ports`
-
-#### List ports
-
-```sh
-dedalus machines ports list --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --max-items 10
-```
-
-#### Create port
-
-```sh
-dedalus machines ports create --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --port '0'
-```
-
-#### Get port
-
-```sh
-dedalus machines ports retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --port-id 'port_id'
-```
-
-#### Delete port
-
-```sh
-dedalus machines ports delete --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --port-id 'port_id'
-```
-
-### `Machines Ssh`
-
-#### List SSH sessions
-
-```sh
-dedalus machines ssh list --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --max-items 10
-```
-
-#### Create SSH session
-
-```sh
-dedalus machines ssh create --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --public-key ''
-```
-
-#### Get SSH session
-
-```sh
-dedalus machines ssh retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --session-id 'session_id'
-```
-
-#### Delete SSH session
-
-```sh
-dedalus machines ssh delete --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --session-id 'session_id'
-```
-
-### `Machines Executions`
-
-#### List executions
-
-```sh
-dedalus machines executions list --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --max-items 10
-```
-
-#### Create execution
-
-```sh
-dedalus machines executions create --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --command '[""]'
-```
-
-#### Get execution
-
-```sh
-dedalus machines executions retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --execution-id 'execution_id'
-```
-
-#### Delete execution
-
-```sh
-dedalus machines executions delete --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --execution-id 'execution_id'
-```
-
-#### Get execution output
-
-```sh
-dedalus machines executions output --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --execution-id 'execution_id'
-```
-
-#### List execution events
-
-```sh
-dedalus machines executions events --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --execution-id 'execution_id' --max-items 10
-```
-
-### `Machines Terminals`
-
-#### List terminals
-
-```sh
-dedalus machines terminals list --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --max-items 10
-```
-
-#### Create terminal
-
-```sh
-dedalus machines terminals create --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --height '0' --width '0'
-```
-
-#### Get terminal
-
-```sh
-dedalus machines terminals retrieve --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --terminal-id 'terminal_id'
-```
-
-#### Delete terminal
-
-```sh
-dedalus machines terminals delete --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --terminal-id 'terminal_id'
-```
-
-#### Connect to terminal WebSocket stream
+`GET /v1/machines/{machine_id}/terminals/{terminal_id}/stream` — Connect to terminal WebSocket stream
 
 Upgrades to a WebSocket connection for interactive terminal I/O. Clients send JSON `TerminalClientEvent` messages and receive JSON `TerminalServerEvent` messages. Terminal byte streams are base64-encoded inside `input` and `output` events; `resize` events use integer `width` and `height` fields.
 
-```sh
-dedalus machines terminals connect --api-key "$DEDALUS_API_KEY" --machine-id 'machine_id' --terminal-id 'terminal_id' --send '{"data":"","type":"input"}' --max-items 10
-```
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--terminal-id` (required), `--send`
 
-## `Networks`
+### `dedalus machine-lifecycle wake`
 
-### Get network details
+`POST /v1/machines/{machine_id}/wake` — Wake a sleeping machine
 
-```sh
-dedalus networks retrieve --api-key "$DEDALUS_API_KEY" --network-id 'network_id'
-```
+Flags: `--x-dedalus-org-id`, `--machine-id` (required), `--idempotency-key` (required)
 
-## `Usage`
+## networks
 
-### Get usage summary
+### `dedalus networks retrieve`
 
-```sh
-dedalus usage retrieve --api-key "$DEDALUS_API_KEY"
-```
+`GET /v1/networks/{network_id}` — Get network details
 
-### List machine compute usage breakdown
+Flags: `--x-dedalus-org-id`, `--network-id` (required)
 
-```sh
-dedalus usage machine-compute --api-key "$DEDALUS_API_KEY"
-```
+## usage
 
-### List machine storage usage breakdown
+### `dedalus usage list`
 
-```sh
-dedalus usage machine-storage --api-key "$DEDALUS_API_KEY"
-```
+`GET /v1/usage` — Get usage summary
+
+Flags: `--period-start`
+
+## usage:machines
+
+### `dedalus usage:machines list-compute-usage`
+
+`GET /v1/usage/machines/compute` — List machine compute usage breakdown
+
+Flags: `--period-start`, `--period-end`, `--machine-id`, `--granularity`
+
+### `dedalus usage:machines list-storage-usage`
+
+`GET /v1/usage/machines/storage` — List machine storage usage breakdown
+
+Flags: `--period-start`, `--period-end`, `--machine-id`

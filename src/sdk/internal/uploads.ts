@@ -18,9 +18,9 @@ export const checkFileSupport = () => {
       typeof process?.versions?.node === 'string' && parseInt(process.versions.node.split('.')) < 20;
     throw new Error(
       '`File` is not defined as a global, which is required for file uploads.' +
-        (isOldNode
-          ? " Update to Node 20 LTS or newer, or set `globalThis.File` to `import('node:buffer').File`."
-          : ''),
+        (isOldNode ?
+          " Update to Node 20 LTS or newer, or set `globalThis.File` to `import('node:buffer').File`."
+        : ''),
     );
   }
 };
@@ -109,12 +109,9 @@ function supportsFormData(fetchObject: Dedalus | Fetch): Promise<boolean> {
       // exists, so serializing an already-provided File/Blob never triggers an extra fetch (which would
       // otherwise show up as a spurious request to `data:,` before the real API call).
       const FetchResponse = (
-        'Response' in fetch
-          ? fetch.Response
-          : typeof Response !== 'undefined'
-            ? Response
-            : (await fetch('data:,')).constructor
-      ) as typeof Response;
+        'Response' in fetch ? fetch.Response
+        : typeof Response !== 'undefined' ? Response
+        : (await fetch('data:,')).constructor) as typeof Response;
       const data = new FormData();
       if (data.toString() === (await new FetchResponse(data).text())) {
         return false;

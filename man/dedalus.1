@@ -21,10 +21,10 @@ Request timeout in milliseconds.
 Number of retries for retryable failures.
 .TP
 \fB\-\-format\fR \fI<format>\fR
-Output format: auto, json, jsonl, pretty, raw, yaml.
+Output format: auto, json, jsonl, pretty, raw, toon, yaml.
 .TP
 \fB\-\-format\-error\fR \fI<format>\fR
-Error output format: auto, json, jsonl, pretty, raw, yaml.
+Error output format: auto, json, jsonl, pretty, raw, toon, yaml.
 .TP
 \fB\-\-transform\fR \fI<path>\fR
 Dot\-path transform for data output.
@@ -94,4 +94,25 @@ Fallback for \-\-provider\-model when the flag is not passed.
 The command completed successfully.
 .TP
 \fB1\fR
-A usage error, or the request failed. The error is printed to standard error.
+The request failed for an unclassified reason. Reported as error.
+.TP
+\fB2\fR
+The command was invoked incorrectly (missing or invalid arguments).
+.TP
+\fB10\fR
+Authentication or authorization failed (HTTP 401 or 403). Reported as auth\-failed.
+.TP
+\fB11\fR
+The requested resource does not exist (HTTP 404). Reported as not\-found.
+.TP
+\fB12\fR
+The request was rate limited (HTTP 429). Reported as rate\-limited.
+.TP
+\fB13\fR
+The request was rejected (any other HTTP 4xx). Reported as client\-error.
+.TP
+\fB14\fR
+The API failed to handle the request (HTTP 5xx). Reported as server\-error.
+.TP
+\fB15\fR
+The API could not be reached, or the request timed out. Reported as connection\-error.

@@ -67,7 +67,7 @@ const getPlatformProperties = (): PlatformProperties => {
       'X-Scalar-Arch': normalizeArch(Deno.build.arch),
       'X-Scalar-Runtime': 'deno',
       'X-Scalar-Runtime-Version':
-        typeof Deno.version === 'string' ? Deno.version : Deno.version?.deno ?? 'unknown',
+        typeof Deno.version === 'string' ? Deno.version : (Deno.version?.deno ?? 'unknown'),
     };
   }
   if (typeof EdgeRuntime !== 'undefined') {

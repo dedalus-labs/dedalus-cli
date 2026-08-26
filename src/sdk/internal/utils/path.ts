@@ -60,7 +60,9 @@ export const createPathTagFunction = (pathEncoder = encodeURIPath) =>
       // Reserved params keep `/` (file-path-like values); everything else uses the default encoder.
       const isReserved = param instanceof ReservedPathParam;
       const value = isReserved ? param.value : param;
-      let encoded = (postPath ? encodeURIComponent : isReserved ? encodeURIPathReserved : pathEncoder)('' + value);
+      let encoded = (postPath ? encodeURIComponent : isReserved ? encodeURIPathReserved : pathEncoder)(
+        '' + value,
+      );
       if (
         index !== params.length &&
         (value == null ||

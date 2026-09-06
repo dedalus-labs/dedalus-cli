@@ -118,6 +118,7 @@ func init() {
 					&machinesSleep,
 					&machinesWake,
 					&machinesWatch,
+					&machinesWait,
 				},
 			},
 			{

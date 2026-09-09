@@ -36,6 +36,8 @@ import {
   status,
 } from './auth/workflow.js'
 
+import { recoverableBearer } from './auth/recovery.js'
+
 const authCommandName = 'auth'
 const completionCommandName = 'completion'
 const defaultClerkIssuer = 'https://neat-gator-21.clerk.accounts.dev'
@@ -321,7 +323,7 @@ const installCredentialInjection = ({
         const gatewayURL = cliOAuthGatewayURL(environment, flags.baseUrl)
         const accessToken = await accessTokenForCommand(credentialStore(), authProvider())
         setCommandOption(action, 'baseUrl', gatewayURL)
-        setCredentialOptions(action, { apiKey: null, xApiKey: null, bearerAuth: accessToken })
+        setCredentialOptions(action, { apiKey: null, xApiKey: null, bearerAuth: await recoverableBearer(accessToken, credentialStore(), authProvider()) })
       } else if (selected.transport === 'bearer') {
         setCredentialOptions(action, { apiKey: selected.value, xApiKey: null, bearerAuth: null })
       } else {

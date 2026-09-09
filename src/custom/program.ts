@@ -5,7 +5,7 @@ import type { Command } from 'commander'
 import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime.js'
 import { completions } from '../cli/completions.js'
 import { addDedalusCommands, formatDedalusError } from './commands.js'
-import { CommandClient } from '../commands/client.js'
+import { AuthenticatedCommandClient as CommandClient } from './client.js'
 import { operationSpecs } from '../commands/operations.generated.js'
 
 const clientOptions = [

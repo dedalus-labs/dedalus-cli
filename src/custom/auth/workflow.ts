@@ -7,7 +7,7 @@
 
 import type { CredentialResolutionOptions, CredentialStore, ResolvedCredential } from './credentials.js'
 import { CredentialStorageError, resolveCredential } from './credentials.js'
-import type { AuthProvider, OAuthSession, OAuthSessionMetadata } from './types.js'
+import { AuthProviderError, type AuthProvider, type OAuthSession, type OAuthSessionMetadata } from './types.js'
 import { oauthSessionMetadata } from './types.js'
 
 const refreshSkewMs = 60 * 1000
@@ -126,6 +126,26 @@ export const logout = async (
   return { status: 'logged_out', revocationConfirmed }
 })
 
+/** Recover a rejected token under the same lock used by proactive refresh. */
+export const recoverRejectedAccessToken = async (
+  store: CredentialStore,
+  provider: AuthProvider,
+  rejectedToken: string,
+  identity: Pick<OAuthSession, 'userId' | 'organizationId'>,
+): Promise<string> => store.withLifecycleLock(async () => {
+  const session = await requireStoredSession(store)
+  requireProviderBinding(session, provider)
+  if (session.userId !== identity.userId || session.organizationId !== identity.organizationId) {
+    throw new CLIAuthWorkflowError('cli_session_identity_changed')
+  }
+  if (session.accessToken !== rejectedToken && session.accessTokenExpiresAt > Date.now() + refreshSkewMs) {
+    return session.accessToken
+  }
+  return (await refreshSession(store, provider, session)).accessToken
+})
+
+const permanentFailures = new WeakMap<CredentialStore, { token: string; error: AuthProviderError }>()
+
 const currentSession = async (
   store: CredentialStore,
   provider: AuthProvider,
@@ -135,7 +155,26 @@ const currentSession = async (
   requireProviderBinding(session, provider)
   if (session.accessTokenExpiresAt > now() + refreshSkewMs) return session
 
-  const refreshed = await provider.refresh(session)
+  return refreshSession(store, provider, session)
+})
+
+const refreshSession = async (
+  store: CredentialStore,
+  provider: AuthProvider,
+  session: OAuthSession,
+): Promise<OAuthSession> => {
+  const previous = permanentFailures.get(store)
+  if (previous?.token === session.refreshToken) throw previous.error
+  let refreshed: OAuthSession
+  try {
+    refreshed = await provider.refresh(session)
+  } catch (error) {
+    if (error instanceof AuthProviderError && error.stage === 'provider' &&
+      ['invalid_grant', 'refresh_token_expired', 'refresh_token_reused', 'refresh_token_invalidated'].includes(error.code)) {
+      permanentFailures.set(store, { token: session.refreshToken, error })
+    }
+    throw error
+  }
   requireProviderBinding(refreshed, provider)
   if (
     refreshed.userId !== session.userId ||
@@ -148,8 +187,9 @@ const currentSession = async (
   } catch (error) {
     throw new CLIAuthWorkflowError('cli_credential_store_failed', { cause: error })
   }
+  permanentFailures.delete(store)
   return refreshed
-})
+}
 
 const requireStoredSession = async (
   store: CredentialStore,

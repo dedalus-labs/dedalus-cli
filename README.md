@@ -209,3 +209,21 @@ override must match that gateway; a direct DCS URL is for API-key authentication
 The staging Admin deployment must have CLI auth enabled with its Clerk client ID
 and secret configured. Missing credentials or cross-environment endpoints fail
 closed. This configuration does not enable any server feature flags.
+
+### OAuth request recovery
+
+OAuth commands refresh tokens shortly before expiry. If an HTTP request returns
+401 unexpectedly, the custom client reloads credentials under the lifecycle lock,
+uses a newer token if another process refreshed it, or refreshes once. It retries
+the request once with the same body and idempotency key. Another 401 is returned
+to the caller. API keys, 403 permission denials, and consumed request streams do
+not enter this recovery path. WebSocket reconnection is outside this HTTP retry.
+
+A temporary refresh failure preserves stored credentials so a later command can
+try again. Permanent provider failures are cached for that credential within the
+current process and require signing in again. This does not guarantee recovery
+if a rotated refresh-token response is lost before it can be saved.
+
+Recovery lives in `src/custom/client.ts` and `src/custom/auth/`. Scalar's SDK is
+called directly and remains unchanged. Verify these helpers on the next Scalar
+platform regeneration before release.

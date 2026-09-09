@@ -102,7 +102,7 @@ test('invariant nested generated resource names cannot bypass credential injecti
     })
 
     await program.parseAsync(['node', 'dedalus', 'resources', nestedName, 'get'])
-    assert.equal(options.bearerAuth, 'oauth-access-token')
+    assert.equal(options.bearerAuth(), 'oauth-access-token')
     assert.equal(options.baseUrl, 'https://dev.admin.api.dedaluslabs.ai/dcs')
   }
 })
@@ -190,7 +190,7 @@ test('invariant generated commands receive stored OAuth only as bearerAuth', asy
   await program.parseAsync(['node', 'dedalus', 'machines'])
   assert.equal(options.apiKey, null)
   assert.equal(options.xApiKey, null)
-  assert.equal(options.bearerAuth, 'oauth-access-token')
+  assert.equal(options.bearerAuth(), 'oauth-access-token')
   assert.equal(options.baseUrl, 'https://dev.admin.api.dedaluslabs.ai/dcs')
 })
 

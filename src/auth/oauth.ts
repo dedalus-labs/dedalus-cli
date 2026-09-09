@@ -27,6 +27,7 @@ import {
   type Deferred,
 } from './oauth-loopback.js'
 import { validIssuer, validSignInURL } from './oauth-configuration.js'
+import { oauthCallbackPage } from './oauth-page.js'
 import type { AuthProvider, OAuthSession } from './types.js'
 
 export {
@@ -287,7 +288,7 @@ const handleOAuthCallback = (
     server,
     state,
     response,
-    'Dedalus CLI login received. You can close this window.',
+    'Authorization received.',
     code,
   )
 }
@@ -332,9 +333,12 @@ const callbackURL = (request: IncomingMessage, response: ServerResponse): URL | 
 const writeCallbackResponse = (response: ServerResponse, status: number, message: string): void => {
   response.writeHead(status, {
     'Cache-Control': 'no-store',
-    'Content-Type': 'text/plain; charset=utf-8',
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+    'Referrer-Policy': 'no-referrer',
+    'X-Content-Type-Options': 'nosniff',
   })
-  response.end(message)
+  response.end(oauthCallbackPage(message))
 }
 
 const settleCallback = (state: CallbackState): void => {

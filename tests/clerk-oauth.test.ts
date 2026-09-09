@@ -39,7 +39,15 @@ const finishAuthorization = async (attempt: ClerkOAuthAttempt, authorization: UR
   )
   const response = await fetch(callback)
   assert.equal(response.status, 200)
-  assert.match(await response.text(), /close this window/u)
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8')
+  assert.equal(response.headers.get('cache-control'), 'no-store')
+  const page = await response.text()
+  assert.match(page, /<!doctype html>/u)
+  assert.match(page, /Authorization received\./u)
+  assert.match(page, /Return to your terminal to check the login result/u)
+  assert.match(page, /close this window/u)
+  assert(!page.includes('authorization-code'))
+  assert(!page.includes(callback.searchParams.get('state') ?? assert.fail('Missing state')))
 }
 
 test('invariant PKCE uses the RFC 7636 S256 transform', () => {
@@ -276,7 +284,7 @@ test('invariant OAuth provider denial cannot reach token exchange', async () => 
   const authorization = new URL(attempt.authorizationURL)
   const callback = new URL(attempt.redirectURI)
   callback.searchParams.set('error', 'access_denied')
-  callback.searchParams.set('error_description', 'raw provider detail must not escape')
+  callback.searchParams.set('error_description', '<script>providerDetail()</script>')
   callback.searchParams.set('iss', authorization.origin)
   callback.searchParams.set(
     'state',
@@ -284,7 +292,12 @@ test('invariant OAuth provider denial cannot reach token exchange', async () => 
   )
 
   const response = await fetch(callback)
-  await response.text()
+  const page = await response.text()
+  assert.equal(response.status, 400)
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8')
+  assert.match(page, /Login was not completed/u)
+  assert(!page.includes('providerDetail'))
+  assert(!page.includes('Authorization received'))
 
   await assert.rejects(
     attempt.complete(),

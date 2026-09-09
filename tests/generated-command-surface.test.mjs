@@ -37,7 +37,7 @@ const listen = async (server) => {
 }
 
 test('generated command table covers every OpenAPI operation', async () => {
-  const source = JSON.parse(await readFile(new URL('../openapi.augmented.json', import.meta.url), 'utf8'))
+  const source = JSON.parse(await readFile(new URL('../spec/dcs.openapi.json', import.meta.url), 'utf8'))
   const methods = new Set(['get', 'post', 'put', 'patch', 'delete'])
   const operationIDs = Object.values(source.paths).flatMap((path) =>
     Object.entries(path).filter(([method]) => methods.has(method)).map(([, operation]) => operation.operationId),
@@ -145,7 +145,7 @@ test('required generated flags fail before making a request', async () => {
   await assert.rejects(
     runCLI(['--api-key', 'test-token', 'machine-lifecycle', 'retrieve']),
     (error) => {
-      assert.equal(error.code, 1)
+      assert.equal(error.code, 2)
       assert.match(error.stderr, /missing required value 'machine-id'/u)
       return true
     },

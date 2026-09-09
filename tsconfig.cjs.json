@@ -2,10 +2,7 @@
   "compilerOptions": {
     "target": "ES2023",
     "module": "CommonJS",
-    "lib": [
-      "ES2023",
-      "DOM"
-    ],
+    "lib": ["ES2023", "DOM"],
     "rootDir": "src",
     "outDir": "./dist/cjs",
     "declaration": true,
@@ -16,11 +13,7 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

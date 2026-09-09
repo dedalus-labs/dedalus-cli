@@ -50,7 +50,8 @@ Dedalus-owned entry point under `src/custom` and imports Scalar's runtime
 directly. Narrow runtime hooks are maintained on `scalar-next` through Scalar's
 three-way merge; the SDK client and generated entry points remain untouched.
 The resource-command table and API reference are deterministically regenerated
-from `openapi.augmented.json` with `npm run generate:commands`. Keep
+from the Dedalus-owned `spec/dcs.openapi.json` with `npm run generate:commands`.
+See [the input contract](./spec/README.md) before updating that snapshot. Keep
 authentication, stored credentials, and other handwritten commands behind the
 `src/custom` boundary.
 
@@ -130,7 +131,7 @@ Declared schemes:
 
 ## Errors
 
-Non-success responses throw generated API errors. Error objects expose status, headers, response body, and request metadata where the target runtime supports it.
+Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 <br />
 
@@ -155,11 +156,13 @@ Generated clients support request timeouts and retry temporary failures such as 
 
 ## Helpers
 
-- `--format <format>` — output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, or `yaml`.
-- `--format-error <format>` — error output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, or `yaml`.
+- `--format <format>` — output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, `toon`, or `yaml`.
+- `--format-error <format>` — error output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, `toon`, or `yaml`.
+- `--format toon` — token-efficient structured output for AI agents; uniform lists collapse into one header plus a row per item, with a definitive item count.
 - `--transform <path>` and `--transform-error <path>` — dot-path transform for data/error output.
 - `--raw-output`, `-r` — print transformed string values without JSON quotes.
 - `--max-items <count>` — bound iterator, streaming, and WebSocket command output.
+- Errors carry a stable `code` and an actionable `hint` beside the API's own message, and each failure class exits with its own status: `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 <br />
 
@@ -175,3 +178,17 @@ Generated clients support request timeouts and retry temporary failures such as 
 - OpenSSH (`ssh` and `ssh-keygen`) when using `machines create --connect`
 
 Powered by Scalar.
+
+## Regeneration and release verification
+
+Update customization branches against `scalar-next` before merging. Resolve runtime
+conflicts by preserving both Scalar changes and the tested auth hooks; never replace
+the generated runtime with a copy under `src/custom`. Run `npm test`,
+`npm run typecheck`, `npm run scalar:check`, and `npm run pack:check` on the
+combined tree. The boundary check is a customization check, not a substitute for
+running tests after a Scalar build.
+
+The custom executable receives its version from `package.json` during every build.
+Review the refreshed release PR only after auth and dependent commands are on
+`scalar-next`; verify its built executable reports the release package version.
+A real Scalar dashboard rebuild is still required to verify platform regeneration.

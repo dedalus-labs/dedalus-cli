@@ -10,6 +10,17 @@ const protectedPaths = [
   'src/sdk',
 ]
 
+// Release Please changes only these marked version values during promotion.
+const implementation = (path, source) => {
+  if (path === 'src/sdk/version.ts') {
+    source = source.replace(/^(export const VERSION = )(['"])[^'"\n]+\2(;? \/\/ x-release-please-version)$/mu, '$1"VERSION"$3')
+  }
+  if (path === 'src/commands/index.ts') {
+    source = source.replace(/^(    version: )(['"])[^'"\n]+\2(, \/\/ x-release-please-version)$/mu, '$1"VERSION"$3')
+  }
+  return source.trimEnd()
+}
+
 const base = process.env.SCALAR_BASE_REF ?? 'origin/scalar-next'
 let changed
 try {
@@ -19,7 +30,7 @@ try {
   changed = candidates.filter((path) => {
     try {
       const baseline = execFileSync('git', ['show', `${base}:${path}`], { encoding: 'utf8' })
-      return baseline.trimEnd() !== readFileSync(path, 'utf8').trimEnd()
+      return implementation(path, baseline) !== implementation(path, readFileSync(path, 'utf8'))
     } catch {
       return true
     }

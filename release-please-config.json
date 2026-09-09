@@ -2,10 +2,7 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "extra-files": [
-        "src/commands/index.ts",
-        "src/sdk/version.ts"
-      ]
+      "extra-files": ["src/commands/index.ts", "src/sdk/version.ts"]
     }
   },
   "bump-minor-pre-major": true,

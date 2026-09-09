@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
-const specification = JSON.parse(readFileSync(resolve(root, 'openapi.augmented.json'), 'utf8'))
+const specification = JSON.parse(readFileSync(resolve(root, 'spec/dcs.openapi.json'), 'utf8'))
 const outputPath = resolve(root, 'src/commands/operations.generated.ts')
 const documentationPath = resolve(root, 'api.md')
 
@@ -95,7 +95,7 @@ for (const [path, pathItem] of Object.entries(specification.paths ?? {})) {
   }
 }
 
-const banner = "// File generated from openapi.augmented.json by scripts/generate-cli-operations.mjs.\n"
+const banner = "// File generated from spec/dcs.openapi.json by scripts/generate-cli-operations.mjs.\n"
 const compactRows = rows.map((row) => `  ${JSON.stringify(row)}`).join(',\n')
 const source = `${banner}import { defineOperations } from './operations.js'\n\nexport const operationSpecs = defineOperations([\n${compactRows},\n] as const)\n`
 const groupedRows = rows.reduce((groups, row) => {

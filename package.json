@@ -2,6 +2,7 @@
   "name": "dedalus-cli",
   "version": "0.1.0",
   "description": "Controlplane API for Dedalus Cloud Services (DCS).",
+  "author": "Dedalus",
   "type": "module",
   "bin": {
     "dedalus": "./dist/esm/custom/bin.js"

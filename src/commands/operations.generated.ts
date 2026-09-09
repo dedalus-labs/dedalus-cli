@@ -1,4 +1,4 @@
-// File generated from openapi.augmented.json by scripts/generate-cli-operations.mjs.
+// File generated from spec/dcs.openapi.json by scripts/generate-cli-operations.mjs.
 import { defineOperations } from './operations.js'
 
 export const operationSpecs = defineOperations([

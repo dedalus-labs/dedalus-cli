@@ -1,5 +1,6 @@
 /** Dedalus-owned CLI assembly layered over Scalar's generated SDK. */
 
+import { version } from './version.generated.js'
 import type { Command } from 'commander'
 import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime.js'
 import { completions } from '../cli/completions.js'
@@ -70,7 +71,7 @@ export const getProgram = (): Command =>
   addDedalusCommands(createProgram({
     SDK: CommandClient,
     binaryName: "dedalus",
-    version: "0.1.0", // x-release-please-version
+    version,
     description: "CLI for Dedalus",
     defaultFormat: "auto",
     defaultErrorFormat: "auto",

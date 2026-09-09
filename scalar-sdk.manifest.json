@@ -1,7 +1,7 @@
 {
   "name": "Dedalus",
   "slug": "dedalus",
-  "generatorVersion": "0.23.6",
+  "generatorVersion": "0.30.0",
   "servers": [
     "https://dcs.dedaluslabs.ai"
   ],

@@ -10,10 +10,16 @@ import { getPlatformHeaders } from './internal/detect-platform';
 import * as Shims from './internal/shims';
 import * as Opts from './internal/request-options';
 import { readEnv } from './internal/utils/env';
-import { formatRequestDetails, loggerFor, parseLogLevel, type LogLevel, type Logger } from './internal/utils/log';
+import {
+  formatRequestDetails,
+  loggerFor,
+  parseLogLevel,
+  type LogLevel,
+  type Logger,
+} from './internal/utils/log';
 export type { Logger, LogLevel } from './internal/utils/log';
 import type { RequestInit, RequestInfo, BodyInit, Fetch } from './internal/builtin-types';
-import { buildHeaders, type HeadersLike } from './internal/headers';
+import { buildHeaders, type HeadersLike, type NullableHeaders } from './internal/headers';
 import type { FinalRequestOptions, RequestOptions } from './internal/request-options';
 import type { HTTPMethod, FinalizedRequestInit, MergedRequestInit, PromiseOrValue } from './internal/types';
 import { stringifyQuery } from './internal/utils/query';
@@ -181,15 +187,15 @@ export class Dedalus {
    * @param {Record<string, string | undefined>} opts.defaultQuery - Default query parameters to include with every request to the API.
    */
   constructor({
-    baseURL = readEnv("DEDALUS_BASE_URL"),
-    apiKey = readEnv("DEDALUS_API_KEY") ?? null,
-    xAPIKey = readEnv("DEDALUS_X_API_KEY") ?? null,
-    bearerAuth = readEnv("DEDALUS_BEARER_AUTH"),
-    provider = readEnv("DEDALUS_PROVIDER") ?? null,
-    providerKey = readEnv("DEDALUS_PROVIDER_KEY") ?? null,
-    providerModel = readEnv("DEDALUS_PROVIDER_MODEL") ?? null,
-    asBaseURL = readEnv("DEDALUS_AS_URL") ?? "https://as.dedaluslabs.ai",
-    dedalusOrgID = readEnv("DEDALUS_ORG_ID") ?? null,
+    baseURL = readEnv('DEDALUS_BASE_URL'),
+    apiKey = readEnv('DEDALUS_API_KEY') ?? null,
+    xAPIKey = readEnv('DEDALUS_X_API_KEY') ?? null,
+    bearerAuth = readEnv('DEDALUS_BEARER_AUTH'),
+    provider = readEnv('DEDALUS_PROVIDER') ?? null,
+    providerKey = readEnv('DEDALUS_PROVIDER_KEY') ?? null,
+    providerModel = readEnv('DEDALUS_PROVIDER_MODEL') ?? null,
+    asBaseURL = readEnv('DEDALUS_AS_URL') ?? 'https://as.dedaluslabs.ai',
+    dedalusOrgID = readEnv('DEDALUS_ORG_ID') ?? null,
     ...opts
   }: ClientOptions = {}) {
     const options: ClientOptions = {
@@ -202,10 +208,10 @@ export class Dedalus {
       asBaseURL,
       dedalusOrgID,
       ...opts,
-      baseURL: baseURL || "https://api.dedaluslabs.ai",
+      baseURL: baseURL || 'https://api.dedaluslabs.ai',
     };
-    const baseURLOverridden = baseURL !== null && baseURL !== undefined && baseURL !== "";
-    const defaultBaseURL = "https://api.dedaluslabs.ai";
+    const baseURLOverridden = baseURL !== null && baseURL !== undefined && baseURL !== '';
+    const defaultBaseURL = 'https://api.dedaluslabs.ai';
     this.baseURL = options.baseURL || defaultBaseURL;
     this.timeout = options.timeout ?? Dedalus.DEFAULT_TIMEOUT /* 1 minute */;
     this.logger = options.logger ?? console;
@@ -214,14 +220,14 @@ export class Dedalus {
     this.logLevel = defaultLogLevel;
     this.logLevel =
       parseLogLevel(options.logLevel, 'ClientOptions.logLevel', this) ??
-      parseLogLevel(readEnv("DEDALUS_LOG"), "process.env[\"DEDALUS_LOG\"]", this) ??
+      parseLogLevel(readEnv('DEDALUS_LOG'), 'process.env["DEDALUS_LOG"]', this) ??
       defaultLogLevel;
     this.fetchOptions = options.fetchOptions;
     this.maxRetries = options.maxRetries ?? 2;
     this.fetch = options.fetch ?? Shims.getDefaultFetch();
     this.#encoder = Opts.FallbackEncoder;
 
-    const customHeadersEnv = readEnv("DEDALUS_CUSTOM_HEADERS");
+    const customHeadersEnv = readEnv('DEDALUS_CUSTOM_HEADERS');
     if (customHeadersEnv) {
       const parsed: Record<string, string> = {};
       for (const line of customHeadersEnv.split('\n')) {
@@ -236,7 +242,7 @@ export class Dedalus {
     this._options = { ...options, baseURL: baseURLOverridden ? this.baseURL : undefined };
     this._baseURLOverridden = baseURLOverridden;
     this._defaultBaseURL = defaultBaseURL;
-    this.idempotencyHeader = "Idempotency-Key";
+    this.idempotencyHeader = 'Idempotency-Key';
 
     this.apiKey = apiKey;
     this.xAPIKey = xAPIKey;
@@ -309,10 +315,11 @@ export class Dedalus {
     const baseURL = (!this.#baseURLOverridden() && defaultBaseURL) || this.baseURL;
     // Guarantee exactly one "/" between baseURL and path so that bases without a trailing slash
     // and paths without a leading slash do not fuse into a malformed URL (e.g. ".../v1" + "widgets").
-    const url =
-      isAbsoluteURL(path) ?
-        new URL(path)
-      : new URL((baseURL.endsWith('/') ? baseURL : baseURL + '/') + (path.startsWith('/') ? path.slice(1) : path));
+    const url = isAbsoluteURL(path)
+      ? new URL(path)
+      : new URL(
+          (baseURL.endsWith('/') ? baseURL : baseURL + '/') + (path.startsWith('/') ? path.slice(1) : path),
+        );
 
     const defaultQuery = this.defaultQuery();
     const pathQuery = Object.fromEntries(url.searchParams);
@@ -320,7 +327,7 @@ export class Dedalus {
       query = { ...pathQuery, ...defaultQuery, ...query };
     }
 
-    if (typeof query === "object" && query && !Array.isArray(query)) {
+    if (typeof query === 'object' && query && !Array.isArray(query)) {
       url.search = this.stringifyQuery(query);
     }
 
@@ -539,7 +546,12 @@ export class Dedalus {
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
   }
 
-  async fetchWithTimeout(url: RequestInfo, init: RequestInit | undefined, ms: number, controller: AbortController): Promise<Response> {
+  async fetchWithTimeout(
+    url: RequestInfo,
+    init: RequestInit | undefined,
+    ms: number,
+    controller: AbortController,
+  ): Promise<Response> {
     const { signal, method, ...options } = init || {};
     const abort = this._makeAbort(controller);
     if (signal) signal.addEventListener('abort', abort, { once: true });
@@ -667,7 +679,16 @@ export class Dedalus {
     if ('timeout' in options) validatePositiveInteger('timeout', options.timeout);
     options.timeout = options.timeout ?? this.timeout;
     const { bodyHeaders, body } = this.buildBody({ options });
-    const reqHeaders = await this.buildHeaders({ options, method, bodyHeaders, retryCount, url });
+    // Headers read the caller's own options, not the copy defaulted above: `X-Scalar-Timeout`
+    // reports an explicit per-request timeout, and the idempotency key written back here has to
+    // land where the retry can see it.
+    const reqHeaders = await this.buildHeaders({
+      options: inputOptions,
+      method,
+      bodyHeaders,
+      retryCount,
+      url,
+    });
 
     const req: FinalizedRequestInit = {
       method,
@@ -711,7 +732,7 @@ export class Dedalus {
         'X-Scalar-Retry-Count': String(retryCount),
         ...(options.timeout ? { 'X-Scalar-Timeout': String(Math.trunc(options.timeout / 1000)) } : {}),
         ...getPlatformHeaders(),
-        ...{ "X-SDK-Version": "1.0.0" },
+        ...{ 'X-SDK-Version': '1.0.0' },
         'X-Provider': this.provider,
         'X-Provider-Key': this.providerKey,
         'X-Provider-Model': this.providerModel,
@@ -786,35 +807,68 @@ export class Dedalus {
     }
   }
 
-  private validateAuth(url: string, headers: Headers, options: FinalRequestOptions): void {
-    if (headers.has("Authorization")) return;
-    if (headerExplicitlyOmitted(options.headers, "Authorization")) return;
-    if (headers.has("x-api-key")) return;
-    if (headerExplicitlyOmitted(options.headers, "x-api-key")) return;
-    throw new Errors.AuthenticationError(401, {}, "Could not resolve authentication method. Expected Authorization or x-api-key to be set.", headers);
+  protected validateAuth(url: string, headers: Headers, options: FinalRequestOptions): void {
+    if (headers.has('Authorization')) return;
+    if (headerExplicitlyOmitted(options.headers, 'Authorization')) return;
+    if (headers.has('x-api-key')) return;
+    if (headerExplicitlyOmitted(options.headers, 'x-api-key')) return;
+    throw new Errors.AuthenticationError(
+      401,
+      undefined,
+      'Could not resolve authentication method. Expected either apiKey, bearerAuth or xAPIKey to be set. Or for one of the "Authorization" or "x-api-key" headers to be explicitly omitted',
+      headers,
+    );
   }
 
   authHeadersSync(): Record<string, string> {
     const headers: Record<string, string> = {};
-    const apiKey = this.resolveAuthOptionSync("apiKey", this.apiKey);
+    const apiKey = this.resolveAuthOptionSync('apiKey', this.apiKey);
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-    const xAPIKey = this.resolveAuthOptionSync("xAPIKey", this.xAPIKey);
-    if (xAPIKey) headers["x-api-key"] = xAPIKey;
-    const bearerAuth = this.resolveAuthOptionSync("bearerAuth", this.bearerAuth);
+    const xAPIKey = this.resolveAuthOptionSync('xAPIKey', this.xAPIKey);
+    if (xAPIKey) headers['x-api-key'] = xAPIKey;
+    const bearerAuth = this.resolveAuthOptionSync('bearerAuth', this.bearerAuth);
     if (bearerAuth) headers['Authorization'] = `Bearer ${bearerAuth}`;
     return headers;
   }
 
   webSocketAuthHeaders(): Record<string, string> {
-    const apiKey = this.resolveAuthOptionSync("apiKey", this.apiKey);
+    const apiKey = this.resolveAuthOptionSync('apiKey', this.apiKey);
     if (apiKey) return { Authorization: `Bearer ${apiKey}` };
-    const xAPIKey = this.resolveAuthOptionSync("xAPIKey", this.xAPIKey);
-    if (xAPIKey) return { "x-api-key": xAPIKey };
+    const xAPIKey = this.resolveAuthOptionSync('xAPIKey', this.xAPIKey);
+    if (xAPIKey) return { 'x-api-key': xAPIKey };
     return {};
   }
 
-  protected async authHeaders(options: FinalRequestOptions): Promise<HeadersLike | undefined> {
-    return buildHeaders([await this.authHeadersAsync()]);
+  protected async authHeaders(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+    return buildHeaders([
+      await this.bearerAuth2(opts),
+      await this.apiKeyAuth(opts),
+      await this.bearerAuth3(opts),
+    ]);
+  }
+
+  protected async bearerAuth2(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+    const apiKey = await this.resolveAuthOption('apiKey', this.apiKey);
+    if (apiKey == null) {
+      return undefined;
+    }
+    return buildHeaders([{ Authorization: `Bearer ${apiKey}` }]);
+  }
+
+  protected async apiKeyAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+    const xAPIKey = await this.resolveAuthOption('xAPIKey', this.xAPIKey);
+    if (xAPIKey == null) {
+      return undefined;
+    }
+    return buildHeaders([{ 'x-api-key': xAPIKey }]);
+  }
+
+  protected async bearerAuth3(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+    const bearerAuth = await this.resolveAuthOption('bearerAuth', this.bearerAuth);
+    if (bearerAuth == null) {
+      return undefined;
+    }
+    return buildHeaders([{ Authorization: `Bearer ${bearerAuth}` }]);
   }
 
   private async authQueryAsync(): Promise<Record<string, string>> {
@@ -827,28 +881,24 @@ export class Dedalus {
     return cookies;
   }
 
-  private async authHeadersAsync(): Promise<Record<string, string>> {
-    const headers: Record<string, string> = {};
-    const apiKey = await this.resolveAuthOption("apiKey", this.apiKey);
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-    const xAPIKey = await this.resolveAuthOption("xAPIKey", this.xAPIKey);
-    if (xAPIKey) headers["x-api-key"] = xAPIKey;
-    const bearerAuth = await this.resolveAuthOption("bearerAuth", this.bearerAuth);
-    if (bearerAuth) headers['Authorization'] = `Bearer ${bearerAuth}`;
-    return headers;
-  }
-
-  private async resolveAuthOption(optionName: string, value: string | AuthTokenProvider | null | undefined): Promise<string | undefined> {
+  private async resolveAuthOption(
+    optionName: string,
+    value: string | AuthTokenProvider | null | undefined,
+  ): Promise<string | undefined> {
     if (value == null) return undefined;
-    const token = typeof value === "function" ? await value() : value;
+    const token = typeof value === 'function' ? await value() : value;
     if (!token) throw new Errors.DedalusError(`Expected '${optionName}' to resolve to a non-empty string.`);
     return token;
   }
 
-  private resolveAuthOptionSync(optionName: string, value: string | AuthTokenProvider | null | undefined): string | undefined {
+  private resolveAuthOptionSync(
+    optionName: string,
+    value: string | AuthTokenProvider | null | undefined,
+  ): string | undefined {
     if (value == null) return undefined;
-    const token = typeof value === "function" ? value() : value;
-    if (typeof token !== "string" || !token) throw new Errors.DedalusError(`Expected '${optionName}' to resolve to a non-empty string.`);
+    const token = typeof value === 'function' ? value() : value;
+    if (typeof token !== 'string' || !token)
+      throw new Errors.DedalusError(`Expected '${optionName}' to resolve to a non-empty string.`);
     return token;
   }
 
@@ -870,13 +920,11 @@ export class Dedalus {
   static UnprocessableEntityError = Errors.UnprocessableEntityError;
 
   static toFile = toFile;
-
 }
 
 export declare namespace Dedalus {
   export type RequestOptions = Opts.RequestOptions;
 }
-
 
 const headerExplicitlyOmitted = (source: HeadersLike | undefined, name: string): boolean => {
   if (!source || Array.isArray(source) || source instanceof Headers) return false;
@@ -886,15 +934,15 @@ const headerExplicitlyOmitted = (source: HeadersLike | undefined, name: string):
 
 const appendAuthCookies = (headers: Headers, cookies: Record<string, string>): void => {
   for (const [name, value] of Object.entries(cookies)) {
-    if (cookieHeaderHas(headers.get("Cookie"), name)) continue;
-    const cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
-    const existing = headers.get("Cookie");
-    headers.set("Cookie", existing ? existing + "; " + cookie : cookie);
+    if (cookieHeaderHas(headers.get('Cookie'), name)) continue;
+    const cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value);
+    const existing = headers.get('Cookie');
+    headers.set('Cookie', existing ? existing + '; ' + cookie : cookie);
   }
 };
 
 const cookieHeaderHas = (value: string | null, name: string): boolean => {
   if (!value) return false;
-  const target = encodeURIComponent(name) + "=";
-  return value.split(";").some((cookie) => cookie.trim().startsWith(target));
+  const target = encodeURIComponent(name) + '=';
+  return value.split(';').some((cookie) => cookie.trim().startsWith(target));
 };

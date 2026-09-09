@@ -1,4 +1,4 @@
-/** Ephemeral SSH connection flow used by `machines create --connect`. */
+/** Ephemeral SSH connection flow used by `machines create --ssh`. */
 
 import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'

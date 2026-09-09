@@ -29,7 +29,7 @@ export type MachineCommandOptions = {
 
 type CreateOptions = {
   readonly autosleep?: string
-  readonly connect?: boolean
+  readonly ssh?: boolean
   readonly memoryMib?: string
   readonly storageGib?: string
   readonly vcpu?: string
@@ -65,7 +65,7 @@ export const addMachineCommands = (
     new Command(machinesCommandName).description('Create and manage Dedalus Machines')
   const create = new Command('create')
     .description('Create a machine')
-    .option('--connect', 'Open an interactive SSH shell after creating the machine')
+    .option('--ssh', 'Open an interactive SSH shell after creating the machine')
     .option('--vcpu <count>', 'CPU in vCPUs')
     .option('--memory-mib <mib>', 'Memory in MiB')
     .option('--storage-gib <gib>', 'Storage in GiB')
@@ -85,7 +85,7 @@ export const addMachineCommands = (
       const client = api(clientOptions(command))
       const result = await client.createMachine(machineShape(createOptions))
       const machineID = machineIDFrom(result)
-      if (createOptions.connect) {
+      if (createOptions.ssh) {
         await connect(client, machineID)
         return
       }

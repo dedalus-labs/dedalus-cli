@@ -41,7 +41,7 @@ dedalus [resource] [command] [flags]
 Create a machine with the API defaults and open an interactive SSH shell:
 
 ```sh
-dedalus machines create --connect
+dedalus machines create --ssh
 ```
 
 Scalar owns the low-level software development kit (SDK), CLI runtime, and its
@@ -175,7 +175,7 @@ Generated clients support request timeouts and retry temporary failures such as 
 ## Requirements
 
 - Node.js 20 or newer
-- OpenSSH (`ssh` and `ssh-keygen`) when using `machines create --connect`
+- OpenSSH (`ssh` and `ssh-keygen`) when using `machines create --ssh`
 
 Powered by Scalar.
 

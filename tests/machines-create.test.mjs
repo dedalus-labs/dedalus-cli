@@ -30,9 +30,9 @@ const addMachines = (overrides = {}) => {
   return { calls, connections, output: () => output, program }
 }
 
-test('invariant machines create --connect uses API defaults and connects the created machine', async () => {
+test('invariant machines create --ssh uses API defaults and connects the created machine', async () => {
   const fixture = addMachines()
-  await fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--connect'])
+  await fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
 
   assert.deepEqual(fixture.calls[0].body, {})
   assert.equal(fixture.calls[0].options.apiKey, 'workload-key')
@@ -102,7 +102,7 @@ test('invariant connect fails closed when create omits machine_id', async () => 
   })
 
   await assert.rejects(
-    fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--connect']),
+    fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh']),
     /server returned no machine_id/u,
   )
   assert.deepEqual(fixture.connections, [])
@@ -131,7 +131,7 @@ test('invariant create and connect share the authenticated OAuth gateway client'
       connect: async (client, machine) => { assert.equal(client, api); connected = machine },
     },
   })
-  await program.parseAsync(['node', 'dedalus', 'machines', 'create', '--connect'])
+  await program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
   assert.equal(connected, 'dm-created')
   assert.equal(clientOptions.baseURL, 'https://dev.admin.api.dedaluslabs.ai/dcs')
   assert.equal(clientOptions.bearerAuth, session.accessToken)

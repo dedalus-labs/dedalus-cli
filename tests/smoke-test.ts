@@ -1,3 +1,5 @@
+// @custom
+// Check the packaged CLI command surface.
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
 // Smoke test: invokes the generated CLI once per operation to confirm each command can reach

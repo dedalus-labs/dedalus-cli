@@ -1,3 +1,5 @@
+// @custom
+// Exercise creation followed by SSH with the authenticated client.
 import assert from 'node:assert/strict'
 import test, { type TestContext } from 'node:test'
 import { createProgram } from '../src/cli/runtime.js'

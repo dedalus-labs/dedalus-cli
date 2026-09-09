@@ -1,3 +1,5 @@
+// @custom
+// Verify SSH credentials, subprocess status, and cancellation cleanup.
 import assert from 'node:assert/strict'
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

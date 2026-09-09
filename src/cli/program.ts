@@ -6,6 +6,7 @@ import { AuthenticatedCommandClient } from '../auth/client.js'
 import { addDedalusCommands, formatDedalusError } from '../auth/commands.js'
 import { installCompletion } from './completion.js'
 import { addMachineCommands, machineResultHandler } from '../commands/machines.js'
+import { addExecutionCommands } from '../commands/executions.js'
 import { version } from './version.generated.js'
 
 export const getProgram = (): Command => {
@@ -17,6 +18,7 @@ export const getProgram = (): Command => {
   })
   addDedalusCommands(program)
   addMachineCommands(program)
+  addExecutionCommands(program)
   installCompletion(program)
   return program
 }

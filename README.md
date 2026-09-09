@@ -10,6 +10,7 @@ The full API of this library can be found in [api.md](./api.md).
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Running commands](#running-commands)
 - [API Reference](./api.md)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
@@ -68,6 +69,24 @@ the stored bearer token to Scalar 0.32.3's WebSocket transport.
 See the [API reference](./api.md) for every available operation.
 
 <br />
+
+## Running commands
+
+`machines exec` is an alias for `machines executions`. Start an asynchronous
+execution by passing an executable and its arguments after `--`; `create` is optional:
+
+```sh
+dedalus machines exec --machine-id "$MACHINE_ID" -- echo "hello world"
+dedalus machines executions create --machine-id "$MACHINE_ID" -- echo "hello world"
+dedalus machines exec create --machine-id "$MACHINE_ID" --command '["echo","hello world"]'
+```
+
+The command returns an execution record, not the remote exit status. Use
+`exec retrieve` or `exec output` with `--machine-id` and `--execution-id` to inspect it.
+Existing subcommands and piped JSON input remain available. Arguments after `--`
+are literal, including empty strings and `@file`; they cannot be combined with
+`--command`. For remote shell operators, explicitly use `-- sh -c 'echo hello && ls'`.
+An unquoted `&&` runs in your local shell.
 
 ## Shell Completion
 

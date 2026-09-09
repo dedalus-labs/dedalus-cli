@@ -40,7 +40,7 @@ npm install -g dedalus-cli
 ```sh
 dedalus [resource] [command] [flags]
 
-dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '0' --storage-gib '0' --vcpu '0'
+dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
 Create a machine with API defaults and open an interactive shell:
@@ -49,17 +49,21 @@ Create a machine with API defaults and open an interactive shell:
 dedalus machines create --ssh
 ```
 
-Scalar generates the SDK, all 35 resource commands, pagination, streaming transports,
-API reference, and manual pages from the connected DCS target's resource mappings.
-The published executable adds authentication through `src/custom`. There is no
-second operation generator or command adapter.
+Scalar generates the SDK, resource commands, API reference, and manual pages from
+the DCS OpenAPI input. Handwritten code lives with its feature: `src/auth` owns
+login and credentials, `src/ssh/connect.ts` owns the interactive connection, and
+`src/cli/program.ts` assembles the executable.
 
-Three narrow extension points survive Scalar's three-way merge: entry-point
-options select the authenticated SDK subclass, the SDK request method is protected
-so OAuth recovery also covers pagination, and CLI runtime hooks support auth errors
-and piped input. A small WebSocket auth override supplies the stored bearer token
-omitted by Scalar 0.32.3's WebSocket selector. Keep other handwritten behavior behind
-`src/custom`; `scalar:check` rejects unrelated SDK and command-table changes.
+Mark handwritten modules and modifications with `// @custom`, followed by a normal
+comment explaining the intent. Preserve Scalar's generated provenance headers.
+These markers document ownership; they do not exempt code from review or tests.
+Scalar carries edits on `scalar-next` through its three-way merge.
+
+The CLI registers nested resources as command words (`machines executions list`).
+Completion reads the assembled command tree so nested resources and auth commands
+stay consistent with help. The SDK owns HTTP, pagination, SSE, and WebSocket
+transports. A small authentication subclass adds bounded OAuth recovery and supplies
+the stored bearer token to Scalar 0.32.3's WebSocket transport.
 
 See the [API reference](./api.md) for every available operation.
 
@@ -205,41 +209,7 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 
 Powered by Scalar.
 
-## Regeneration and release verification
-
-Update customization branches against `scalar-next` before merging. Resolve runtime
-conflicts by preserving both Scalar changes and the tested auth hooks; never replace
-the generated runtime with a copy under `src/custom`. Run `npm test`,
-`npm run typecheck`, `npm run scalar:check`, and `npm run pack:check` on the
-combined tree. The boundary check is a customization check, not a substitute for
-running tests after a Scalar build.
-
-The custom executable receives its version from `package.json` during every build.
-Review the refreshed release PR only after auth and dependent commands are on
-`scalar-next`; verify its built executable reports the release package version.
-The connected Scalar target was rebuilt with generator 0.32.3 and now emits all
-35 DCS operations. These customizations were reconciled against that output. After
-merging them into `scalar-next`, rebuild again to verify the platform carries the
-hooks forward before releasing.
-
-### Staging OAuth verification
-
-Use the public OAuth client ID provisioned for the staging Clerk application:
-
-```sh
-export DEDALUS_CLERK_ISSUER="https://clerk.staging.dedaluslabs.ai"
-export DEDALUS_CLERK_CLIENT_ID="<staging-public-client-id>"
-dedalus auth login
-```
-
-This selects `https://staging.dedaluslabs.ai/cli/sign-in` and
-`https://staging.admin.api.dedaluslabs.ai/dcs`. An existing `DEDALUS_BASE_URL`
-override must match that gateway; a direct DCS URL is for API-key authentication.
-The staging Admin deployment must have CLI auth enabled with its Clerk client ID
-and secret configured. Missing credentials or cross-environment endpoints fail
-closed. This configuration does not enable any server feature flags.
-
-### OAuth request recovery
+## OAuth request recovery
 
 OAuth commands refresh tokens shortly before expiry. If an HTTP request returns
 401 unexpectedly, the custom client reloads credentials under the lifecycle lock,
@@ -253,7 +223,7 @@ try again. Permanent provider failures are cached for that credential within the
 current process and require signing in again. This does not guarantee recovery
 if a rotated refresh-token response is lost before it can be saved.
 
-Recovery lives in `src/custom/client.ts` and `src/custom/auth/`. The SDK's shared
+Recovery lives in `src/auth/client.ts` and `src/auth/`. The SDK's shared
 request method has one visibility change (`private` to `protected`); Scalar still
 owns request construction, pagination, response parsing, and transient retries.
 

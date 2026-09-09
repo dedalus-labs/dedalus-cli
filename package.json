@@ -9,17 +9,17 @@
   },
   "type": "module",
   "bin": {
-    "dedalus": "./dist/esm/custom/bin.js"
+    "dedalus": "./dist/esm/bin.js"
   },
-  "main": "./dist/cjs/custom/index.js",
-  "module": "./dist/esm/custom/index.js",
-  "types": "./dist/esm/custom/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/esm/custom/index.d.ts",
-      "import": "./dist/esm/custom/index.js",
-      "require": "./dist/cjs/custom/index.js",
-      "default": "./dist/esm/custom/index.js"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -69,12 +69,11 @@
     "./man/dedalus-completion.1"
   ],
   "scripts": {
-    "build": "node scripts/prepare-build.mjs && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
-    "scalar:check": "node scripts/check-scalar-boundaries.mjs",
-    "pack:check": "node scripts/check-package.mjs",
+    "build": "node --import tsx scripts/prepare-build.ts && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
+    "pack:check": "node --import tsx scripts/check-package.ts",
     "prepack": "npm run build",
-    "test": "npm run build && node --test tests/*.test.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit"
+    "test": "npm run build && node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit && tsc -p tsconfig.tests.json && tsc -p tsconfig.tools.json"
   },
   "dependencies": {
     "@napi-rs/keyring": "^1.3.0",
@@ -89,7 +88,8 @@
     "@types/node": "^20.17.0",
     "@types/proper-lockfile": "^4.1.4",
     "@types/ws": "^8.5.13",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "tsx": "^4.20.0"
   },
   "peerDependencies": {
     "ws": "^8.18.0"

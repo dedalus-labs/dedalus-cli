@@ -9,7 +9,7 @@ await Promise.all([
   rewriteRelativeSpecifiers(resolve(root, 'dist/esm')),
   markCommonJsOutput(resolve(root, 'dist/cjs')),
 ]);
-await chmod(resolve(root, 'dist/esm/custom/bin.js'), 0o755).catch(() => {});
+await chmod(resolve(root, 'dist/esm/bin.js'), 0o755).catch(() => {});
 
 async function rewriteRelativeSpecifiers(dir) {
   let entries;

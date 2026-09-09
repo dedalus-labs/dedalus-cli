@@ -1,4 +1,7 @@
-// File generated from our OpenAPI spec by Scalar and narrowly customized on scalar-next.
+// File generated from our OpenAPI spec by Scalar. See README.md for details.
+
+// @custom
+// Keep authentication errors, piped input, and resource nesting in the generated execution path.
 
 import { stdin as processStdin, stdout as processStdout } from 'node:process';
 
@@ -59,8 +62,10 @@ export type CliClientOptionDefinition = {
   readonly defaultValue?: string;
 };
 
-export type CreateProgramOptions = {
-  readonly SDK: new (...args: any[]) => unknown;
+// @custom
+// Keep the constructed client type available to result orchestration.
+export type CreateProgramOptions<Client = unknown> = {
+  readonly SDK: new (options: Record<string, unknown>) => Client;
   readonly binaryName: string;
   readonly version: string;
   readonly description: string;
@@ -68,9 +73,8 @@ export type CreateProgramOptions = {
   readonly defaultErrorFormat: OutputFormat;
   readonly clientOptions: readonly CliClientOptionDefinition[];
   readonly commands: readonly CliCommandDefinition[];
-  readonly configureDefinition?: (definition: CliCommandDefinition) => CliCommandDefinition;
   // Return true when custom orchestration has handled the result and owns its output.
-  readonly handleResult?: (result: unknown, client: unknown, command: Command) => Promise<boolean>;
+  readonly handleResult?: (result: unknown, client: Client, command: Command) => Promise<boolean>;
   readonly formatError?: (error: unknown, command: Command) => Record<string, unknown> | undefined;
   // Completion script per shell, generated alongside the command table. Absent when the SDK
   // config disables shell completions, in which case no `completion` command is registered.
@@ -101,7 +105,7 @@ type GlobalOptions = {
   readonly maxItems?: string;
 };
 
-export const createProgram = ({
+export const createProgram = <Client>({
   SDK,
   binaryName,
   version,
@@ -111,10 +115,9 @@ export const createProgram = ({
   clientOptions,
   commands,
   formatError,
-  configureDefinition,
   handleResult,
   completions,
-}: CreateProgramOptions): Command => {
+}: CreateProgramOptions<Client>): Command => {
   const program = usageExitCode(new Command());
   program
     .enablePositionalOptions()
@@ -143,7 +146,7 @@ export const createProgram = ({
   }
 
   for (const definition of commands)
-    addGeneratedCommand(program, SDK, clientOptions, configureDefinition?.(definition) ?? definition, formatError, handleResult);
+    addGeneratedCommand(program, definition, { SDK, clientOptions, formatError, handleResult });
 
   if (completions) addCompletionCommand(program, binaryName, completions);
 
@@ -215,15 +218,25 @@ const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   return parts.join(' ');
 };
 
-const addGeneratedCommand = (
+// @custom
+// Share typed execution hooks without adding positional arguments to registration.
+type CommandRuntime<Client> = {
+  readonly SDK: CreateProgramOptions<Client>['SDK'];
+  readonly clientOptions: CreateProgramOptions<Client>['clientOptions'];
+  readonly formatError: CreateProgramOptions<Client>['formatError'];
+  readonly handleResult: CreateProgramOptions<Client>['handleResult'];
+};
+
+const addGeneratedCommand = <Client>(
   program: Command,
-  SDK: CreateProgramOptions['SDK'],
-  clientOptions: readonly CliClientOptionDefinition[],
   definition: CliCommandDefinition,
-  formatError: CreateProgramOptions['formatError'],
-  handleResult: CreateProgramOptions['handleResult'],
+  runtime: CommandRuntime<Client>,
 ): void => {
-  const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1));
+  const { clientOptions } = runtime;
+  // @custom
+  // Scalar 0.32 emits colon-delimited resource segments; the public CLI uses words.
+  const commandPath = definition.commandPath.flatMap((segment) => segment.split(':'));
+  const parent = ensureCommandPath(program, commandPath.slice(0, -1));
   const commandName = definition.commandPath.at(-1) ?? definition.methodName;
   const command = usageExitCode(new Command(commandName))
     .description(definition.summary ?? definition.description ?? '')
@@ -287,7 +300,7 @@ const addGeneratedCommand = (
     const command = args.at(-1);
     if (!(command instanceof Command)) throw new Error('Expected Commander command context');
     const positionalValues = args.slice(0, -1);
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, formatError, handleResult);
+    await runGeneratedCommand(runtime, definition, command, positionalValues);
   });
 
   parent.addCommand(command);
@@ -308,21 +321,19 @@ const ensureCommandPath = (program: Command, path: readonly string[]): Command =
   return parent;
 };
 
-const runGeneratedCommand = async (
-  SDK: CreateProgramOptions['SDK'],
-  clientOptions: readonly CliClientOptionDefinition[],
+const runGeneratedCommand = async <Client>(
+  runtime: CommandRuntime<Client>,
   definition: CliCommandDefinition,
   command: Command,
   positionalValues: readonly unknown[],
-  formatError: CreateProgramOptions['formatError'],
-  handleResult: CreateProgramOptions['handleResult'],
 ): Promise<void> => {
+  const { SDK, clientOptions, formatError, handleResult } = runtime;
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
   const maxItems = definition.iterable ? normalizeMaxItems(commandOptions.maxItems) : undefined;
   const outputOptions: OutputOptions = {
     format: normalizeFormat(commandOptions.format ?? rootOptions.format, 'auto'),
-    title: definition.commandPath.join(' '),
+    title: definition.commandPath.join(' ').replaceAll(':', ' '),
     ...((commandOptions.transform ?? rootOptions.transform)
       ? { transform: commandOptions.transform ?? rootOptions.transform }
       : {}),
@@ -338,7 +349,7 @@ const runGeneratedCommand = async (
   };
 
   try {
-    const client = new SDK(sdkClientOptions(rootOptions, command, clientOptions)) as Record<string, unknown>;
+    const client = new SDK(sdkClientOptions(rootOptions, command, clientOptions));
     const method = sdkMethod(client, definition);
     const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
 
@@ -368,6 +379,7 @@ const runGeneratedCommand = async (
       return;
     }
 
+    // @custom: let orchestration consume a result while retaining this SDK instance.
     if (await handleResult?.(resolved, client, command)) return;
     await writeOutput(resolved, outputOptions);
   } catch (error) {
@@ -405,7 +417,7 @@ const sdkClientOptions = (
 };
 
 const sdkMethod = (
-  client: Record<string, unknown>,
+  client: unknown,
   definition: CliCommandDefinition,
 ): ((...args: unknown[]) => unknown) => {
   let target: unknown = client;

@@ -22,6 +22,9 @@ export type CliFlagDefinition = {
   readonly valueKind: CliValueKind;
   // Array-valued flag accepted as a repeatable singular switch (`--status a --status b`).
   readonly repeatable?: boolean;
+  // Value kind of one occurrence of a repeatable flag, so `--tag ''` stays an empty string rather
+  // than parsing as YAML `null`, and a string id is not read as a number.
+  readonly itemKind?: CliValueKind;
   // Wire-property path under the parent param for dotted leaf flags (e.g. `--address.city`).
   readonly objectPath?: readonly string[];
 };
@@ -421,7 +424,7 @@ const callArguments = async (
   for (const flag of definition.flags) {
     if (flag.objectPath) continue;
     const value = options[flag.optionKey];
-    if (value !== undefined) flagParams[flag.paramKey] = coerceValue(value, flag.valueKind);
+    if (value !== undefined) flagParams[flag.paramKey] = coerceValue(value, flag.valueKind, flag.itemKind);
   }
 
   // Dotted leaf flags (e.g. `--address.city`) are applied after the JSON-blob flag for the same
@@ -522,7 +525,12 @@ const readStdinSource = async (): Promise<string> => {
   return done;
 };
 
+// An empty argument is an empty STRING, not YAML's empty document. `--tag ''` asks for one
+// empty tag; parsing it as YAML answers `null`, which the request builder then refuses
+// ("Received null for "tags[]""). Only the empty case is special-cased: `--tag null` still
+// means null, and every other value keeps the JSON-then-YAML reading.
 const parseStructuredValue = (source: string): unknown => {
+  if (source === '') return source;
   try {
     return JSON.parse(source);
   } catch {
@@ -565,9 +573,13 @@ const omitParams = (params: Record<string, unknown>, names: readonly string[]): 
   return out;
 };
 
-const coerceValue = (value: unknown, kind: CliValueKind): unknown => {
-  if (Array.isArray(value))
-    return value.map((item) => coerceValue(item, kind === 'array' ? 'unknown' : kind));
+// `itemKind` types one occurrence of a repeatable array flag; a definition without one (an injected
+// field with no item schema) falls back to parsing each occurrence as structured text.
+const coerceValue = (value: unknown, kind: CliValueKind, itemKind?: CliValueKind): unknown => {
+  if (Array.isArray(value)) {
+    const elementKind = kind === 'array' ? (itemKind ?? 'unknown') : kind;
+    return value.map((item) => coerceValue(item, elementKind));
+  }
   if (typeof value !== 'string') return value;
   if (kind === 'boolean') return value === 'true' || value === '1';
   if (kind === 'number' || kind === 'integer') return Number(value);

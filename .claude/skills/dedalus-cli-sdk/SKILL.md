@@ -26,9 +26,23 @@ Provide credentials using the options below. Environment variables are read auto
 
 ```sh
 dedalus [resource] [command] [flags]
+
+dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '0' --storage-gib '0' --vcpu '0'
 ```
 
 Method names, parameter shapes, and response types are generated from the API description — do not guess them. Look up the exact call signature in [api.md](../../../api.md) before writing a call.
+
+## Pagination
+
+Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to cap the total number of items returned.
+
+## Streaming
+
+Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
+
+## WebSockets
+
+WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
 
 ## Error handling
 

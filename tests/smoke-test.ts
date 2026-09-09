@@ -35,7 +35,835 @@ type SmokeResult = {
 // absent when the command has no optional flag and so has only one case. `args` is the argv
 // passed to the built CLI; the other fields are metadata used for filtering and reporting. This
 // list is generated, so it stays in sync with the CLI command surface.
-const cases: { operation: string; method: string; path: string; label?: string; args: string[] }[] = [];
+const cases: { operation: string; method: string; path: string; label?: string; args: string[] }[] = [
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines',
+    label: 'required params',
+    args: ['machines', 'list', '--max-items', '10'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines',
+    label: 'all params',
+    args: ['machines', 'list', '--x-dedalus-org-id', 'X-Dedalus-Org-Id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines',
+    label: 'required params',
+    args: ['machines', 'create', '--memory-mib', '0', '--storage-gib', '0', '--vcpu', '0'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines',
+    label: 'all params',
+    args: [
+      'machines',
+      'create',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--autosleep',
+      '',
+      '--memory-mib',
+      '0',
+      '--storage-gib',
+      '0',
+      '--vcpu',
+      '0',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}',
+    label: 'required params',
+    args: ['machines', 'retrieve', '--machine-id', 'machine_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}',
+    label: 'all params',
+    args: ['machines', 'retrieve', '--machine-id', 'machine_id', '--x-dedalus-org-id', 'X-Dedalus-Org-Id'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PATCH',
+    path: '/v1/machines/{machine_id}',
+    label: 'required params',
+    args: ['machines', 'update', '--machine-id', 'machine_id'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PATCH',
+    path: '/v1/machines/{machine_id}',
+    label: 'all params',
+    args: [
+      'machines',
+      'update',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--autosleep',
+      '',
+      '--memory-mib',
+      '0',
+      '--storage-gib',
+      '0',
+      '--vcpu',
+      '0',
+    ],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}',
+    label: 'required params',
+    args: ['machines', 'delete', '--machine-id', 'machine_id'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}',
+    label: 'all params',
+    args: ['machines', 'delete', '--machine-id', 'machine_id', '--x-dedalus-org-id', 'X-Dedalus-Org-Id'],
+  },
+
+  {
+    operation: 'watch',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/status/stream',
+    label: 'required params',
+    args: ['machines', 'watch', '--machine-id', 'machine_id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'watch',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/status/stream',
+    label: 'all params',
+    args: [
+      'machines',
+      'watch',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+      '--last-event-id',
+      'Last-Event-ID',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'sleep',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/sleep',
+    label: 'required params',
+    args: ['machines', 'sleep', '--machine-id', 'machine_id'],
+  },
+
+  {
+    operation: 'sleep',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/sleep',
+    label: 'all params',
+    args: ['machines', 'sleep', '--machine-id', 'machine_id', '--x-dedalus-org-id', 'X-Dedalus-Org-Id'],
+  },
+
+  {
+    operation: 'wake',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/wake',
+    label: 'required params',
+    args: ['machines', 'wake', '--machine-id', 'machine_id'],
+  },
+
+  {
+    operation: 'wake',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/wake',
+    label: 'all params',
+    args: ['machines', 'wake', '--machine-id', 'machine_id', '--x-dedalus-org-id', 'X-Dedalus-Org-Id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/network',
+    label: 'required params',
+    args: ['machines:network', 'retrieve', '--machine-id', 'machine_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/network',
+    label: 'all params',
+    args: [
+      'machines:network',
+      'retrieve',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/artifacts',
+    label: 'required params',
+    args: ['machines:artifacts', 'list', '--machine-id', 'machine_id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/artifacts',
+    label: 'all params',
+    args: [
+      'machines:artifacts',
+      'list',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/artifacts/{artifact_id}',
+    label: 'required params',
+    args: ['machines:artifacts', 'retrieve', '--machine-id', 'machine_id', '--artifact-id', 'artifact_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/artifacts/{artifact_id}',
+    label: 'all params',
+    args: [
+      'machines:artifacts',
+      'retrieve',
+      '--machine-id',
+      'machine_id',
+      '--artifact-id',
+      'artifact_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/artifacts/{artifact_id}',
+    label: 'required params',
+    args: ['machines:artifacts', 'delete', '--machine-id', 'machine_id', '--artifact-id', 'artifact_id'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/artifacts/{artifact_id}',
+    label: 'all params',
+    args: [
+      'machines:artifacts',
+      'delete',
+      '--machine-id',
+      'machine_id',
+      '--artifact-id',
+      'artifact_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ports',
+    label: 'required params',
+    args: ['machines:ports', 'list', '--machine-id', 'machine_id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ports',
+    label: 'all params',
+    args: [
+      'machines:ports',
+      'list',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/ports',
+    label: 'required params',
+    args: ['machines:ports', 'create', '--machine-id', 'machine_id', '--port', '0'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/ports',
+    label: 'all params',
+    args: [
+      'machines:ports',
+      'create',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--port',
+      '0',
+      '--protocol',
+      'http',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ports/{port_id}',
+    label: 'required params',
+    args: ['machines:ports', 'retrieve', '--machine-id', 'machine_id', '--port-id', 'port_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ports/{port_id}',
+    label: 'all params',
+    args: [
+      'machines:ports',
+      'retrieve',
+      '--machine-id',
+      'machine_id',
+      '--port-id',
+      'port_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/ports/{port_id}',
+    label: 'required params',
+    args: ['machines:ports', 'delete', '--machine-id', 'machine_id', '--port-id', 'port_id'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/ports/{port_id}',
+    label: 'all params',
+    args: [
+      'machines:ports',
+      'delete',
+      '--machine-id',
+      'machine_id',
+      '--port-id',
+      'port_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ssh',
+    label: 'required params',
+    args: ['machines:ssh', 'list', '--machine-id', 'machine_id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ssh',
+    label: 'all params',
+    args: [
+      'machines:ssh',
+      'list',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/ssh',
+    label: 'required params',
+    args: ['machines:ssh', 'create', '--machine-id', 'machine_id', '--public-key', ''],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/ssh',
+    label: 'all params',
+    args: [
+      'machines:ssh',
+      'create',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--public-key',
+      '',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ssh/{session_id}',
+    label: 'required params',
+    args: ['machines:ssh', 'retrieve', '--machine-id', 'machine_id', '--session-id', 'session_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/ssh/{session_id}',
+    label: 'all params',
+    args: [
+      'machines:ssh',
+      'retrieve',
+      '--machine-id',
+      'machine_id',
+      '--session-id',
+      'session_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/ssh/{session_id}',
+    label: 'required params',
+    args: ['machines:ssh', 'delete', '--machine-id', 'machine_id', '--session-id', 'session_id'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/ssh/{session_id}',
+    label: 'all params',
+    args: [
+      'machines:ssh',
+      'delete',
+      '--machine-id',
+      'machine_id',
+      '--session-id',
+      'session_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions',
+    label: 'required params',
+    args: ['machines:executions', 'list', '--machine-id', 'machine_id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions',
+    label: 'all params',
+    args: [
+      'machines:executions',
+      'list',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/executions',
+    label: 'required params',
+    args: ['machines:executions', 'create', '--machine-id', 'machine_id', '--command', '[""]'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/executions',
+    label: 'all params',
+    args: [
+      'machines:executions',
+      'create',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--command',
+      '[""]',
+      '--cwd',
+      '',
+      '--env',
+      '{}',
+      '--stdin',
+      '',
+      '--timeout-ms',
+      '0',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}',
+    label: 'required params',
+    args: ['machines:executions', 'retrieve', '--machine-id', 'machine_id', '--execution-id', 'execution_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}',
+    label: 'all params',
+    args: [
+      'machines:executions',
+      'retrieve',
+      '--machine-id',
+      'machine_id',
+      '--execution-id',
+      'execution_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}',
+    label: 'required params',
+    args: ['machines:executions', 'delete', '--machine-id', 'machine_id', '--execution-id', 'execution_id'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}',
+    label: 'all params',
+    args: [
+      'machines:executions',
+      'delete',
+      '--machine-id',
+      'machine_id',
+      '--execution-id',
+      'execution_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'output',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/output',
+    label: 'required params',
+    args: ['machines:executions', 'output', '--machine-id', 'machine_id', '--execution-id', 'execution_id'],
+  },
+
+  {
+    operation: 'output',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/output',
+    label: 'all params',
+    args: [
+      'machines:executions',
+      'output',
+      '--machine-id',
+      'machine_id',
+      '--execution-id',
+      'execution_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'events',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/events',
+    label: 'required params',
+    args: [
+      'machines:executions',
+      'events',
+      '--machine-id',
+      'machine_id',
+      '--execution-id',
+      'execution_id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'events',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/events',
+    label: 'all params',
+    args: [
+      'machines:executions',
+      'events',
+      '--machine-id',
+      'machine_id',
+      '--execution-id',
+      'execution_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/terminals',
+    label: 'required params',
+    args: ['machines:terminals', 'list', '--machine-id', 'machine_id', '--max-items', '10'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/terminals',
+    label: 'all params',
+    args: [
+      'machines:terminals',
+      'list',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--max-items',
+      '10',
+    ],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/terminals',
+    label: 'required params',
+    args: ['machines:terminals', 'create', '--machine-id', 'machine_id', '--height', '0', '--width', '0'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/terminals',
+    label: 'all params',
+    args: [
+      'machines:terminals',
+      'create',
+      '--machine-id',
+      'machine_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+      '--cwd',
+      '',
+      '--env',
+      '{}',
+      '--height',
+      '0',
+      '--shell',
+      '',
+      '--width',
+      '0',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/terminals/{terminal_id}',
+    label: 'required params',
+    args: ['machines:terminals', 'retrieve', '--machine-id', 'machine_id', '--terminal-id', 'terminal_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/terminals/{terminal_id}',
+    label: 'all params',
+    args: [
+      'machines:terminals',
+      'retrieve',
+      '--machine-id',
+      'machine_id',
+      '--terminal-id',
+      'terminal_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/terminals/{terminal_id}',
+    label: 'required params',
+    args: ['machines:terminals', 'delete', '--machine-id', 'machine_id', '--terminal-id', 'terminal_id'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}/terminals/{terminal_id}',
+    label: 'all params',
+    args: [
+      'machines:terminals',
+      'delete',
+      '--machine-id',
+      'machine_id',
+      '--terminal-id',
+      'terminal_id',
+      '--x-dedalus-org-id',
+      'X-Dedalus-Org-Id',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/networks/{network_id}',
+    label: 'required params',
+    args: ['networks', 'retrieve', '--network-id', 'network_id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/networks/{network_id}',
+    label: 'all params',
+    args: ['networks', 'retrieve', '--network-id', 'network_id', '--x-dedalus-org-id', 'X-Dedalus-Org-Id'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/usage',
+    label: 'required params',
+    args: ['usage', 'retrieve'],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/usage',
+    label: 'all params',
+    args: ['usage', 'retrieve', '--period-start', 'period_start'],
+  },
+
+  {
+    operation: 'machineCompute',
+    method: 'GET',
+    path: '/v1/usage/machines/compute',
+    label: 'required params',
+    args: ['usage', 'machine-compute'],
+  },
+
+  {
+    operation: 'machineCompute',
+    method: 'GET',
+    path: '/v1/usage/machines/compute',
+    label: 'all params',
+    args: [
+      'usage',
+      'machine-compute',
+      '--period-start',
+      'period_start',
+      '--period-end',
+      'period_end',
+      '--machine-id',
+      'machine_id',
+      '--granularity',
+      'granularity',
+    ],
+  },
+
+  {
+    operation: 'machineStorage',
+    method: 'GET',
+    path: '/v1/usage/machines/storage',
+    label: 'required params',
+    args: ['usage', 'machine-storage'],
+  },
+
+  {
+    operation: 'machineStorage',
+    method: 'GET',
+    path: '/v1/usage/machines/storage',
+    label: 'all params',
+    args: [
+      'usage',
+      'machine-storage',
+      '--period-start',
+      'period_start',
+      '--period-end',
+      'period_end',
+      '--machine-id',
+      'machine_id',
+    ],
+  },
+];
 
 // Each command gets its own budget so one hanging command fails on its own instead of stalling
 // the whole run; the generator additionally bounds the overall run.
@@ -64,6 +892,17 @@ const resolveBinPath = (): string => {
   );
 };
 
+/**
+ * How many commands run at once, capped at the number of cases there are.
+ *
+ * SCALAR_SMOKE_CONCURRENCY overrides the default; anything unparseable falls back to it.
+ */
+const smokeConcurrency = (caseCount: number): number => {
+  const override = Number.parseInt(process.env['SCALAR_SMOKE_CONCURRENCY'] ?? '', 10);
+  const limit = Number.isInteger(override) && override > 0 ? override : 32;
+  return Math.min(limit, caseCount);
+};
+
 const main = async (): Promise<void> => {
   const binPath = resolveBinPath();
 
@@ -83,10 +922,18 @@ const main = async (): Promise<void> => {
         )
       : cases;
 
-  // Run every selected command concurrently. Promise.allSettled means one failing command never
-  // blocks the others, so a single run reports the status of every endpoint.
-  const settled = await Promise.allSettled(
-    selected.map(async (testCase): Promise<SmokeResult> => {
+  // Run the selected commands under a bounded worker pool rather than all at once. Every case
+  // spawns a whole node process running the built binary, so an unbounded fan-out over a large
+  // SDK's command surface would swamp the machine. Each worker pulls the next index off a shared
+  // cursor and writes into a pre-sized array, so results stay in case order however the workers
+  // interleave. The per-case body catches everything and never rejects, so one failing command
+  // still cannot block the others.
+  const results: SmokeResult[] = new Array<SmokeResult>(selected.length);
+  let cursor = 0;
+  const runNext = async (): Promise<void> => {
+    for (let index = cursor++; index < selected.length; index = cursor++) {
+      const testCase = selected[index];
+      if (!testCase) continue;
       const startedAt = Date.now();
       // `label` distinguishes the required-flags run from the all-flags run of the same command;
       // it is omitted entirely when the command contributed only one case.
@@ -104,7 +951,7 @@ const main = async (): Promise<void> => {
           timeout: COMMAND_TIMEOUT_MS,
           maxBuffer: 1024 * 1024 * 20,
         });
-        return { ...identity, status: 'passed', durationMs: Date.now() - startedAt };
+        results[index] = { ...identity, status: 'passed', durationMs: Date.now() - startedAt };
       } catch (error) {
         // Surface stderr (commander/runtime error output) when present; fall back to the message.
         const detail =
@@ -113,24 +960,16 @@ const main = async (): Promise<void> => {
             : '';
         const message =
           detail.trim() || (error instanceof Error ? (error.stack ?? error.message) : String(error));
-        return { ...identity, status: 'failed', durationMs: Date.now() - startedAt, error: message };
-      }
-    }),
-  );
-
-  // allSettled never rejects, but defensively map any rejected slot to a failed result.
-  const results: SmokeResult[] = settled.map((result) =>
-    result.status === 'fulfilled'
-      ? result.value
-      : {
-          operation: 'unknown',
-          method: '',
-          path: '',
+        results[index] = {
+          ...identity,
           status: 'failed',
-          durationMs: 0,
-          error: String(result.reason),
-        },
-  );
+          durationMs: Date.now() - startedAt,
+          error: message,
+        };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: smokeConcurrency(selected.length) }, runNext));
   const failed = results.filter((result) => result.status === 'failed');
 
   // With SCALAR_SMOKE_REPORT set, write a machine-readable report; otherwise print a table.

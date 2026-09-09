@@ -327,34 +327,43 @@
           {
             "name": "memory_mib",
             "publicName": "memory_mib",
-            "required": true,
+            "required": false,
             "deprecated": false,
             "type": {
               "kind": "primitive",
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "validation": {
+                "exclusiveMinimum": 0
+              }
             }
           },
           {
             "name": "storage_gib",
             "publicName": "storage_gib",
-            "required": true,
+            "required": false,
             "deprecated": false,
             "type": {
               "kind": "primitive",
               "type": "integer",
-              "format": "int64"
+              "format": "int64",
+              "validation": {
+                "exclusiveMinimum": 0
+              }
             }
           },
           {
             "name": "vcpu",
             "publicName": "vcpu",
-            "required": true,
+            "required": false,
             "deprecated": false,
             "type": {
               "kind": "primitive",
               "type": "number",
-              "format": "double"
+              "format": "double",
+              "validation": {
+                "exclusiveMinimum": 0
+              }
             }
           }
         ],
@@ -4204,15 +4213,15 @@
         },
         {
           "name": "memory_mib",
-          "required": true
+          "required": false
         },
         {
           "name": "storage_gib",
-          "required": true
+          "required": false
         },
         {
           "name": "vcpu",
-          "required": true
+          "required": false
         }
       ],
       "publicPositionalParams": [],

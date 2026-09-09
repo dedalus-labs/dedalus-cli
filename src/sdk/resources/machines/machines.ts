@@ -129,9 +129,10 @@ export class Machines extends APIResource {
    * @example
    * ```ts
    * const machine = await client.machines.create({
-   *   memory_mib: 0,
-   *   storage_gib: 0,
-   *   vcpu: 0,
+   *   autosleep: '300s',
+   *   memory_mib: 4096,
+   *   storage_gib: 10,
+   *   vcpu: 1,
    * });
    * ```
    */
@@ -391,24 +392,31 @@ export interface MachineListItem {
 
 export interface CreateParams {
   /**
-   * Memory in MiB.
-   * @format int64
-   */
-  memory_mib: number;
-  /**
-   * Storage in GiB.
-   * @format int64
-   */
-  storage_gib: number;
-  /**
-   * CPU in vCPUs.
-   * @format double
-   */
-  vcpu: number;
-  /**
    * Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
+   * @default 300s
    */
   autosleep?: string;
+  /**
+   * Memory in MiB.
+   * @default 4096
+   * @format int64
+   * @exclusiveMinimum 0
+   */
+  memory_mib?: number;
+  /**
+   * Storage in GiB.
+   * @default 10
+   * @format int64
+   * @exclusiveMinimum 0
+   */
+  storage_gib?: number;
+  /**
+   * CPU in vCPUs.
+   * @default 1
+   * @format double
+   * @exclusiveMinimum 0
+   */
+  vcpu?: number;
 }
 
 export interface UpdateParams {
@@ -471,23 +479,30 @@ export interface MachineCreateParams {
   'X-Dedalus-Org-Id'?: string;
   /**
    * Body param: Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
+   * @default 300s
    */
   autosleep?: string;
   /**
    * Body param: Memory in MiB.
+   * @default 4096
    * @format int64
+   * @exclusiveMinimum 0
    */
-  memory_mib: number;
+  memory_mib?: number;
   /**
    * Body param: Storage in GiB.
+   * @default 10
    * @format int64
+   * @exclusiveMinimum 0
    */
-  storage_gib: number;
+  storage_gib?: number;
   /**
    * Body param: CPU in vCPUs.
+   * @default 1
    * @format double
+   * @exclusiveMinimum 0
    */
-  vcpu: number;
+  vcpu?: number;
 }
 
 export interface MachineRetrieveParams {

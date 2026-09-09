@@ -4,7 +4,7 @@
 dedalus\-machines\-create \- Create machine
 .SH "SYNOPSIS"
 .B dedalus machines create
-\fB\-\-memory\-mib\fR \fI<number>\fR \fB\-\-storage\-gib\fR \fI<number>\fR \fB\-\-vcpu\fR \fI<number>\fR [\fIoptions\fR]
+[\fIoptions\fR]
 .SH "DESCRIPTION"
 Create machine
 .SH "OPTIONS"
@@ -16,13 +16,13 @@ The x\-dedalus\-org\-id header parameter.
 Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
 .TP
 \fB\-\-memory\-mib\fR \fI<number>\fR
-Memory in MiB. Required.
+Memory in MiB.
 .TP
 \fB\-\-storage\-gib\fR \fI<number>\fR
-Storage in GiB. Required.
+Storage in GiB.
 .TP
 \fB\-\-vcpu\fR \fI<number>\fR
-CPU in vCPUs. Required.
+CPU in vCPUs.
 .TP
 \fB\-\-base\-url\fR \fI<url>\fR
 Override the base URL for API requests.
@@ -72,7 +72,7 @@ Model identifier for BYOK provider. Can also be set with the DEDALUS_PROVIDER_MO
 .PP
 .RS 4
 .nf
-dedalus machines create \-\-api\-key "$DEDALUS_API_KEY" \-\-memory\-mib '0' \-\-storage\-gib '0' \-\-vcpu '0'
+dedalus machines create \-\-api\-key "$DEDALUS_API_KEY" \-\-autosleep '300s' \-\-memory\-mib '4096' \-\-storage\-gib '10' \-\-vcpu '1'
 .fi
 .RE
 .SH "ENVIRONMENT"

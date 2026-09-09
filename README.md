@@ -40,7 +40,7 @@ npm install -g dedalus-cli
 ```sh
 dedalus [resource] [command] [flags]
 
-dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '0' --storage-gib '0' --vcpu '0'
+dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
 The examples in the following sections assume a `client` configured as shown above.

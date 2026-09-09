@@ -4,16 +4,15 @@ This directory owns the handwritten version 1 command-line interface (CLI)
 authentication adapter. Scalar owns the software development kit (SDK) and
 resource commands. Generated commands receive one selected credential without
 depending on Clerk. Browser login uses OAuth 2.0 Authorization Code with S256
-Proof Key for Code Exchange (PKCE). Authenticated commands send the selected
-token through the Admin API gateway.
+Proof Key for Code Exchange (PKCE). Authenticated commands send the access
+token to the configured Dedalus application programming interface (API) gateway.
 
 ```mermaid
 sequenceDiagram
     participant CLI
     participant Browser
     participant Clerk
-    participant Gateway as Admin API /dcs gateway
-    participant DCS as DCS API
+    participant API as Dedalus API
 
     CLI->>Browser: Authorization Code + S256 PKCE
     Browser->>Clerk: Sign in and select an organization
@@ -21,11 +20,8 @@ sequenceDiagram
     CLI->>Clerk: Exchange code; fetch user and organization
     Clerk-->>CLI: Access token + refresh token
     CLI->>CLI: Store provider-neutral OAuth session
-    CLI->>Gateway: Clerk access token
-    Gateway->>Clerk: Verify token and current organization membership
-    Gateway->>Gateway: Resolve service account and decrypt canonical key
-    Gateway->>DCS: API key plus signed human actor context
-    DCS->>DCS: Verify actor context for the managed key
+    CLI->>API: Request with access token
+    API-->>CLI: Response or authentication/authorization error
 ```
 
 Clerk is the version 1 OAuth 2.0 issuer. `oauth.ts` requests only `offline_access` and
@@ -37,19 +33,13 @@ in a fragment. OAuth state therefore does not enter website request or
 analytics logs. The website reads that fragment in the browser and immediately
 continues to Clerk.
 
-The command sends the Clerk access token only to the Admin application
-programming interface (API) `/dcs` gateway.
-The gateway verifies the token and current Clerk organization membership,
-resolves the organization's canonical service account, decrypts its API key on
-the server, and forwards the request to Dedalus Cloud Services (DCS) with signed
-human actor context. DCS accepts a managed service-account key only when that
-context verifies. The raw canonical API key never enters the CLI.
+The command sends the Clerk access token only to the gateway configured for its
+issuer. The API validates credentials and enforces access to the requested
+resource. Local identity metadata does not grant access.
 
 The CLI stores Clerk's access and refresh tokens plus non-secret identity and
-organization metadata. It does not create, retrieve, display, or store the
-canonical service-account application programming interface (API) key. Token
-lifetime and refresh behavior follow Clerk's response. V1 makes no Dedalus
-rotation or absolute-session guarantee.
+organization metadata. Token lifetime and refresh behavior follow Clerk's
+response. V1 makes no Dedalus rotation or absolute-session guarantee.
 
 Credential selection is authoritative and stops at the first priority:
 
@@ -84,7 +74,7 @@ The adapter exposes these explicit ownership boundaries:
 | `login`, `status`, `logout`, `accessTokenForCommand` | Authoritative local lifecycle | The CLI locks refresh and persistence before returning a usable token. |
 | `addDedalusCommands` | Generated-code integration | Handwritten code injects one selected credential into Scalar-owned commands. |
 | Browser sign-in page | Neighboring surface | The website forwards the fragment payload; it does not own OAuth state or tokens. |
-| Admin API gateway and DCS | Downstream enforcement | The gateway verifies membership and resolves the canonical service key; DCS verifies actor context. |
+| Dedalus API | Server authorization | The API validates credentials and enforces resource access. |
 
 Commands:
 
@@ -101,19 +91,18 @@ whether provider revocation was confirmed. Every auth command accepts `--json`
 and excludes access tokens, refresh tokens, authorization codes, PKCE values,
 state, and API-key plaintext.
 
-The checked-in version 1 bundle targets development:
+## Configuration
 
-- Clerk issuer: `https://neat-gator-21.clerk.accounts.dev`
-- Browser handoff: `https://dev.dedaluslabs.ai/cli/sign-in`
-- Gateway: `https://dev.admin.api.dedaluslabs.ai/dcs`
+Browser login defaults to the development configuration in `commands.ts`.
+Setting `DEDALUS_CLERK_ISSUER` to the configured staging issuer selects staging
+and requires its `DEDALUS_CLERK_CLIENT_ID`. Other issuer overrides are rejected.
+For development, explicit issuer and client values must match the defaults.
 
-If set, `DEDALUS_CLERK_ISSUER` and `DEDALUS_CLERK_CLIENT_ID` must exactly match
-the checked-in development bundle; arbitrary issuer or client overrides fail
-closed. `DEDALUS_SIGN_IN_URL` may independently point at a local loopback
-website. Version 1 accepts only a Clerk development issuer and sends its token only to
-the checked-in development Admin API gateway. Production requires a separate
-reviewed issuer, client, and gateway bundle; arbitrary gateway overrides fail
-closed.
+`DEDALUS_SIGN_IN_URL` accepts the selected environment's sign-in page or a local
+HTTP page at `localhost` or `127.0.0.1` with the path `/cli/sign-in`.
+For OAuth sessions, `--base-url` and `DEDALUS_BASE_URL` must match the gateway
+for the selected environment. Production browser login is not configured in
+this version.
 
 Run `npm run typecheck` and `npm test`. A real browser-to-gateway test remains a
 deployment check because it requires the configured Clerk application, the

@@ -113,8 +113,8 @@ WebSocket commands stay connected and stream messages. Use `--send <json>` to se
 
 Sign in through the browser with Clerk Authorization Code and S256 Proof Key
 for Code Exchange (PKCE). The command-line interface (CLI) stores Clerk's OAuth
-2.0 token set in protected local storage. The canonical service-account
-application programming interface (API) key stays on the server:
+2.0 token set in protected local storage and uses the access token for
+authenticated requests:
 
 ```sh
 dedalus auth login
@@ -130,11 +130,11 @@ falls back to another source. `--offline` reads only stored status metadata.
 Add `--json` to auth or generated resource commands for structured output that
 excludes secret values.
 
-The checked-in version 1 authentication bundle targets the development Clerk
-application and `https://dev.admin.api.dedaluslabs.ai/dcs`. OAuth sessions are
-accepted only for a Clerk development issuer and are sent only to that exact
-gateway. Production needs its own checked-in issuer, client, and gateway bundle;
-arbitrary HTTPS gateway overrides fail closed.
+Browser login defaults to the development environment and also supports the
+configured staging environment. Each OAuth session is restricted to the gateway
+for its configured issuer. Production browser login is not configured in this
+version. See [authentication configuration](./src/auth/README.md#configuration)
+for supported overrides.
 
 Workload credentials may also be supplied explicitly:
 

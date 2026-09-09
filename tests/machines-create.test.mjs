@@ -107,3 +107,34 @@ test('invariant connect fails closed when create omits machine_id', async () => 
   )
   assert.deepEqual(fixture.connections, [])
 })
+
+test('invariant create and connect share the authenticated OAuth gateway client', async () => {
+  const session = {
+    version: 1, issuer: 'https://clerk.example.com', clientId: 'client_cli',
+    accessToken: 'fixture-access', accessTokenExpiresAt: 2_000_000_000_000,
+    refreshToken: 'fixture-refresh', userId: 'user_cli', organizationId: 'org_cli',
+    organizationName: 'Test', grantedScopes: ['offline_access', 'user:org:read'],
+  }
+  let clientOptions
+  let connected
+  const api = { createMachine: async () => ({ machine_id: 'dm-created' }) }
+  const program = new Command()
+  addDedalusCommands(program, {
+    environment: { DEDALUS_BASE_URL: 'https://dev.admin.api.dedaluslabs.ai/dcs' },
+    credentialStore: () => ({
+      backend: 'file', read: async () => session, write: async () => {}, remove: async () => true,
+      withLifecycleLock: async (operation) => operation(),
+    }),
+    authProvider: () => ({ issuer: session.issuer, clientId: session.clientId, refresh: async (value) => value }),
+    machines: {
+      api: (options) => { clientOptions = options; return api },
+      connect: async (client, machine) => { assert.equal(client, api); connected = machine },
+    },
+  })
+  await program.parseAsync(['node', 'dedalus', 'machines', 'create', '--connect'])
+  assert.equal(connected, 'dm-created')
+  assert.equal(clientOptions.baseURL, 'https://dev.admin.api.dedaluslabs.ai/dcs')
+  assert.equal(clientOptions.bearerAuth, session.accessToken)
+  assert.equal(clientOptions.apiKey, null)
+  assert.equal(clientOptions.xAPIKey, null)
+})

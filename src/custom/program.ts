@@ -1,82 +1,15 @@
-/** Dedalus-owned CLI assembly layered over Scalar's generated SDK. */
-
-import { version } from './version.generated.js'
+/** Adds Dedalus authentication to Scalar's generated command tree. */
 import type { Command } from 'commander'
-import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime.js'
-import { completions } from '../cli/completions.js'
+import { getProgram as getGeneratedProgram } from '../commands/index.js'
+import { AuthenticatedCommandClient } from './client.js'
 import { addDedalusCommands, formatDedalusError } from './commands.js'
-import { AuthenticatedCommandClient as CommandClient } from './client.js'
-import { operationSpecs } from '../commands/operations.generated.js'
+import { addMachineCommands, withMachineDefaults, machineResultHandler } from './machines.js'
+import { version } from './version.generated.js'
 
-const clientOptions = [
-  {
-    "clientKey": "apiKey",
-    "sdkKey": "apiKey",
-    "name": "api-key",
-    "optionKey": "apiKey",
-    "env": "DEDALUS_API_KEY",
-    "description": "API key authentication using Bearer token",
-    "auth": true
-  },
-  {
-    "clientKey": "xAPIKey",
-    "sdkKey": "xAPIKey",
-    "name": "x-api-key",
-    "optionKey": "xApiKey",
-    "env": "DEDALUS_X_API_KEY",
-    "description": "API key authentication using X-API-Key header",
-    "auth": true
-  },
-  {
-    "clientKey": "bearerAuth",
-    "sdkKey": "bearerAuth",
-    "name": "bearer-auth",
-    "optionKey": "bearerAuth",
-    "env": "DEDALUS_BEARER_AUTH",
-    "description": "Dedalus API key in Authorization: Bearer <key>.",
-    "auth": true
-  },
-  {
-    "clientKey": "provider",
-    "sdkKey": "provider",
-    "name": "provider",
-    "optionKey": "provider",
-    "env": "DEDALUS_PROVIDER",
-    "description": "Provider name for BYOK mode.",
-    "auth": false
-  },
-  {
-    "clientKey": "providerKey",
-    "sdkKey": "providerKey",
-    "name": "provider-key",
-    "optionKey": "providerKey",
-    "env": "DEDALUS_PROVIDER_KEY",
-    "description": "Provider API key for BYOK mode.",
-    "auth": false
-  },
-  {
-    "clientKey": "providerModel",
-    "sdkKey": "providerModel",
-    "name": "provider-model",
-    "optionKey": "providerModel",
-    "env": "DEDALUS_PROVIDER_MODEL",
-    "description": "Model identifier for BYOK provider.",
-    "auth": false
-  }
-] as const satisfies readonly CliClientOptionDefinition[]
-
-const commands = operationSpecs.map(({ command }) => command) satisfies readonly CliCommandDefinition[]
-
-export const getProgram = (): Command =>
-  addDedalusCommands(createProgram({
-    SDK: CommandClient,
-    binaryName: "dedalus",
-    version,
-    description: "CLI for Dedalus",
-    defaultFormat: "auto",
-    defaultErrorFormat: "auto",
-    clientOptions,
-    commands,
-    formatError: formatDedalusError,
-    completions,
-  }))
+export const getProgram = (): Command => addMachineCommands(addDedalusCommands(getGeneratedProgram({
+  SDK: AuthenticatedCommandClient,
+  version,
+  configureDefinition: withMachineDefaults,
+  handleResult: machineResultHandler(),
+  formatError: formatDedalusError,
+})))

@@ -8,7 +8,9 @@ import test from 'node:test'
 
 import { WebSocketServer } from 'ws'
 
-import { operationSpecs } from '../dist/esm/commands/operations.generated.js'
+import SDK from '../dist/esm/sdk/index.js'
+import { AuthenticatedCommandClient } from '../dist/esm/custom/client.js'
+import { getProgram } from '../dist/esm/custom/program.js'
 
 const binary = fileURLToPath(new URL('../dist/esm/custom/bin.js', import.meta.url))
 
@@ -36,14 +38,19 @@ const listen = async (server) => {
   return `http://127.0.0.1:${address.port}`
 }
 
-test('generated command table covers every OpenAPI operation', async () => {
-  const source = JSON.parse(await readFile(new URL('../spec/dcs.openapi.json', import.meta.url), 'utf8'))
-  const methods = new Set(['get', 'post', 'put', 'patch', 'delete'])
-  const operationIDs = Object.values(source.paths).flatMap((path) =>
-    Object.entries(path).filter(([method]) => methods.has(method)).map(([, operation]) => operation.operationId),
-  )
-  assert.equal(operationSpecs.length, 35)
-  assert.deepEqual(operationSpecs.map(({ id }) => id).sort(), operationIDs.sort())
+test('Scalar manifest operations have generated SDK methods and CLI commands', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../scalar-sdk.manifest.json', import.meta.url), 'utf8'))
+  const sdk = new SDK({ apiKey: 'fixture' })
+  const program = getProgram()
+  assert.equal(manifest.operations.length, 35)
+  for (const operation of manifest.operations) {
+    const resources = operation.publicResource.split('.')
+    const resource = resources.reduce((value, name) => value[name], sdk)
+    assert.equal(typeof resource[operation.publicOperation], 'function', operation.publicResource + '.' + operation.publicOperation)
+    const group = program.commands.find((command) => command.name() === resources.join(':'))
+    const name = operation.publicOperation.replace(/[A-Z]/gu, (letter) => '-' + letter.toLowerCase())
+    assert.ok(group?.commands.some((command) => command.name() === name), resources.join(':') + ' ' + name)
+  }
 })
 
 test('machine list reaches the generated endpoint with bearer auth', async (context) => {
@@ -56,13 +63,13 @@ test('machine list reaches the generated endpoint with bearer auth', async (cont
   })
   context.after(() => server.close())
   const baseURL = await listen(server)
-  const processResult = runCLI(['--base-url', baseURL, '--api-key', 'test-token', '--format', 'json', 'machine-lifecycle', 'list'])
+  const processResult = runCLI(['--base-url', baseURL, '--api-key', 'test-token', '--format', 'json', 'machines', 'list'])
   const incoming = await request
   const result = await processResult
   assert.equal(incoming.method, 'GET')
   assert.equal(incoming.url, '/v1/machines')
   assert.equal(incoming.headers.authorization, 'Bearer test-token')
-  assert.deepEqual(JSON.parse(result.stdout), { items: [{ id: 'machine_1' }] })
+  assert.deepEqual(JSON.parse(result.stdout), [{ id: 'machine_1' }])
 })
 
 test('create port encodes path, headers, and JSON body', async (context) => {
@@ -80,9 +87,8 @@ test('create port encodes path, headers, and JSON body', async (context) => {
   const processResult = runCLI([
     '--base-url', baseURL,
     '--api-key', 'test-token',
-    'machine-lifecycle', 'create-port',
+    'machines:ports', 'create',
     '--machine-id', 'machine/a',
-    '--idempotency-key', 'request-1',
     '--port', '8080',
     '--protocol', 'https',
     '--format', 'json',
@@ -90,7 +96,7 @@ test('create port encodes path, headers, and JSON body', async (context) => {
   const { incoming, body } = await received
   const result = await processResult
   assert.equal(incoming.url, '/v1/machines/machine%2Fa/ports')
-  assert.equal(incoming.headers['idempotency-key'], 'request-1')
+  assert.ok(incoming.headers['idempotency-key'])
   assert.deepEqual(JSON.parse(body), { port: 8080, protocol: 'https' })
   assert.deepEqual(JSON.parse(result.stdout), { ok: true })
 })
@@ -105,7 +111,7 @@ test('SSE commands stream parsed events', async (context) => {
   const result = await runCLI([
     '--base-url', baseURL,
     '--api-key', 'test-token',
-    'machine-lifecycle', 'watch-status',
+    'machines', 'watch',
     '--machine-id', 'machine_1',
     '--format', 'jsonl',
   ])
@@ -125,7 +131,7 @@ test('terminal command connects with authorization and sends JSON', async (conte
   const processResult = runCLI([
     '--base-url', baseURL,
     '--api-key', 'websocket-token',
-    'machine-lifecycle', 'connect-terminal',
+    'machines:terminals', 'connect',
     '--machine-id', 'machine_1',
     '--terminal-id', 'terminal_1',
     '--send', '{"type":"input","data":"hello"}',
@@ -141,13 +147,50 @@ test('terminal command connects with authorization and sends JSON', async (conte
   assert.deepEqual(events.find(({ type }) => type === 'message'), { type: 'message', message: { type: 'output', data: 'ready' } })
 })
 
+test('native WebSocket authenticates with the OAuth token provider', async (context) => {
+  const server = createServer()
+  const websocket = new WebSocketServer({server})
+  context.after(() => websocket.close())
+  context.after(() => server.close())
+  const baseURL = await listen(server)
+  const connected = new Promise((resolve) => websocket.once('connection', (socket, request) => {
+    resolve(request)
+    socket.close()
+  }))
+  const client = new AuthenticatedCommandClient({baseURL,apiKey:null,xAPIKey:null,bearerAuth:()=>'oauth-token'})
+  const stream = client.machines.terminals.connect({machine_id:'machine_1',terminal_id:'terminal_1'})
+  context.after(() => stream.close())
+  assert.equal((await connected).headers.authorization,'Bearer oauth-token')
+  for await (const event of stream) assert.notEqual(event.type,'error')
+})
+
 test('required generated flags fail before making a request', async () => {
   await assert.rejects(
-    runCLI(['--api-key', 'test-token', 'machine-lifecycle', 'retrieve']),
+    runCLI(['--api-key', 'test-token', 'machines', 'retrieve']),
     (error) => {
       assert.equal(error.code, 2)
       assert.match(error.stderr, /missing required value 'machine-id'/u)
       return true
     },
   )
+})
+
+test('native pagination follows cursors while raw output preserves one envelope', async (context) => {
+  const paths = []
+  const server = createServer((incoming, response) => {
+    paths.push(incoming.url)
+    const next = incoming.url.includes('cursor=page2')
+    response.setHeader('content-type', 'application/json')
+    response.end(JSON.stringify({items:[{machine_id:next?'two':'one'}], next_cursor:next?null:'page2'}))
+  })
+  context.after(() => server.close())
+  const baseURL = await listen(server)
+  const args = ['--base-url',baseURL,'--api-key','fixture','machines','list']
+  const result = await runCLI([...args,'--format','json'])
+  assert.deepEqual(JSON.parse(result.stdout),[{machine_id:'one'},{machine_id:'two'}])
+  assert.deepEqual(paths,['/v1/machines','/v1/machines?cursor=page2'])
+  paths.length = 0
+  const raw = await runCLI([...args,'--format','raw'])
+  assert.deepEqual(JSON.parse(raw.stdout),{items:[{machine_id:'one'}],next_cursor:'page2'})
+  assert.equal(paths.length,1)
 })

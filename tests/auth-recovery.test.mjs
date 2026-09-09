@@ -4,7 +4,7 @@ import { AuthenticatedCommandClient } from '../dist/esm/custom/client.js'
 import { recoverableBearer } from '../dist/esm/custom/auth/recovery.js'
 import { AuthProviderError } from '../dist/esm/custom/auth/types.js'
 
-const fixture = async (respond, refreshError) => {
+const fixture = async (respond, refreshError, responseBody = () => ({ok:true})) => {
   let saved = { version:1,issuer:'https://clerk.test',clientId:'client',accessToken:'old',refreshToken:'refresh-old',
     accessTokenExpiresAt:Date.now()+3600000,userId:'user',organizationId:'org',grantedScopes:['offline_access','user:org:read'] }
   let lock = Promise.resolve()
@@ -19,7 +19,7 @@ const fixture = async (respond, refreshError) => {
     baseURL:'https://gateway.test',maxRetries:0,fetch:async(url,init)=>{
       requests.push({headers:new Headers(init.headers),body:init.body})
       const status=respond(requests.length,new Headers(init.headers))
-      return new Response(JSON.stringify(status===200?{ok:true}:{error_code:'invalid_token'}),{status,headers:{'content-type':'application/json'}})
+      return new Response(JSON.stringify(status===200?responseBody(url):{error_code:'invalid_token'}),{status,headers:{'content-type':'application/json'}})
     }})
   return {client,requests,refreshes:()=>refreshes,store,session:()=>saved}
 }
@@ -101,4 +101,23 @@ test('recovered response retains raw streaming response support',async()=>{
  const response=await f.client.get('/events',{__binaryResponse:true})
  assert.ok(response instanceof Response)
  assert.deepEqual(await response.json(),{ok:true})
+})
+
+test('native generated pagination recovers OAuth on a later page', async () => {
+ const f=await fixture((n)=>n===2?401:200,undefined,(url)=>String(url).includes('cursor=next')
+   ?{items:[{machine_id:'two'}],next_cursor:null}:{items:[{machine_id:'one'}],next_cursor:'next'})
+ const items=[]
+ for await(const item of f.client.machines.list()) items.push(item.machine_id)
+ assert.deepEqual(items,['one','two'])
+ assert.equal(f.refreshes(),1)
+ assert.equal(f.requests.length,3)
+ assert.equal(f.requests[2].headers.get('authorization'),'Bearer new')
+})
+
+test('transient retries cannot start a second OAuth recovery for one request', async () => {
+ const statuses=[401,500,401]
+ const f=await fixture(n=>statuses[n-1])
+ await assert.rejects(f.client.machines.retrieve({machine_id:'one'},{maxRetries:1}),e=>e.status===401)
+ assert.equal(f.refreshes(),1)
+ assert.equal(f.requests.length,3)
 })

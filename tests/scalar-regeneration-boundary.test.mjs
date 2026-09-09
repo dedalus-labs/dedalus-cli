@@ -12,7 +12,7 @@ test('invariant the published CLI executes Scalar runtime with narrow hooks', as
   ])
 
   assert.match(manifest, /"dedalus": "\.\/dist\/esm\/custom\/bin\.js"/u)
-  assert.match(program, /from '\.\.\/cli\/runtime\.js'/u)
+  assert.match(program, /from '\.\.\/commands\/index\.js'/u)
   assert.doesNotMatch(program, /custom\/runtime|from '\.\/runtime\.js'/u)
   assert.match(runtime, /readonly formatError\?:/u)
   assert.match(runtime, /formatError\?\.\(error, command\)/u)
@@ -34,9 +34,10 @@ test('invariant release version bumps pass the boundary but implementation edits
     const commands = (version) => `const program = {\n    version: '${version}', // x-release-please-version\n};\n`
     await writeFile(join(directory, 'src/sdk/version.ts'), sdk('0.1.0'))
     await writeFile(join(directory, 'src/commands/index.ts'), commands('0.1.0'))
+    await writeFile(join(directory, 'src/sdk/client.ts'), '  private async makeRequest(\n')
     const git = (args) => execFileSync('git', args, { cwd: directory, stdio: 'pipe' })
     git(['init'])
-    git(['add', 'src/sdk/version.ts', 'src/commands/index.ts'])
+    git(['add', 'src/sdk/version.ts', 'src/sdk/client.ts', 'src/commands/index.ts'])
     git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test',
       '-c', 'commit.gpgsign=false', 'commit', '-m', 'fixture'])
     await writeFile(join(directory, 'src/sdk/version.ts'), sdk('0.2.0'))
@@ -44,7 +45,11 @@ test('invariant release version bumps pass the boundary but implementation edits
     const check = () => spawnSync(process.execPath,
       [new URL('../scripts/check-scalar-boundaries.mjs', import.meta.url).pathname],
       { cwd: directory, env: { ...process.env, SCALAR_BASE_REF: 'HEAD' }, encoding: 'utf8' })
+    await writeFile(join(directory, 'src/sdk/client.ts'), '  protected async makeRequest(\n')
     assert.equal(check().status, 0)
+    await writeFile(join(directory, 'src/sdk/client.ts'), '  protected async makeRequest(\nreturn null\n')
+    assert.notEqual(check().status, 0)
+    await writeFile(join(directory, 'src/sdk/client.ts'), '  protected async makeRequest(\n')
     await writeFile(join(directory, 'src/commands/index.ts'), commands('0.2.0') + 'program.debug = true\n')
     const rejected = check()
     assert.notEqual(rejected.status, 0)

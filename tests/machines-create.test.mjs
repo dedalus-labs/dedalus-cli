@@ -1,167 +1,167 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { spawn } from 'node:child_process'
+import { createServer } from 'node:http'
+import { once } from 'node:events'
+import { fileURLToPath } from 'node:url'
 
-import { Command } from 'commander'
+import { getProgram as getGeneratedProgram } from '../dist/esm/commands/index.js'
+import { AuthenticatedCommandClient } from '../dist/esm/custom/client.js'
+import { addDedalusCommands, formatDedalusError } from '../dist/esm/custom/commands.js'
+import { addMachineCommands, withMachineDefaults, machineResultHandler } from '../dist/esm/custom/machines.js'
 
-import { addDedalusCommands } from '../dist/esm/custom/commands.js'
-import { createMachineAPI } from '../dist/esm/custom/machines.js'
+// In-process command fixtures model an interactive terminal; child CLI tests use pipes.
+const initialTTY = process.stdin.isTTY
+test.before(() => { process.stdin.isTTY = true })
+test.after(() => { process.stdin.isTTY = initialTTY })
 
-const addMachines = (overrides = {}) => {
+const fixture = (auth = {}) => {
   const calls = []
   const connections = []
-  let output = ''
-  const program = new Command()
-  addDedalusCommands(program, {
-    environment: { DEDALUS_API_KEY: 'workload-key' },
-    writeOutput: (value) => { output += value },
-    machines: {
-      api: (options) => ({
-        createMachine: async (body) => {
-          calls.push({ body, options })
-          return { machine_id: 'dm-created', phase: 'accepted' }
-        },
-        createSSHSession: async () => { throw new Error('unexpected SSH session') },
-        getMachineSSHSession: async () => { throw new Error('unexpected SSH poll') },
-      }),
-      connect: async (_api, machineID) => { connections.push(machineID) },
-      ...overrides,
-    },
+  let output
+  class SDK extends AuthenticatedCommandClient {
+    constructor(options) {
+      super({...options, maxRetries:0, fetch:async (url, init) => {
+        calls.push({url:String(url),body:JSON.parse(init.body ?? '{}'),headers:new Headers(init.headers)})
+        return new Response(JSON.stringify({machine_id:'dm-created',phase:'accepted'}),{headers:{'content-type':'application/json'}})
+      }})
+    }
+  }
+  const connected = machineResultHandler(async (api,machineID) => {
+    connections.push(machineID)
+    await api.createSSHSession(machineID,'fixture-public-key')
+    await api.getMachineSSHSession(machineID,'session-1')
   })
-  return { calls, connections, output: () => output, program }
+  const program = addMachineCommands(addDedalusCommands(getGeneratedProgram({
+    SDK, configureDefinition:withMachineDefaults, formatError:formatDedalusError,
+    handleResult:async (...args) => {
+      if (await connected(...args)) return true
+      output = args[0]
+      return true
+    },
+  }), {environment:{DEDALUS_API_KEY:'workload-key'},...auth}))
+  return {program,calls,connections,output:()=>output}
 }
 
-test('invariant machines create --ssh uses API defaults and connects the created machine', async () => {
-  const fixture = addMachines()
-  await fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
-
-  assert.deepEqual(fixture.calls[0].body, {})
-  assert.equal(fixture.calls[0].options.apiKey, 'workload-key')
-  assert.equal(fixture.calls[0].options.bearerAuth, null)
-  assert.equal(fixture.calls[0].options.xAPIKey, null)
-  assert.deepEqual(fixture.connections, ['dm-created'])
-  assert.equal(fixture.output(), '')
+test('generated machines create uses server defaults then native SSH session methods', async () => {
+  const f = fixture()
+  await f.program.parseAsync(['node','dedalus','machines','create','--ssh'])
+  assert.deepEqual(f.calls.map(({body})=>body),[{}, {public_key:'fixture-public-key'}, {}])
+  assert.deepEqual(f.calls.map(({url})=>new URL(url).pathname),[
+    '/v1/machines','/v1/machines/dm-created/ssh','/v1/machines/dm-created/ssh/session-1',
+  ])
+  assert.ok(f.calls[0].headers.get('idempotency-key'))
+  assert.ok(f.calls[1].headers.get('idempotency-key'))
+  assert.equal(f.calls[0].headers.get('authorization'),'Bearer workload-key')
+  assert.deepEqual(f.connections,['dm-created'])
+  assert.equal(f.output(),undefined)
 })
 
-test('invariant the machines adapter uses Scalar transport with an empty JSON body', async () => {
-  const requests = []
-  const api = createMachineAPI({
-    apiKey: 'workload-key',
-    baseURL: 'https://api.example.test',
-    maxRetries: 0,
-    fetch: async (url, init) => {
-      requests.push({ url: String(url), init })
-      return new Response(JSON.stringify({ machine_id: 'dm-created' }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      })
-    },
+test('SSH preserves an explicit per-operation organization override', async () => {
+  const f=fixture()
+  await f.program.parseAsync(['node','dedalus','machines','create','--ssh','--x-dedalus-org-id','org-override'])
+  assert.equal(f.calls.length,3)
+  for(const request of f.calls) assert.equal(request.headers.get('x-dedalus-org-id'),'org-override')
+})
+
+test('generated create preserves explicit sizing and organization flags', async () => {
+  const f=fixture()
+  await f.program.parseAsync(['node','dedalus','machines','create',
+    '--vcpu','2','--memory-mib','2048','--storage-gib','20','--autosleep','30m','--x-dedalus-org-id','org-override'])
+  assert.deepEqual(f.calls[0].body,{autosleep:'30m',memory_mib:2048,storage_gib:20,vcpu:2})
+  assert.equal(f.calls[0].headers.get('x-dedalus-org-id'),'org-override')
+  assert.deepEqual(f.output(),{machine_id:'dm-created',phase:'accepted'})
+  assert.deepEqual(f.connections,[])
+})
+
+test('SSH customization preserves generated command identity and siblings', () => {
+  const program=getGeneratedProgram()
+  const machines=program.commands.find(command=>command.name()==='machines')
+  const create=machines.commands.find(command=>command.name()==='create')
+  const siblings=[...machines.commands]
+  addMachineCommands(program)
+  assert.deepEqual(machines.commands,siblings)
+  assert.equal(machines.commands.find(command=>command.name()==='create'),create)
+  assert.ok(create.options.some(option=>option.long==='--ssh'))
+  assert.equal(create.options.filter(option=>option.long==='--vcpu').length,1)
+})
+
+test('only machine create sizing requirements are relaxed', () => {
+  const base={resourcePath:['machines'],methodName:'create',flags:[
+    {paramKey:'vcpu',required:true},{paramKey:'memory_mib',required:true},{paramKey:'storage_gib',required:true},{paramKey:'future_required',required:true},
+  ]}
+  assert.deepEqual(withMachineDefaults(base).flags.map(flag=>flag.required),[false,false,false,true])
+  assert.deepEqual(base.flags.map(flag=>flag.required),[true,true,true,true])
+  const other={...base,methodName:'retrieve'}
+  assert.equal(withMachineDefaults(other),other)
+})
+
+test('SSH fails closed when create omits machine_id', async () => {
+  const program=fixture().program
+  const create=program.commands.find(command=>command.name()==='machines').commands.find(command=>command.name()==='create')
+  create.setOptionValue('ssh',true)
+  await assert.rejects(machineResultHandler(async()=>assert.fail('unexpected SSH'))(
+    {phase:'accepted'},new AuthenticatedCommandClient({apiKey:'fixture'}),create),/server returned no machine_id/u)
+})
+
+test('create and SSH share stored OAuth gateway authentication', async () => {
+  const session={version:1,issuer:'https://clerk.example.com',clientId:'client_cli',
+    accessToken:'fixture-access',accessTokenExpiresAt:2_000_000_000_000,refreshToken:'fixture-refresh',
+    userId:'user_cli',organizationId:'org_cli',organizationName:'Test',grantedScopes:['offline_access','user:org:read']}
+  const f=fixture({
+    environment:{DEDALUS_BASE_URL:'https://dev.admin.api.dedaluslabs.ai/dcs'},
+    credentialStore:()=>({backend:'file',read:async()=>session,write:async()=>{},remove:async()=>true,withLifecycleLock:async(fn)=>fn()}),
+    authProvider:()=>({issuer:session.issuer,clientId:session.clientId,refresh:async(value)=>value}),
   })
-
-  assert.deepEqual(await api.createMachine({}), { machine_id: 'dm-created' })
-  assert.equal(requests.length, 1)
-  assert.equal(requests[0].url, 'https://api.example.test/v1/machines')
-  assert.equal(requests[0].init.method, 'POST')
-  assert.equal(requests[0].init.body, '{}')
-  const headers = new Headers(requests[0].init.headers)
-  assert.equal(headers.get('authorization'), 'Bearer workload-key')
-  assert.ok(headers.get('idempotency-key'))
-})
-
-test('invariant machines create preserves explicit shape overrides', async () => {
-  const fixture = addMachines()
-
-  await fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create',
-    '--vcpu', '2', '--memory-mib', '2048', '--storage-gib', '20', '--autosleep', '30m'])
-
-  assert.deepEqual(fixture.calls[0].body, {
-    autosleep: '30m',
-    memory_mib: 2048,
-    storage_gib: 20,
-    vcpu: 2,
-  })
-  assert.deepEqual(JSON.parse(fixture.output()), {
-    machine_id: 'dm-created',
-    phase: 'accepted',
-  })
-  assert.deepEqual(fixture.connections, [])
-})
-
-test('invariant Scalar generated commands cannot shadow the machines adapter', () => {
-  const machines = new Command('machines').addCommand(new Command('create'))
-  assert.throws(() => addDedalusCommands(new Command().addCommand(machines)),
-    /Scalar generated the reserved 'machines create' command/u)
-})
-
-test('invariant connect fails closed when create omits machine_id', async () => {
-  const fixture = addMachines({
-    api: () => ({
-      createMachine: async () => ({ phase: 'accepted' }),
-      createSSHSession: async () => { throw new Error('unexpected SSH session') },
-      getMachineSSHSession: async () => { throw new Error('unexpected SSH poll') },
-    }),
-  })
-
-  await assert.rejects(
-    fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh']),
-    /server returned no machine_id/u,
-  )
-  assert.deepEqual(fixture.connections, [])
-})
-
-test('invariant create and connect share the authenticated OAuth gateway client', async () => {
-  const session = {
-    version: 1, issuer: 'https://clerk.example.com', clientId: 'client_cli',
-    accessToken: 'fixture-access', accessTokenExpiresAt: 2_000_000_000_000,
-    refreshToken: 'fixture-refresh', userId: 'user_cli', organizationId: 'org_cli',
-    organizationName: 'Test', grantedScopes: ['offline_access', 'user:org:read'],
+  await f.program.parseAsync(['node','dedalus','machines','create','--ssh'])
+  assert.deepEqual(f.connections,['dm-created'])
+  assert.equal(f.calls.length,3)
+  for(const request of f.calls){
+    assert.ok(request.url.startsWith('https://dev.admin.api.dedaluslabs.ai/dcs/v1/machines'))
+    assert.equal(request.headers.get('authorization'),'Bearer fixture-access')
+    assert.equal(request.headers.get('x-api-key'),null)
   }
-  let clientOptions
-  let connected
-  const api = { createMachine: async () => ({ machine_id: 'dm-created' }) }
-  const program = new Command()
-  addDedalusCommands(program, {
-    environment: { DEDALUS_BASE_URL: 'https://dev.admin.api.dedaluslabs.ai/dcs' },
-    credentialStore: () => ({
-      backend: 'file', read: async () => session, write: async () => {}, remove: async () => true,
-      withLifecycleLock: async (operation) => operation(),
-    }),
-    authProvider: () => ({ issuer: session.issuer, clientId: session.clientId, refresh: async (value) => value }),
-    machines: {
-      api: (options) => { clientOptions = options; return api },
-      connect: async (client, machine) => { assert.equal(client, api); connected = machine },
-    },
-  })
-  await program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
-  assert.equal(connected, 'dm-created')
-  assert.equal(clientOptions.baseURL, 'https://dev.admin.api.dedaluslabs.ai/dcs')
-  assert.equal(clientOptions.bearerAuth(), session.accessToken)
-  assert.equal(clientOptions.apiKey, null)
-  assert.equal(clientOptions.xAPIKey, null)
 })
 
+const runCLI = (args, stdin) => new Promise((resolve,reject)=>{
+  const child=spawn(process.execPath,[fileURLToPath(new URL('../dist/esm/custom/bin.js',import.meta.url)),...args])
+  let stdout='',stderr=''
+  child.stdout.on('data',value=>{stdout+=value})
+  child.stderr.on('data',value=>{stderr+=value})
+  child.stdin.end(stdin)
+  child.once('error',reject)
+  child.once('close',code=>resolve({code,stdout,stderr}))
+})
 
-test('invariant create permission errors use the secret-safe output boundary', async () => {
-  let stderr = ''
-  const previousExitCode = process.exitCode
-  const fixture = addMachines({
-    api: () => ({
-      createMachine: async () => {
-        throw Object.assign(new Error('private provider details'), {
-          status: 403, error: { error_code: 'AUTH_SCOPE_FORBIDDEN', message: 'private details' },
-        })
-      },
-    }),
-    writeError: (value) => { stderr += value },
+const serverFixture=async(context,status=200)=>{
+  const requests=[]
+  const server=createServer(async(request,response)=>{
+    let body=''
+    for await(const chunk of request)body+=chunk
+    requests.push(JSON.parse(body))
+    response.writeHead(status,{'content-type':'application/json'})
+    response.end(JSON.stringify(status===200?{machine_id:'dm-created',phase:'accepted'}
+      :{error_code:'AUTH_SCOPE_FORBIDDEN',message:'private provider details'}))
   })
-  try {
-    await fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
-    assert.equal(process.exitCode, 1)
-    assert.equal(JSON.parse(stderr).error.code, 'AUTH_SCOPE_FORBIDDEN')
-    assert.equal(JSON.parse(stderr).error.http_status, 403)
-    assert.doesNotMatch(stderr, /private|Error:|\n    at /u)
-    assert.equal(fixture.output(), '')
-    assert.deepEqual(fixture.connections, [])
-  } finally {
-    process.exitCode = previousExitCode
-  }
+  context.after(()=>server.close())
+  server.listen(0,'127.0.0.1')
+  await once(server,'listening')
+  return {requests,args:['--api-key','fixture','--base-url',`http://127.0.0.1:${server.address().port}`,'machines','create']}
+}
+
+test('generated create retains piped JSON and output transforms', async(context)=>{
+  const f=await serverFixture(context)
+  const result=await runCLI([...f.args,'--format','json','--transform','machine_id'],JSON.stringify({vcpu:2,autosleep:'never'}))
+  assert.equal(result.code,0,result.stderr)
+  assert.deepEqual(f.requests,[{vcpu:2,autosleep:'never'}])
+  assert.equal(JSON.parse(result.stdout),'dm-created')
+})
+
+test('generated create permission errors retain the secret-safe boundary', async(context)=>{
+  const f=await serverFixture(context,403)
+  const result=await runCLI([...f.args,'--ssh','--format-error','json'])
+  assert.notEqual(result.code,0)
+  assert.equal(JSON.parse(result.stderr).error.code,'AUTH_SCOPE_FORBIDDEN')
+  assert.doesNotMatch(result.stderr,/private|Error:|\n    at /u)
+  assert.equal(result.stdout,'')
 })

@@ -13,10 +13,13 @@ The full API of this library can be found in [api.md](./api.md).
 - [API Reference](./api.md)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
+- [Streaming](#streaming)
+- [WebSockets](#websockets)
 - [Authentication](#authentication)
 - [Errors](#errors)
 - [Client Options](#client-options)
 - [Retries and Timeouts](#retries-and-timeouts)
+- [Pagination](#pagination)
 - [Helpers](#helpers)
 - [Logging](#logging)
 - [Requirements](#requirements)
@@ -36,24 +39,27 @@ npm install -g dedalus-cli
 
 ```sh
 dedalus [resource] [command] [flags]
+
+dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '0' --storage-gib '0' --vcpu '0'
 ```
 
-Create a machine with the API defaults and open an interactive SSH shell:
+Create a machine with API defaults and open an interactive shell:
 
 ```sh
 dedalus machines create --ssh
 ```
 
-Scalar owns the low-level software development kit (SDK), CLI runtime, and its
-generated entry points. The published `dedalus` executable uses the
-Dedalus-owned entry point under `src/custom` and imports Scalar's runtime
-directly. Narrow runtime hooks are maintained on `scalar-next` through Scalar's
-three-way merge; the SDK client and generated entry points remain untouched.
-The resource-command table and API reference are deterministically regenerated
-from the Dedalus-owned `spec/dcs.openapi.json` with `npm run generate:commands`.
-See [the input contract](./spec/README.md) before updating that snapshot. Keep
-authentication, stored credentials, and other handwritten commands behind the
-`src/custom` boundary.
+Scalar generates the SDK, all 35 resource commands, pagination, streaming transports,
+API reference, and manual pages from the connected DCS target's resource mappings.
+The published executable adds authentication through `src/custom`. There is no
+second operation generator or command adapter.
+
+Three narrow extension points survive Scalar's three-way merge: entry-point
+options select the authenticated SDK subclass, the SDK request method is protected
+so OAuth recovery also covers pagination, and CLI runtime hooks support auth errors
+and piped input. A small WebSocket auth override supplies the stored bearer token
+omitted by Scalar 0.32.3's WebSocket selector. Keep other handwritten behavior behind
+`src/custom`; `scalar:check` rejects unrelated SDK and command-table changes.
 
 See the [API reference](./api.md) for every available operation.
 
@@ -84,6 +90,18 @@ Installing the package globally also installs man pages. `man dedalus` lists the
 man dedalus
 man dedalus-completion
 ```
+
+<br />
+
+## Streaming
+
+Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
+
+<br />
+
+## WebSockets
+
+WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
 
 <br />
 
@@ -133,6 +151,8 @@ Declared schemes:
 
 Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
+Documented error statuses: `400`, `401`, `403`, `409`, `429`, `500`, `502`, `503`, `default`.
+
 <br />
 
 ## Client Options
@@ -151,6 +171,12 @@ Configure the generated client by setting any of these options when you create i
 ## Retries and Timeouts
 
 Generated clients support request timeouts and retry temporary failures such as network errors, 408, 409, 429, and 5xx responses. Retry delays honor `Retry-After` headers when present. Tune the retry and timeout client options shown above, or override them per request.
+
+<br />
+
+## Pagination
+
+Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to cap the total number of items returned.
 
 <br />
 
@@ -191,7 +217,10 @@ running tests after a Scalar build.
 The custom executable receives its version from `package.json` during every build.
 Review the refreshed release PR only after auth and dependent commands are on
 `scalar-next`; verify its built executable reports the release package version.
-A real Scalar dashboard rebuild is still required to verify platform regeneration.
+The connected Scalar target was rebuilt with generator 0.32.3 and now emits all
+35 DCS operations. These customizations were reconciled against that output. After
+merging them into `scalar-next`, rebuild again to verify the platform carries the
+hooks forward before releasing.
 
 ### Staging OAuth verification
 
@@ -224,11 +253,17 @@ try again. Permanent provider failures are cached for that credential within the
 current process and require signing in again. This does not guarantee recovery
 if a rotated refresh-token response is lost before it can be saved.
 
-Recovery lives in `src/custom/client.ts` and `src/custom/auth/`. Scalar's SDK is
-called directly and remains unchanged. Verify these helpers on the next Scalar
-platform regeneration before release.
+Recovery lives in `src/custom/client.ts` and `src/custom/auth/`. The SDK's shared
+request method has one visibility change (`private` to `protected`); Scalar still
+owns request construction, pagination, response parsing, and transient retries.
 
-`machines create --ssh` removes temporary SSH credentials on normal exit and on
-SIGINT, SIGTERM, or SIGHUP. Cancellation also signals the active SSH subprocess.
-It does not delete the created machine. SIGKILL and host crashes cannot run
-process cleanup.
+`machines create --ssh` extends Scalar's generated create command, then uses its
+native SSH session methods. Scalar still handles flags, piped JSON, authentication,
+request construction, and output formats. The DCS input currently marks CPU,
+memory, and storage as required even though the server accepts defaults; a narrow
+command-definition hook makes only those three fields optional. Remove that hook
+when the source OpenAPI contract is corrected.
+
+Temporary SSH credentials are removed on normal exit and on SIGINT, SIGTERM, or
+SIGHUP. Cancellation also signals the active SSH subprocess. It does not delete
+the created machine. SIGKILL and host crashes cannot run process cleanup.

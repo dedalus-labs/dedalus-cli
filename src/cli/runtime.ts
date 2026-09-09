@@ -22,6 +22,9 @@ export type CliFlagDefinition = {
   readonly valueKind: CliValueKind;
   // Array-valued flag accepted as a repeatable singular switch (`--status a --status b`).
   readonly repeatable?: boolean;
+  // Value kind of one occurrence of a repeatable flag, so `--tag ''` stays an empty string rather
+  // than parsing as YAML `null`, and a string id is not read as a number.
+  readonly itemKind?: CliValueKind;
   // Wire-property path under the parent param for dotted leaf flags (e.g. `--address.city`).
   readonly objectPath?: readonly string[];
 };
@@ -65,6 +68,9 @@ export type CreateProgramOptions = {
   readonly defaultErrorFormat: OutputFormat;
   readonly clientOptions: readonly CliClientOptionDefinition[];
   readonly commands: readonly CliCommandDefinition[];
+  readonly configureDefinition?: (definition: CliCommandDefinition) => CliCommandDefinition;
+  // Return true when custom orchestration has handled the result and owns its output.
+  readonly handleResult?: (result: unknown, client: unknown, command: Command) => Promise<boolean>;
   readonly formatError?: (error: unknown, command: Command) => Record<string, unknown> | undefined;
   // Completion script per shell, generated alongside the command table. Absent when the SDK
   // config disables shell completions, in which case no `completion` command is registered.
@@ -105,6 +111,8 @@ export const createProgram = ({
   clientOptions,
   commands,
   formatError,
+  configureDefinition,
+  handleResult,
   completions,
 }: CreateProgramOptions): Command => {
   const program = usageExitCode(new Command());
@@ -135,7 +143,7 @@ export const createProgram = ({
   }
 
   for (const definition of commands)
-    addGeneratedCommand(program, SDK, clientOptions, definition, formatError);
+    addGeneratedCommand(program, SDK, clientOptions, configureDefinition?.(definition) ?? definition, formatError, handleResult);
 
   if (completions) addCompletionCommand(program, binaryName, completions);
 
@@ -213,6 +221,7 @@ const addGeneratedCommand = (
   clientOptions: readonly CliClientOptionDefinition[],
   definition: CliCommandDefinition,
   formatError: CreateProgramOptions['formatError'],
+  handleResult: CreateProgramOptions['handleResult'],
 ): void => {
   const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1));
   const commandName = definition.commandPath.at(-1) ?? definition.methodName;
@@ -278,7 +287,7 @@ const addGeneratedCommand = (
     const command = args.at(-1);
     if (!(command instanceof Command)) throw new Error('Expected Commander command context');
     const positionalValues = args.slice(0, -1);
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, formatError);
+    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, formatError, handleResult);
   });
 
   parent.addCommand(command);
@@ -306,6 +315,7 @@ const runGeneratedCommand = async (
   command: Command,
   positionalValues: readonly unknown[],
   formatError: CreateProgramOptions['formatError'],
+  handleResult: CreateProgramOptions['handleResult'],
 ): Promise<void> => {
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
@@ -358,6 +368,7 @@ const runGeneratedCommand = async (
       return;
     }
 
+    if (await handleResult?.(resolved, client, command)) return;
     await writeOutput(resolved, outputOptions);
   } catch (error) {
     await writeError(error, errorOptions, clientOptions, SDK, command, formatError);
@@ -430,7 +441,7 @@ const callArguments = async (
   for (const flag of definition.flags) {
     if (flag.objectPath) continue;
     const value = options[flag.optionKey];
-    if (value !== undefined) flagParams[flag.paramKey] = coerceValue(value, flag.valueKind);
+    if (value !== undefined) flagParams[flag.paramKey] = coerceValue(value, flag.valueKind, flag.itemKind);
   }
 
   // Dotted leaf flags (e.g. `--address.city`) are applied after the JSON-blob flag for the same
@@ -528,7 +539,12 @@ const readStdinSource = async (): Promise<string> => {
   return done;
 };
 
+// An empty argument is an empty STRING, not YAML's empty document. `--tag ''` asks for one
+// empty tag; parsing it as YAML answers `null`, which the request builder then refuses
+// ("Received null for "tags[]""). Only the empty case is special-cased: `--tag null` still
+// means null, and every other value keeps the JSON-then-YAML reading.
 const parseStructuredValue = (source: string): unknown => {
+  if (source === '') return source;
   try {
     return JSON.parse(source);
   } catch {
@@ -571,9 +587,13 @@ const omitParams = (params: Record<string, unknown>, names: readonly string[]): 
   return out;
 };
 
-const coerceValue = (value: unknown, kind: CliValueKind): unknown => {
-  if (Array.isArray(value))
-    return value.map((item) => coerceValue(item, kind === 'array' ? 'unknown' : kind));
+// `itemKind` types one occurrence of a repeatable array flag; a definition without one (an injected
+// field with no item schema) falls back to parsing each occurrence as structured text.
+const coerceValue = (value: unknown, kind: CliValueKind, itemKind?: CliValueKind): unknown => {
+  if (Array.isArray(value)) {
+    const elementKind = kind === 'array' ? (itemKind ?? 'unknown') : kind;
+    return value.map((item) => coerceValue(item, elementKind));
+  }
   if (typeof value !== 'string') return value;
   if (kind === 'boolean') return value === 'true' || value === '1';
   if (kind === 'number' || kind === 'integer') return Number(value);

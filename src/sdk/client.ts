@@ -1,6 +1,9 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-import { APIPromise, type APIResponseProps } from './api-promise';
+import { APIPromise } from './api-promise';
+import type { APIResponseProps } from './internal/parse';
+import { PagePromise, type AbstractPage, type CursorPageParams, CursorPageResponse } from './core/pagination';
+import * as Pagination from './core/pagination';
 import * as Errors from './error';
 import { uuid4 } from './internal/utils/uuid';
 import { validatePositiveInteger, isAbsoluteURL, safeJSON, isEmptyObj } from './internal/utils/values';
@@ -25,6 +28,42 @@ import type { HTTPMethod, FinalizedRequestInit, MergedRequestInit, PromiseOrValu
 import { stringifyQuery } from './internal/utils/query';
 import { toFile } from './core/uploads';
 import { VERSION } from './version';
+import {
+  Machines,
+  type Machine,
+  type MachineList,
+  type MachineListItem,
+  type CreateParams,
+  type UpdateParams,
+  type LifecycleStatus,
+  type MachineListItemsCursorPage,
+  type MachineRetrieveResponse,
+  type MachineListParams,
+  type MachineCreateParams,
+  type MachineRetrieveParams,
+  type MachineUpdateParams,
+  type MachineDeleteParams,
+  type MachineWatchParams,
+  type MachineSleepParams,
+  type MachineWakeParams,
+} from './resources/machines/machines';
+import {
+  Networks,
+  type Network,
+  type NetworkGateway,
+  type NetworkRetrieveParams,
+} from './resources/networks';
+import {
+  Usage,
+  type OrgUsage,
+  type MachineComputeUsage,
+  type MachineComputeUsageRow,
+  type MachineStorageUsage,
+  type MachineStorageUsageRow,
+  type UsageRetrieveParams,
+  type UsageMachineComputeParams,
+  type UsageMachineStorageParams,
+} from './resources/usage';
 
 export type AuthTokenProvider = () => string | Promise<string>;
 
@@ -178,7 +217,7 @@ export class Dedalus {
    * @param {string | null | undefined} [opts.providerModel=process.env["DEDALUS_PROVIDER_MODEL"] ?? null]
    * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string | null | undefined} [opts.dedalusOrgID=process.env["DEDALUS_ORG_ID"] ?? null]
-   * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://api.dedaluslabs.ai] - Override the default base URL for the API.
+   * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://dcs.dedaluslabs.ai] - Override the default base URL for the API.
    * @param {number} [opts.timeout=1 minute] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
    * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
    * @param {Fetch} [opts.fetch] - Specify a custom `fetch` function implementation.
@@ -208,10 +247,10 @@ export class Dedalus {
       asBaseURL,
       dedalusOrgID,
       ...opts,
-      baseURL: baseURL || 'https://api.dedaluslabs.ai',
+      baseURL: baseURL || 'https://dcs.dedaluslabs.ai',
     };
     const baseURLOverridden = baseURL !== null && baseURL !== undefined && baseURL !== '';
-    const defaultBaseURL = 'https://api.dedaluslabs.ai';
+    const defaultBaseURL = 'https://dcs.dedaluslabs.ai';
     this.baseURL = options.baseURL || defaultBaseURL;
     this.timeout = options.timeout ?? Dedalus.DEFAULT_TIMEOUT /* 1 minute */;
     this.logger = options.logger ?? console;
@@ -389,7 +428,7 @@ export class Dedalus {
     return new APIPromise(this, this.makeRequest(options, remainingRetries, undefined));
   }
 
-  private async makeRequest(
+  protected async makeRequest(
     optionsInput: PromiseOrValue<FinalRequestOptions>,
     retriesRemaining: number | null,
     retryOfRequestLogID: string | undefined,
@@ -544,6 +583,31 @@ export class Dedalus {
     );
 
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
+  }
+
+  // Public escape hatch for list endpoints the spec does not describe: the page type parameter
+  // defaults so `getAPIList<Item>(path, MyPage)` needs only the item type, and the page argument
+  // is a bare constructor so a hand-rolled page class need not restate the runtime page
+  // constructor's parameter types.
+  getAPIList<Item, Page extends AbstractPage<Item> = AbstractPage<Item>>(
+    path: string,
+    Page: new (...args: any[]) => Page,
+    options?: PromiseOrValue<RequestOptions>,
+    method: FinalRequestOptions['method'] = 'get',
+  ): PagePromise<Page, Item> {
+    // List endpoints are usually GET, but a body-located cursor scheme rides a POST body, so the
+    // caller passes the operation's actual verb. The method is preserved across auto-advanced
+    // pages because `nextPageRequestOptions` spreads the stored request options (incl. `method`).
+    const requestOptions = Promise.resolve(options).then((opts) => ({ ...opts, method, path }));
+    return this.requestAPIList<Item, Page>(Page, requestOptions);
+  }
+
+  requestAPIList<Item = unknown, Page extends AbstractPage<Item> = AbstractPage<Item>>(
+    Page: new (...args: ConstructorParameters<typeof AbstractPage>) => Page,
+    options: PromiseOrValue<FinalRequestOptions>,
+  ): PagePromise<Page, Item> {
+    // `Item` is passed explicitly because the page constructor carries no slot to infer it from.
+    return new PagePromise<Page, Item>(this, this.makeRequest(options, null, undefined), Page);
   }
 
   async fetchWithTimeout(
@@ -920,10 +984,60 @@ export class Dedalus {
   static UnprocessableEntityError = Errors.UnprocessableEntityError;
 
   static toFile = toFile;
+
+  machines: Machines = new Machines(this);
+  networks: Networks = new Networks(this);
+  usage: Usage = new Usage(this);
 }
+
+Dedalus.Machines = Machines;
+Dedalus.Networks = Networks;
+Dedalus.Usage = Usage;
 
 export declare namespace Dedalus {
   export type RequestOptions = Opts.RequestOptions;
+
+  export import CursorPage = Pagination.CursorPage;
+  export { type CursorPageParams as CursorPageParams, type CursorPageResponse as CursorPageResponse };
+
+  export {
+    Machines as Machines,
+    type Machine as Machine,
+    type MachineList as MachineList,
+    type MachineListItem as MachineListItem,
+    type CreateParams as CreateParams,
+    type UpdateParams as UpdateParams,
+    type LifecycleStatus as LifecycleStatus,
+    type MachineListItemsCursorPage as MachineListItemsCursorPage,
+    type MachineRetrieveResponse as MachineRetrieveResponse,
+    type MachineListParams as MachineListParams,
+    type MachineCreateParams as MachineCreateParams,
+    type MachineRetrieveParams as MachineRetrieveParams,
+    type MachineUpdateParams as MachineUpdateParams,
+    type MachineDeleteParams as MachineDeleteParams,
+    type MachineWatchParams as MachineWatchParams,
+    type MachineSleepParams as MachineSleepParams,
+    type MachineWakeParams as MachineWakeParams,
+  };
+
+  export {
+    Networks as Networks,
+    type Network as Network,
+    type NetworkGateway as NetworkGateway,
+    type NetworkRetrieveParams as NetworkRetrieveParams,
+  };
+
+  export {
+    Usage as Usage,
+    type OrgUsage as OrgUsage,
+    type MachineComputeUsage as MachineComputeUsage,
+    type MachineComputeUsageRow as MachineComputeUsageRow,
+    type MachineStorageUsage as MachineStorageUsage,
+    type MachineStorageUsageRow as MachineStorageUsageRow,
+    type UsageRetrieveParams as UsageRetrieveParams,
+    type UsageMachineComputeParams as UsageMachineComputeParams,
+    type UsageMachineStorageParams as UsageMachineStorageParams,
+  };
 }
 
 const headerExplicitlyOmitted = (source: HeadersLike | undefined, name: string): boolean => {

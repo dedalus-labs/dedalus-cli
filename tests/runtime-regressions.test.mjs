@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import test from 'node:test'
 
-import { CommandClient } from '../dist/esm/commands/client.js'
+import { AuthenticatedCommandClient } from '../dist/esm/custom/client.js'
 
 const commandDefinition = (transport) => ({
   resourcePath: ['probe'],
@@ -48,7 +48,7 @@ const runProgram = (source, input, delayMs = 0) => new Promise((resolve, reject)
 })
 
 test('invariant stored OAuth authenticates WebSocket SDK clients', () => {
-  const client = new CommandClient({
+  const client = new AuthenticatedCommandClient({
     apiKey: null,
     xAPIKey: null,
     bearerAuth: 'oauth-access-token',

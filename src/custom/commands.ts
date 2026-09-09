@@ -24,7 +24,6 @@ import {
   statusOutput,
 } from './auth/output.js'
 import { AuthProviderError, type AuthProvider } from './auth/types.js'
-import { addMachineCommands, type MachineCommandOptions } from './machines.js'
 import {
   accessTokenForCommand,
   type AuthStatus,
@@ -73,7 +72,6 @@ export type DedalusCommandOptions = {
   readonly environment?: Readonly<Record<string, string | undefined>>
   readonly writeOutput?: (value: string) => void
   readonly writeError?: (value: string) => void
-  readonly machines?: MachineCommandOptions
 }
 
 // addDedalusCommands is the boundary between generated resource commands and
@@ -105,7 +103,6 @@ export const addDedalusCommands = (
   const writeOutput = options.writeOutput ?? ((value) => process.stdout.write(value))
   const writeError = options.writeError ?? ((value) => process.stderr.write(value))
   const authCommand = createAuthCommand({ environment, operations, writeError, writeOutput })
-  addMachineCommands(program, { ...options.machines, writeOutput })
   installJSONConvenience(program, new Set([authCommand]))
   const completionCommand = program.commands.find((command) => command.name() === completionCommandName)
   program.addCommand(authCommand)

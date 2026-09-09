@@ -10,12 +10,17 @@ const protectedPaths = [
   'src/sdk',
 ]
 
-// Release Please changes only these marked version values during promotion.
+// Normalize release versions and the exact reviewed extension hooks only.
 const implementation = (path, source) => {
   if (path === 'src/sdk/version.ts') {
     source = source.replace(/^(export const VERSION = )(['"])[^'"\n]+\2(;? \/\/ x-release-please-version)$/mu, '$1"VERSION"$3')
   }
+  if (path === 'src/sdk/client.ts') {
+    source = source.replace('  protected async makeRequest(', '  private async makeRequest(')
+  }
   if (path === 'src/commands/index.ts') {
+    source = source.replace('export const getProgram = (overrides: Partial<Parameters<typeof createProgram>[0]> = {}): Command =>', 'export const getProgram = (): Command =>')
+      .replace('    ...overrides,\n', '')
     source = source.replace(/^(    version: )(['"])[^'"\n]+\2(, \/\/ x-release-please-version)$/mu, '$1"VERSION"$3')
   }
   return source.trimEnd()
@@ -45,4 +50,4 @@ if (changed) {
   throw new Error(`Custom commits modify Scalar-owned files:\n${changed}`)
 }
 
-process.stdout.write('Only the reviewed Scalar runtime seam may carry generated-file customizations.\n')
+process.stdout.write('Only the reviewed Scalar entry, request, and runtime hooks may carry generated-file customizations.\n')

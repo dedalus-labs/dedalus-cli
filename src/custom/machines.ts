@@ -1,205 +1,59 @@
-/** Dedalus-owned machine command aliases layered over Scalar's generated client. */
-
-import { Command } from 'commander'
-
-import { AuthenticatedCommandClient as CommandClient } from './client.js'
-import type { ClientOptions } from '../sdk/index.js'
+/** Adds default sizing and SSH orchestration to Scalar's machine commands. */
+import { Command, InvalidArgumentError } from 'commander'
+import SDK from '../sdk/index.js'
+import type { CliCommandDefinition, CreateProgramOptions } from '../cli/runtime.js'
 import { connectMachine } from './ssh.js'
-import { formatDedalusError } from './auth/output.js'
-
-const machinesCommandName = 'machines'
-
-type MachineShape = {
-  readonly autosleep?: string
-  readonly memory_mib?: number
-  readonly storage_gib?: number
-  readonly vcpu?: number
-}
 
 export type MachineAPI = {
-  readonly createMachine: (body: MachineShape) => Promise<unknown>
   readonly createSSHSession: (machineID: string, publicKey: string) => Promise<unknown>
   readonly getMachineSSHSession: (machineID: string, sessionID: string) => Promise<unknown>
 }
 
-export type MachineCommandOptions = {
-  readonly api?: (options: ClientOptions) => MachineAPI
-  readonly connect?: (api: MachineAPI, machineID: string) => Promise<void>
-  readonly writeOutput?: (value: string) => void
-  readonly writeError?: (value: string) => void
+const defaultShape = new Set(['vcpu', 'memory_mib', 'storage_gib'])
+
+// The server accepts omitted sizing; the connected OpenAPI input still requires it.
+export const withMachineDefaults = (definition: CliCommandDefinition): CliCommandDefinition => {
+  if (definition.resourcePath.length !== 1 || definition.resourcePath[0] !== 'machines' || definition.methodName !== 'create') return definition
+  return { ...definition, flags: definition.flags.map((flag) => defaultShape.has(flag.paramKey)
+    ? { ...flag, required: false, description: (flag.description ?? '') + ' Omit to use the server default.' }
+    : flag) }
 }
 
-type CreateOptions = {
-  readonly autosleep?: string
-  readonly ssh?: boolean
-  readonly memoryMib?: string
-  readonly storageGib?: string
-  readonly vcpu?: string
-}
-
-type GlobalOptions = {
-  readonly apiKey?: ClientOptions['apiKey']
-  readonly baseUrl?: string
-  readonly bearerAuth?: ClientOptions['bearerAuth']
-  readonly debug?: boolean
-  readonly dedalusOrgId?: string
-  readonly maxRetries?: string
-  readonly provider?: string
-  readonly providerKey?: string
-  readonly providerModel?: string
-  readonly timeout?: string
-  readonly xApiKey?: ClientOptions['xAPIKey']
-}
-
-export const addMachineCommands = (
-  program: Command,
-  options: MachineCommandOptions = {},
-): Command => {
-  const generatedMachines = program.commands.find((command) => command.name() === machinesCommandName)
-  if (generatedMachines?.commands.some((command) => command.name() === 'create')) {
-    throw new Error("Scalar generated the reserved 'machines create' command")
-  }
-
-  const api = options.api ?? createMachineAPI
-  const connect = options.connect ?? connectMachine
-  const writeOutput = options.writeOutput ?? ((value: string) => process.stdout.write(value))
-  const machines = generatedMachines ??
-    new Command(machinesCommandName).description('Create and manage Dedalus Machines')
-  const create = new Command('create')
-    .description('Create a machine')
-    .option('--ssh', 'Open an interactive SSH shell after creating the machine')
-    .option('--vcpu <count>', 'CPU in vCPUs')
-    .option('--memory-mib <mib>', 'Memory in MiB')
-    .option('--storage-gib <gib>', 'Storage in GiB')
-    .option('--autosleep <duration>', 'Idle window before autosleep, or never to disable')
-    .option('--base-url <url>', 'Override the base URL for API requests')
-    .option('--timeout <ms>', 'Request timeout in milliseconds')
-    .option('--max-retries <count>', 'Number of retries for retryable failures')
-    .option('--api-key <value>', 'API key authentication using Bearer token')
-    .option('--x-api-key <value>', 'API key authentication using X-API-Key header')
-    .option('--bearer-auth <value>', 'Dedalus API key in Authorization: Bearer <key>')
-    .option('--provider <value>', 'Provider name for BYOK mode')
-    .option('--provider-key <value>', 'Provider API key for BYOK mode')
-    .option('--provider-model <value>', 'Model identifier for BYOK provider')
-    .option('--dedalus-org-id <value>', 'Organization ID for request scoping')
-    .option('--debug', 'Enable SDK debug logging')
-    .action(async (createOptions: CreateOptions, command: Command) => {
-      try {
-        const client = api(clientOptions(command))
-        const result = await client.createMachine(machineShape(createOptions))
-        const machineID = machineIDFrom(result)
-        if (createOptions.ssh) {
-          await connect(client, machineID)
-          return
-        }
-        writeOutput(`${JSON.stringify(result, null, 2)}\n`)
-      } catch (error) {
-        const safe = formatDedalusError(error, command)
-        if (!safe) throw error
-        const writeError = options.writeError ?? ((value: string) => process.stderr.write(value))
-        writeError(`${JSON.stringify(safe)}\n`)
-        process.exitCode = 1
+export const addMachineCommands = (program: Command): Command => {
+  const machines = program.commands.find((command) => command.name() === 'machines')
+  const create = machines?.commands.find((command) => command.name() === 'create')
+  if (!create) throw new Error("Scalar is missing the 'machines create' command")
+  create.option('--ssh', 'Open an interactive SSH shell after creating the machine')
+  for (const name of ['vcpu', 'memory-mib', 'storage-gib']) {
+    const option = create.options.find((option) => option.long === '--' + name)
+    if (!option) throw new Error(`Scalar is missing the '${name}' machine option`)
+    option.argParser((raw: string) => {
+      const value = Number(raw)
+      if (!Number.isFinite(value) || value <= 0 || (name !== 'vcpu' && !Number.isSafeInteger(value))) {
+        throw new InvalidArgumentError(name === 'vcpu' ? 'must be a positive number' : 'must be a positive integer')
       }
+      return raw
     })
-
-  machines.addCommand(create)
-  if (!generatedMachines) program.addCommand(machines)
+  }
   return program
 }
 
-export const createMachineAPI = (options: ClientOptions): MachineAPI => {
-  const client = new CommandClient(options)
+const machineSSHAPI = (client: SDK, organizationID: string | undefined): MachineAPI => {
+  const headers = organizationID === undefined ? {} : { 'X-Dedalus-Org-Id': organizationID }
   return {
-    createMachine: (body) => client.post('/v1/machines', { body }),
-    createSSHSession: async (machineID, publicKey) => operation(client, 'createMachineSSHSession')({
-      machine_id: machineID,
-      public_key: publicKey,
-    }),
-    getMachineSSHSession: async (machineID, sessionID) => operation(client, 'getMachineSSHSession')({
-      machine_id: machineID,
-      session_id: sessionID,
-    }),
+    createSSHSession: (machineID, publicKey) => client.machines.ssh.create({ ...headers, machine_id: machineID, public_key: publicKey }),
+    getMachineSSHSession: (machineID, sessionID) => client.machines.ssh.retrieve({ ...headers, machine_id: machineID, session_id: sessionID }),
   }
 }
 
-const operation = (
-  client: CommandClient,
-  name: 'createMachineSSHSession' | 'getMachineSSHSession',
-): ((params: Record<string, unknown>) => unknown) => {
-  const method = client.operations[name]
-  if (!method) throw new Error(`Scalar generated client is missing operation '${name}'`)
-  return method
-}
-
-const clientOptions = (command: Command): ClientOptions => {
-  const options = command.optsWithGlobals<GlobalOptions>()
-  const defaultHeaders: Record<string, string> = {
-    'X-Scalar-Lang': 'cli',
-    'X-Scalar-Runtime': 'cli',
-    'X-Scalar-CLI-Command': command.name(),
-  }
-  if (options.dedalusOrgId !== undefined) {
-    defaultHeaders['X-Dedalus-Org-Id'] = options.dedalusOrgId
-  }
-  return {
-    ...(options.baseUrl !== undefined ? { baseURL: options.baseUrl } : {}),
-    ...(options.timeout !== undefined ? { timeout: positiveInteger(options.timeout, 'timeout') } : {}),
-    ...(options.maxRetries !== undefined
-      ? { maxRetries: nonnegativeInteger(options.maxRetries, 'max-retries') }
-      : {}),
-    ...(options.debug ? { logLevel: 'debug' as const } : {}),
-    ...(options.apiKey !== undefined ? { apiKey: options.apiKey } : {}),
-    ...(options.xApiKey !== undefined ? { xAPIKey: options.xApiKey } : {}),
-    ...(options.bearerAuth !== undefined ? { bearerAuth: options.bearerAuth } : {}),
-    ...(options.provider !== undefined ? { provider: options.provider } : {}),
-    ...(options.providerKey !== undefined ? { providerKey: options.providerKey } : {}),
-    ...(options.providerModel !== undefined ? { providerModel: options.providerModel } : {}),
-    defaultHeaders,
-  }
-}
-
-const machineShape = (options: CreateOptions): MachineShape => ({
-  ...(options.autosleep !== undefined ? { autosleep: options.autosleep } : {}),
-  ...(options.memoryMib !== undefined
-    ? { memory_mib: positiveInteger(options.memoryMib, 'memory-mib') }
-    : {}),
-  ...(options.storageGib !== undefined
-    ? { storage_gib: positiveInteger(options.storageGib, 'storage-gib') }
-    : {}),
-  ...(options.vcpu !== undefined ? { vcpu: positiveNumber(options.vcpu, 'vcpu') } : {}),
-})
-
-const machineIDFrom = (value: unknown): string => {
-  if (!value || typeof value !== 'object') {
-    throw new Error('create machine: server returned an empty response')
-  }
-  const machineID = (value as Record<string, unknown>).machine_id
-  if (typeof machineID !== 'string' || !machineID) {
+export const machineResultHandler = (
+  connect: (api: MachineAPI, machineID: string) => Promise<void> = connectMachine,
+): NonNullable<CreateProgramOptions['handleResult']> => async (result, client, command) => {
+  if (command.parent?.name() !== 'machines' || command.name() !== 'create' || !command.opts<{ ssh?: boolean }>().ssh) return false
+  if (!(client instanceof SDK)) throw new Error('Expected the generated Scalar SDK client')
+  if (!result || typeof result !== 'object' || !('machine_id' in result) || typeof result.machine_id !== 'string' || !result.machine_id) {
     throw new Error('create machine: server returned no machine_id')
   }
-  return machineID
-}
-
-const positiveInteger = (raw: string, name: string): number => {
-  const value = Number(raw)
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new Error(`--${name} must be a positive integer`)
-  }
-  return value
-}
-
-const nonnegativeInteger = (raw: string, name: string): number => {
-  const value = Number(raw)
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new Error(`--${name} must be a nonnegative integer`)
-  }
-  return value
-}
-
-const positiveNumber = (raw: string, name: string): number => {
-  const value = Number(raw)
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`--${name} must be a positive number`)
-  }
-  return value
+  await connect(machineSSHAPI(client, command.opts<{ xDedalusOrgId?: string }>().xDedalusOrgId), result.machine_id)
+  return true
 }

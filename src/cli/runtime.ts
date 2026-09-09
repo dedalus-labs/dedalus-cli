@@ -7,8 +7,6 @@ import { Command } from 'commander';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 import { encodeToon } from './toon.js';
-// @custom: Temporary hook for hosted customization verification.
-import { registerRegenerationCheck } from './regeneration-check.js';
 
 type OutputFormat = 'auto' | 'json' | 'jsonl' | 'pretty' | 'raw' | 'toon' | 'yaml';
 
@@ -140,9 +138,6 @@ export const createProgram = ({
   for (const definition of commands) addGeneratedCommand(program, SDK, clientOptions, definition);
 
   if (completions) addCompletionCommand(program, binaryName, completions);
-
-  // @custom: Temporary hook for hosted customization verification.
-  registerRegenerationCheck(program);
 
   return program;
 };

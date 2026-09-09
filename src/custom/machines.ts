@@ -5,6 +5,7 @@ import { Command } from 'commander'
 import { CommandClient } from '../commands/client.js'
 import type { ClientOptions } from '../sdk/index.js'
 import { connectMachine } from './ssh.js'
+import { formatDedalusError } from './auth/output.js'
 
 const machinesCommandName = 'machines'
 
@@ -25,6 +26,7 @@ export type MachineCommandOptions = {
   readonly api?: (options: ClientOptions) => MachineAPI
   readonly connect?: (api: MachineAPI, machineID: string) => Promise<void>
   readonly writeOutput?: (value: string) => void
+  readonly writeError?: (value: string) => void
 }
 
 type CreateOptions = {
@@ -82,14 +84,22 @@ export const addMachineCommands = (
     .option('--dedalus-org-id <value>', 'Organization ID for request scoping')
     .option('--debug', 'Enable SDK debug logging')
     .action(async (createOptions: CreateOptions, command: Command) => {
-      const client = api(clientOptions(command))
-      const result = await client.createMachine(machineShape(createOptions))
-      const machineID = machineIDFrom(result)
-      if (createOptions.ssh) {
-        await connect(client, machineID)
-        return
+      try {
+        const client = api(clientOptions(command))
+        const result = await client.createMachine(machineShape(createOptions))
+        const machineID = machineIDFrom(result)
+        if (createOptions.ssh) {
+          await connect(client, machineID)
+          return
+        }
+        writeOutput(`${JSON.stringify(result, null, 2)}\n`)
+      } catch (error) {
+        const safe = formatDedalusError(error, command)
+        if (!safe) throw error
+        const writeError = options.writeError ?? ((value: string) => process.stderr.write(value))
+        writeError(`${JSON.stringify(safe)}\n`)
+        process.exitCode = 1
       }
-      writeOutput(`${JSON.stringify(result, null, 2)}\n`)
     })
 
   machines.addCommand(create)

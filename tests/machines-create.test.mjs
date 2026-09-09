@@ -138,3 +138,30 @@ test('invariant create and connect share the authenticated OAuth gateway client'
   assert.equal(clientOptions.apiKey, null)
   assert.equal(clientOptions.xAPIKey, null)
 })
+
+
+test('invariant create permission errors use the secret-safe output boundary', async () => {
+  let stderr = ''
+  const previousExitCode = process.exitCode
+  const fixture = addMachines({
+    api: () => ({
+      createMachine: async () => {
+        throw Object.assign(new Error('private provider details'), {
+          status: 403, error: { error_code: 'AUTH_SCOPE_FORBIDDEN', message: 'private details' },
+        })
+      },
+    }),
+    writeError: (value) => { stderr += value },
+  })
+  try {
+    await fixture.program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
+    assert.equal(process.exitCode, 1)
+    assert.equal(JSON.parse(stderr).error.code, 'AUTH_SCOPE_FORBIDDEN')
+    assert.equal(JSON.parse(stderr).error.http_status, 403)
+    assert.doesNotMatch(stderr, /private|Error:|\n    at /u)
+    assert.equal(fixture.output(), '')
+    assert.deepEqual(fixture.connections, [])
+  } finally {
+    process.exitCode = previousExitCode
+  }
+})

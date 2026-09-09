@@ -1,3 +1,6 @@
+// @custom
+// Adds literal argument forwarding to execution commands.
+
 package cmd
 
 import (

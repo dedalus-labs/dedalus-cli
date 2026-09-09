@@ -171,6 +171,8 @@ var machinesExecutionsOutput = cli.Command{
 
 func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
+	// @custom
+	// Accepts literal command arguments alongside the generated JSON input path.
 	argv := cmd.Args().Slice()
 	if len(argv) > 0 {
 		if cmd.IsSet("command") {
@@ -196,6 +198,8 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
+	// @custom
+	// Inserts literal arguments after flag processing to bypass local @file expansion.
 	if len(argv) > 0 {
 		options = append(options, option.WithJSONSet("command", argv))
 	}

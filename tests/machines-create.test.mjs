@@ -134,7 +134,7 @@ test('invariant create and connect share the authenticated OAuth gateway client'
   await program.parseAsync(['node', 'dedalus', 'machines', 'create', '--ssh'])
   assert.equal(connected, 'dm-created')
   assert.equal(clientOptions.baseURL, 'https://dev.admin.api.dedaluslabs.ai/dcs')
-  assert.equal(clientOptions.bearerAuth, session.accessToken)
+  assert.equal(clientOptions.bearerAuth(), session.accessToken)
   assert.equal(clientOptions.apiKey, null)
   assert.equal(clientOptions.xAPIKey, null)
 })

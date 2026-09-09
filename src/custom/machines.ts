@@ -2,7 +2,7 @@
 
 import { Command } from 'commander'
 
-import { CommandClient } from '../commands/client.js'
+import { AuthenticatedCommandClient as CommandClient } from './client.js'
 import type { ClientOptions } from '../sdk/index.js'
 import { connectMachine } from './ssh.js'
 import { formatDedalusError } from './auth/output.js'

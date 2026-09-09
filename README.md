@@ -111,28 +111,6 @@ Creating an execution returns an execution ID. Use `retrieve` to check its
 status and `output` to read its output. The `list`, `events`, and `delete`
 subcommands also work under `exec`.
 
-#### Scalar migration
-
-This syntax ships first in the Go CLI on `main` through
-[#42](https://github.com/dedalus-labs/dedalus-cli/pull/42). The Scalar TypeScript
-CLI under development in [#35](https://github.com/dedalus-labs/dedalus-cli/pull/35)
-and [#36](https://github.com/dedalus-labs/dedalus-cli/pull/36) needs its own
-implementation. The Go customization does not change the TypeScript executable.
-
-Before Scalar replaces the Go CLI, port and verify this contract:
-
-- Preserve `machines exec` and `machines executions`, with optional `create`
-  before literal arguments and all existing execution subcommands.
-- Forward arguments after `--` unchanged, including empty arguments, spaces,
-  quotes, leading dashes, `@file` strings, and executable names such as `list`.
-- Preserve JSON and piped command input. Reject conflicting `--command` input,
-  missing commands or machine IDs, and empty executable names before any request.
-- Port `pkg/cmd/execution_argv_test.go` to request-level tests of the Scalar
-  executable. Verify the HTTP method, path, body, and absence of requests for
-  invalid input. Run these tests again after Scalar regeneration before cutover.
-
-The Scalar port is a release prerequisite and remains outstanding.
-
 ### Environment variables
 
 | Environment variable | Description                                   | Required | Default value |

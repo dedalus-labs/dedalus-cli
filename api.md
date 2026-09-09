@@ -60,7 +60,7 @@ dedalus machines list --api-key "$DEDALUS_API_KEY" --max-items 10
 ### Create machine
 
 ```sh
-dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '0' --storage-gib '0' --vcpu '0'
+dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
 ### Get machine

@@ -40,7 +40,7 @@ npm install -g dedalus-cli
 ```sh
 dedalus [resource] [command] [flags]
 
-dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '4096' --storage-gib '10' --vcpu '1'
+dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
 Create a machine with API defaults and open an interactive shell:

@@ -57,7 +57,18 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'POST',
     path: '/v1/machines',
     label: 'required params',
-    args: ['machines', 'create', '--memory-mib', '0', '--storage-gib', '0', '--vcpu', '0'],
+    args: [
+      'machines',
+      'create',
+      '--autosleep',
+      '300s',
+      '--memory-mib',
+      '4096',
+      '--storage-gib',
+      '10',
+      '--vcpu',
+      '1',
+    ],
   },
 
   {
@@ -71,13 +82,13 @@ const cases: { operation: string; method: string; path: string; label?: string; 
       '--x-dedalus-org-id',
       'X-Dedalus-Org-Id',
       '--autosleep',
-      '',
+      '300s',
       '--memory-mib',
-      '0',
+      '4096',
       '--storage-gib',
-      '0',
+      '10',
       '--vcpu',
-      '0',
+      '1',
     ],
   },
 
@@ -944,7 +955,9 @@ const main = async (): Promise<void> => {
       try {
         // Pass the current environment through so the embedded SDK picks up the base URL and
         // credentials; node runs the built bin exactly as the published executable would.
-        await execFileAsync('node', [binPath, ...testCase.args], {
+        // @custom: mirror the public space-separated resource path in the smoke harness.
+        const [resource, ...args] = testCase.args;
+        await execFileAsync('node', [binPath, ...(resource?.split(':') ?? []), ...args], {
           env: process.env,
           timeout: COMMAND_TIMEOUT_MS,
           maxBuffer: 1024 * 1024 * 20,

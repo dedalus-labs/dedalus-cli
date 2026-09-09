@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test, { type TestContext } from 'node:test'
+import { createProgram } from '../src/cli/runtime.js'
 import type { OAuthSession } from '../src/auth/types.js'
 import type { DedalusCommandOptions } from '../src/auth/commands.js'
 import { spawn } from 'node:child_process'
@@ -277,4 +278,45 @@ test('generated create permission errors retain the secret-safe boundary', async
   assert.equal(JSON.parse(result.stderr).error.code, 'AUTH_SCOPE_FORBIDDEN')
   assert.doesNotMatch(result.stderr, /private|Error:|\n    at /u)
   assert.equal(result.stdout, '')
+})
+
+test('result hooks receive the constructed client with its inferred instance type', async () => {
+  class FixtureClient {
+    calls = 0
+    execute() {
+      this.calls += 1
+      return 'result'
+    }
+  }
+  let handled = false
+  const program = createProgram({
+    SDK: FixtureClient,
+    binaryName: 'fixture',
+    version: '1',
+    description: '',
+    defaultFormat: 'json',
+    defaultErrorFormat: 'json',
+    clientOptions: [],
+    commands: [
+      {
+        resourcePath: [],
+        commandPath: ['execute'],
+        methodName: 'execute',
+        transport: 'http',
+        iterable: false,
+        callShape: 'options',
+        positional: [],
+        flags: [],
+      },
+    ],
+    handleResult: async (result, client) => {
+      const calls: number = client.calls
+      assert.equal(calls, 1)
+      assert.equal(result, 'result')
+      handled = true
+      return true
+    },
+  })
+  await program.parseAsync(['node', 'fixture', 'execute'])
+  assert.equal(handled, true)
 })

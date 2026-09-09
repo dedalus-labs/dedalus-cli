@@ -27,7 +27,7 @@ Provide credentials using the options below. Environment variables are read auto
 ```sh
 dedalus [resource] [command] [flags]
 
-dedalus machines create --api-key "$DEDALUS_API_KEY" --memory-mib '0' --storage-gib '0' --vcpu '0'
+dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
 Method names, parameter shapes, and response types are generated from the API description — do not guess them. Look up the exact call signature in [api.md](../../../api.md) before writing a call.

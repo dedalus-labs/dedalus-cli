@@ -1,0 +1,95 @@
+{
+  "name": "dedalus-cli",
+  "version": "0.6.0",
+  "description": "Controlplane API for Dedalus Cloud Services (DCS).",
+  "author": "Dedalus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dedalus-labs/dedalus-cli.git"
+  },
+  "type": "module",
+  "bin": {
+    "dedalus": "./dist/esm/bin.js"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "api.md",
+    "man",
+    "SKILL.md"
+  ],
+  "man": [
+    "./man/dedalus.1",
+    "./man/dedalus-machines-list.1",
+    "./man/dedalus-machines-create.1",
+    "./man/dedalus-machines-retrieve.1",
+    "./man/dedalus-machines-update.1",
+    "./man/dedalus-machines-delete.1",
+    "./man/dedalus-machines-watch.1",
+    "./man/dedalus-machines-sleep.1",
+    "./man/dedalus-machines-wake.1",
+    "./man/dedalus-machines-network-retrieve.1",
+    "./man/dedalus-machines-artifacts-list.1",
+    "./man/dedalus-machines-artifacts-retrieve.1",
+    "./man/dedalus-machines-artifacts-delete.1",
+    "./man/dedalus-machines-ports-list.1",
+    "./man/dedalus-machines-ports-create.1",
+    "./man/dedalus-machines-ports-retrieve.1",
+    "./man/dedalus-machines-ports-delete.1",
+    "./man/dedalus-machines-ssh-list.1",
+    "./man/dedalus-machines-ssh-create.1",
+    "./man/dedalus-machines-ssh-retrieve.1",
+    "./man/dedalus-machines-ssh-delete.1",
+    "./man/dedalus-machines-executions-list.1",
+    "./man/dedalus-machines-executions-create.1",
+    "./man/dedalus-machines-executions-retrieve.1",
+    "./man/dedalus-machines-executions-delete.1",
+    "./man/dedalus-machines-executions-output.1",
+    "./man/dedalus-machines-executions-events.1",
+    "./man/dedalus-machines-terminals-list.1",
+    "./man/dedalus-machines-terminals-create.1",
+    "./man/dedalus-machines-terminals-retrieve.1",
+    "./man/dedalus-machines-terminals-delete.1",
+    "./man/dedalus-machines-terminals-connect.1",
+    "./man/dedalus-networks-retrieve.1",
+    "./man/dedalus-usage-retrieve.1",
+    "./man/dedalus-usage-machine-compute.1",
+    "./man/dedalus-usage-machine-storage.1",
+    "./man/dedalus-completion.1"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit"
+  },
+  "dependencies": {
+    "ansis": "^4.3.0",
+    "commander": "^14.0.3",
+    "yaml": "^2.9.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/ws": "^8.5.13",
+    "typescript": "^6.0.0"
+  },
+  "peerDependencies": {
+    "ws": "^8.18.0"
+  },
+  "peerDependenciesMeta": {
+    "ws": {
+      "optional": true
+    }
+  },
+  "license": "Apache-2.0"
+}

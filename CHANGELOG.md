@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.5.0...v0.6.0) (2026-09-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** 6 breaking changes to the SDK surface.
+    - Property `create_params.memory_mib` is no longer required.
+    - Property `create_params.memory_mib` type changed from `integer<int64>` to `integer<int64>`.
+    - Property `create_params.storage_gib` is no longer required.
+    - Property `create_params.storage_gib` type changed from `integer<int64>` to `integer<int64>`.
+    - Property `create_params.vcpu` is no longer required.
+    - Property `create_params.vcpu` type changed from `number<double>` to `number<double>`.
+* **api:** URL of environment `production` changed from `https://api.dedaluslabs.ai` to `https://dcs.dedaluslabs.ai`.
+
+### Features
+
+* **api:** initial SDK generation ([50afe86](https://github.com/dedalus-labs/dedalus-cli/commit/50afe863f2a606f9be967d4c4dbecab89ab36e64))
+* **api:** update environment production (+88 more changes) ([82b06cd](https://github.com/dedalus-labs/dedalus-cli/commit/82b06cd1aa778ef1521e919bcb34fd93f6977e4c))
+* **api:** update property create_params.memory_mib (+5 more changes) ([78fa6f6](https://github.com/dedalus-labs/dedalus-cli/commit/78fa6f67eaf8190e1785fa2690416c4391bdad55))
+
+
+### Chores
+
+* **api:** regenerate SDK ([4a96efb](https://github.com/dedalus-labs/dedalus-cli/commit/4a96efb41dcaf3d6cc7c84e9fb2e7becf1bcc3fd))
+* **api:** regenerate SDK ([fd5540f](https://github.com/dedalus-labs/dedalus-cli/commit/fd5540f2220b861f6b36ebf653f954e36d5b069a))
+* **api:** update generated SDK content ([20479e6](https://github.com/dedalus-labs/dedalus-cli/commit/20479e685f7dfc92d3c1aa37a275d8a2a20a42de))
+
 ## 0.5.0 (2026-07-10)
 
 Full Changelog: [v0.4.0...v0.5.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.4.0...v0.5.0)

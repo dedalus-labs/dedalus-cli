@@ -1,163 +1,165 @@
-# Dedalus CLI
+# Dedalus
 
-The official CLI for the [Dedalus REST API](https://docs.dedaluslabs.ai).
+This library provides convenient access to the Dedalus REST API from the command line.
 
-It is generated with [Stainless](https://www.stainless.com/).
+The full API of this library can be found in [api.md](./api.md).
 
-<!-- x-release-please-start-version -->
+<br />
+
+## Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Reference](./api.md)
+- [Shell Completion](#shell-completion)
+- [Manual Pages](#manual-pages)
+- [Streaming](#streaming)
+- [WebSockets](#websockets)
+- [Authentication](#authentication)
+- [Errors](#errors)
+- [Client Options](#client-options)
+- [Retries and Timeouts](#retries-and-timeouts)
+- [Pagination](#pagination)
+- [Helpers](#helpers)
+- [Logging](#logging)
+- [Requirements](#requirements)
+
+<br />
 
 ## Installation
 
-### Installing with Homebrew
-
 ```sh
-brew install dedalus-labs/tap/dedalus
+# npm (requires Node.js)
+npm install -g dedalus-cli
 ```
 
-### Installing with Go
-
-To test or install the CLI locally, you need [Go](https://go.dev/doc/install) version 1.22 or later installed.
-
-```sh
-go install 'github.com/dedalus-labs/dedalus-cli/cmd/dedalus@latest'
-```
-
-Once you have run `go install`, the binary is placed in your Go bin directory:
-
-- **Default location**: `$HOME/go/bin` (or `$GOPATH/bin` if GOPATH is set)
-- **Check your path**: Run `go env GOPATH` to see the base directory
-
-If commands aren't found after installation, add the Go bin directory to your PATH:
-
-```sh
-# Add to your shell profile (.zshrc, .bashrc, etc.)
-export PATH="$PATH:$(go env GOPATH)/bin"
-```
-
-<!-- x-release-please-end -->
-
-### Updating
-
-```sh
-dedalus update
-```
-
-To check the latest available release without installing it:
-
-```sh
-dedalus update --check
-```
-
-The updater respects how the CLI was installed. Homebrew installs delegate to
-`brew upgrade`, macOS/Linux curl installs rerun the install script for the
-current executable directory, and Windows installs print the PowerShell installer
-command because Windows cannot replace the running `dedalus.exe` process.
-
-### Running Locally
-
-After cloning the git repository for this project, you can use the
-`scripts/run` script to run the tool locally:
-
-```sh
-./scripts/run args...
-```
+<br />
 
 ## Usage
 
-The CLI follows a resource-based command structure:
+```sh
+dedalus [resource] [command] [flags]
+
+dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
+```
+
+The examples in the following sections assume a `client` configured as shown above.
+
+See the [API reference](./api.md) for every available operation.
+
+<br />
+
+## Shell Completion
+
+`dedalus completion <shell>` prints a completion script for bash, zsh, and fish. Add the matching line to your shell startup file to complete commands, subcommands, and flags with Tab.
 
 ```sh
-dedalus [resource] <command> [flags...]
+# bash (~/.bashrc)
+eval "$(dedalus completion bash)"
+
+# zsh (~/.zshrc)
+eval "$(dedalus completion zsh)"
+
+# fish (~/.config/fish/config.fish)
+dedalus completion fish | source
 ```
+
+<br />
+
+## Manual Pages
+
+Installing the package globally also installs man pages. `man dedalus` lists every command, and each command has its own page named after the command with spaces and `:` replaced by `-`.
 
 ```sh
-dedalus machines create \
-  --api-key 'My API Key' \
-  --memory-mib 2048 \
-  --storage-gib 10 \
-  --vcpu 1
+man dedalus
+man dedalus-<resource>-<command>
 ```
 
-For details about specific commands, use the `--help` flag.
+<br />
 
-### Environment variables
+## Streaming
 
-| Environment variable | Description                                   | Required | Default value |
-| -------------------- | --------------------------------------------- | -------- | ------------- |
-| `DEDALUS_API_KEY`    | Dedalus API key sent as Authorization Bearer. | no       | `null`        |
-| `DEDALUS_X_API_KEY`  | Dedalus API key sent as x-api-key header.     | no       | `null`        |
-| `DEDALUS_ORG_ID`     | Organization ID header for all DCS requests.  | no       | `null`        |
+Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
 
-### Global flags
+<br />
 
-- `--api-key` - Dedalus API key sent as Authorization Bearer. (can also be set with `DEDALUS_API_KEY` env var)
-- `--x-api-key` - Dedalus API key sent as x-api-key header. (can also be set with `DEDALUS_X_API_KEY` env var)
-- `--dedalus-org-id` - Organization ID header for all DCS requests. (can also be set with `DEDALUS_ORG_ID` env var)
-- `--help` - Show command line usage
-- `--debug` - Enable debug logging (includes HTTP request/response details)
-- `--version`, `-v` - Show the CLI version
-- `--base-url` - Use a custom API backend URL
-- `--format` - Change the output format (`auto`, `explore`, `json`, `jsonl`, `pretty`, `raw`, `yaml`)
-- `--format-error` - Change the output format for errors (`auto`, `explore`, `json`, `jsonl`, `pretty`, `raw`, `yaml`)
-- `--transform` - Transform the data output using [GJSON syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md)
-- `--transform-error` - Transform the error output using [GJSON syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md)
+## WebSockets
 
-### Passing files as arguments
+WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
 
-To pass files to your API, you can use the `@myfile.ext` syntax:
+<br />
 
-```bash
-dedalus <command> --arg @abe.jpg
-```
+## Authentication
 
-Files can also be passed inside JSON or YAML blobs:
+Pass credentials to the generated client constructor. Environment variables are read automatically when supported by the target runtime.
 
-```bash
-dedalus <command> --arg '{image: "@abe.jpg"}'
-# Equivalent:
-dedalus <command> <<YAML
-arg:
-  image: "@abe.jpg"
-YAML
-```
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--api-key` | `string \| provider` | - | API key authentication using Bearer token Defaults to DEDALUS_API_KEY. |
+| `--x-api-key` | `string \| provider` | - | API key authentication using X-API-Key header Defaults to DEDALUS_X_API_KEY. |
+| `--bearer-auth` | `string \| provider` | - | Dedalus API key in Authorization: Bearer <key>. Defaults to DEDALUS_BEARER_AUTH. |
 
-If you need to pass a string literal that begins with an `@` sign, you can
-escape the `@` sign to avoid accidentally passing a file.
+Declared schemes:
 
-```bash
-dedalus <command> --username '\@abe'
-```
+- `ApiKeyAuth` API key in header `x-api-key`
+- `BearerAuth` bearer token
+- `Bearer` bearer token
 
-#### Explicit encoding
+<br />
 
-For JSON endpoints, the CLI tool does filetype sniffing to determine whether the
-file contents should be sent as a string literal (for plain text files) or as a
-base64-encoded string literal (for binary files). If you need to explicitly send
-the file as either plain text or base64-encoded data, you can use
-`@file://myfile.txt` (for string encoding) or `@data://myfile.dat` (for
-base64-encoding). Note that absolute paths will begin with `@file://` or
-`@data://`, followed by a third `/` (for example, `@file:///tmp/file.txt`).
+## Errors
 
-```bash
-dedalus <command> --arg @data://file.txt
-```
+Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
-## Linking different Go SDK versions
+Documented error statuses: `400`, `401`, `403`, `409`, `429`, `500`, `502`, `503`, `default`.
 
-You can link the CLI against a different version of the Dedalus Go SDK
-for development purposes using the `./scripts/link` script.
+<br />
 
-To link to a specific version from a repository (version can be a branch,
-git tag, or commit hash):
+## Client Options
 
-```bash
-./scripts/link github.com/org/repo@version
-```
+Configure the generated client by setting any of these options when you create it.
 
-To link to a local copy of the SDK:
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--base-url` | `<url>` | - | Override the base URL for API requests. |
+| `--timeout` | `<ms>` | - | Request timeout in milliseconds. |
+| `--max-retries` | `<count>` | - | Number of retries for retryable failures. |
+| `--debug` | `flag` | - | Enable SDK debug logging. |
 
-```bash
-./scripts/link ../path/to/dedalus-go
-```
+<br />
 
-If you run the link script without any arguments, it will default to `../dedalus-go`.
+## Retries and Timeouts
+
+Generated clients support request timeouts and retry temporary failures such as network errors, 408, 409, 429, and 5xx responses. Retry delays honor `Retry-After` headers when present. Tune the retry and timeout client options shown above, or override them per request.
+
+<br />
+
+## Pagination
+
+Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to cap the total number of items returned.
+
+<br />
+
+## Helpers
+
+- `--format <format>` — output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, `toon`, or `yaml`.
+- `--format-error <format>` — error output format: `auto`, `json`, `jsonl`, `pretty`, `raw`, `toon`, or `yaml`.
+- `--format toon` — token-efficient structured output for AI agents; uniform lists collapse into one header plus a row per item, with a definitive item count.
+- `--transform <path>` and `--transform-error <path>` — dot-path transform for data/error output.
+- `--raw-output`, `-r` — print transformed string values without JSON quotes.
+- `--max-items <count>` — bound iterator, streaming, and WebSocket command output.
+- Errors carry a stable `code` and an actionable `hint` beside the API's own message, and each failure class exits with its own status: `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
+
+<br />
+
+## Logging
+
+- Pass `--debug` to any command to enable SDK debug logging on stderr.
+
+<br />
+
+## Requirements
+
+- Node.js 20 or newer
+
+Powered by Scalar.

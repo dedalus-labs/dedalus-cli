@@ -16,6 +16,7 @@ import (
 
 func init() {
 	Command.Commands = renestColonCommands(Command.Commands)
+	configureExecutionArguments(Command.Command("machines").Command("executions"))
 }
 
 // renestColonCommands moves any command whose Name contains ':' under the

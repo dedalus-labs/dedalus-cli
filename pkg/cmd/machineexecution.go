@@ -171,10 +171,19 @@ var machinesExecutionsOutput = cli.Command{
 
 func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
-	unusedArgs := cmd.Args().Slice()
-
-	if len(unusedArgs) > 0 {
-		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	argv := cmd.Args().Slice()
+	if len(argv) > 0 {
+		if cmd.IsSet("command") {
+			return fmt.Errorf("use either --command or arguments after --, not both")
+		}
+		if argv[0] == "" {
+			return fmt.Errorf("the executable after -- must not be empty")
+		}
+		// Satisfy required-field validation without letting file expansion
+		// interpret argv values such as @file. Insert literal argv afterward.
+		if err := cmd.Set("command", "[]"); err != nil {
+			return err
+		}
 	}
 
 	options, err := flagOptions(
@@ -186,6 +195,9 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 	)
 	if err != nil {
 		return err
+	}
+	if len(argv) > 0 {
+		options = append(options, option.WithJSONSet("command", argv))
 	}
 
 	params := dedalus.MachineExecutionNewParams{

@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 // Re-parents Stainless's colon-flattened subresource commands into
 // space-separated subcommands. `dedalus machines:executions create` becomes
 // `dedalus machines executions create`. The colon form is removed.
@@ -17,7 +17,6 @@ import (
 
 func init() {
 	Command.Commands = renestColonCommands(Command.Commands)
-	// @custom
 	// Registers exec after nesting so both resource names share the same commands.
 	configureExecutionArguments(Command.Command("machines").Command("executions"))
 }
@@ -47,3 +46,5 @@ func renestColonCommands(cmds []*cli.Command) []*cli.Command {
 	}
 	return kept
 }
+
+// @custom end

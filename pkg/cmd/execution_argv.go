@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 // Adds literal argument forwarding to execution commands.
 
 package cmd
@@ -11,8 +11,10 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// Keep the generated resource's subcommands available under both names. Defer
-// flag parsing to create so even subcommand names after -- remain literal argv.
+// configureExecutionArguments adds the exec alias and implicit create command.
+// Existing execution subcommands remain available under both resource names.
+// Flag parsing belongs to create so names after -- stay literal arguments.
+// Call this after the execution resource is nested under machines.
 func configureExecutionArguments(executions *cli.Command) {
 	executions.Aliases = append(executions.Aliases, "exec")
 	executions.Usage = "Run commands on a machine or manage executions"
@@ -29,3 +31,5 @@ func configureExecutionArguments(executions *cli.Command) {
 		return command.Command("create").Run(ctx, append([]string{"create"}, args...))
 	}
 }
+
+// @custom end

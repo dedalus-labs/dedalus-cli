@@ -4,7 +4,9 @@ package cmd
 
 import (
 	"context"
+	// @custom start
 	"fmt"
+	// @custom end
 
 	"github.com/dedalus-labs/dedalus-cli/internal/apiquery"
 	"github.com/dedalus-labs/dedalus-cli/internal/requestflag"
@@ -171,7 +173,7 @@ var machinesExecutionsOutput = cli.Command{
 
 func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
-	// @custom
+	// @custom start
 	// Accepts literal command arguments alongside the generated JSON input path.
 	argv := cmd.Args().Slice()
 	if len(argv) > 0 {
@@ -187,6 +189,7 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 			return err
 		}
 	}
+	// @custom end
 
 	options, err := flagOptions(
 		cmd,
@@ -198,11 +201,12 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
-	// @custom
+	// @custom start
 	// Inserts literal arguments after flag processing to bypass local @file expansion.
 	if len(argv) > 0 {
 		options = append(options, option.WithJSONSet("command", argv))
 	}
+	// @custom end
 
 	params := dedalus.MachineExecutionNewParams{
 		MachineID: cmd.Value("machine-id").(string),

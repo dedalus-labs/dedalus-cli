@@ -1,3 +1,6 @@
+// @custom start
+// Regression coverage for handwritten execution argument forwarding.
+
 package cmd
 
 import (
@@ -18,19 +21,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestInvariantExecutionArgumentsReachAPIUnchanged checks the built CLI against
+// a local HTTP server. It covers literal arguments, existing input formats and
+// subcommands, help output, and rejection before any request is sent.
 func TestInvariantExecutionArgumentsReachAPIUnchanged(t *testing.T) {
+	// A real binary exercises command routing and request encoding together.
 	binary := filepath.Join(t.TempDir(), "dedalus")
 	if runtime.GOOS == "windows" {
 		binary += ".exe"
 	}
 	output, err := exec.Command("go", "build", "-o", binary, "../../cmd/dedalus").CombinedOutput()
 	require.NoError(t, err, "%s", output)
+
+	// An existing file makes accidental @file expansion observable in the body.
 	localFile := filepath.Join(t.TempDir(), "literal.txt")
 	require.NoError(t, os.WriteFile(localFile, []byte("must not be uploaded"), 0600))
+	// These values must survive without shell interpretation or flag parsing.
 	argv := []string{"echo", "hello world", "", "--help", "--", "a\"b", "$HOME", "&&", "@" + localFile, `\@literal`}
+
+	// Both resource names support explicit create and the shorthand form.
 	for _, resource := range []string{"executions", "exec"} {
 		for _, create := range []bool{false, true} {
 			t.Run(resource+"/create="+strconv.FormatBool(create), func(t *testing.T) {
+				// Buffer the body so the handler can reply before the CLI exits.
 				requests := make(chan map[string]any, 1)
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					assert.Equal(t, "POST", r.Method)
@@ -52,6 +65,8 @@ func TestInvariantExecutionArgumentsReachAPIUnchanged(t *testing.T) {
 				require.NoError(t, err, "%s", output)
 				select {
 				case body := <-requests:
+					// Decode the expected slice too: JSON arrays in map[string]any
+					// have type []any, so []string would fail a type-sensitive comparison.
 					encoded, err := json.Marshal(argv)
 					require.NoError(t, err)
 					var want any
@@ -67,6 +82,9 @@ func TestInvariantExecutionArgumentsReachAPIUnchanged(t *testing.T) {
 			})
 		}
 	}
+
+	// The alias preserves JSON and piped input plus every generated subcommand.
+	// A command named list after -- must still create a remote execution.
 	for _, test := range []struct {
 		name    string
 		args    []string
@@ -122,11 +140,16 @@ func TestInvariantExecutionArgumentsReachAPIUnchanged(t *testing.T) {
 			}
 		})
 	}
+
+	// Help must remain reachable at both the resource and create levels.
 	for _, args := range [][]string{{"exec", "--help"}, {"exec", "create", "--help"}} {
 		output, err := exec.Command(binary, append([]string{"machines"}, args...)...).CombinedOutput()
 		require.NoError(t, err, "%s", output)
 		require.Contains(t, string(output), "machine-id")
 	}
+
+	// Invalid input must fail locally. A nonzero exit alone would also allow
+	// a server-side rejection, so the atomic counter checks for zero requests.
 	for _, args := range [][]string{
 		{"exec", "--machine-id", "dm-test", "--"},
 		{"exec", "--machine-id", "dm-test", "--", ""},
@@ -148,3 +171,5 @@ func TestInvariantExecutionArgumentsReachAPIUnchanged(t *testing.T) {
 		})
 	}
 }
+
+// @custom end

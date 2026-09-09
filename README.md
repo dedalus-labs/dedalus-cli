@@ -227,3 +227,8 @@ if a rotated refresh-token response is lost before it can be saved.
 Recovery lives in `src/custom/client.ts` and `src/custom/auth/`. Scalar's SDK is
 called directly and remains unchanged. Verify these helpers on the next Scalar
 platform regeneration before release.
+
+`machines create --ssh` removes temporary SSH credentials on normal exit and on
+SIGINT, SIGTERM, or SIGHUP. Cancellation also signals the active SSH subprocess.
+It does not delete the created machine. SIGKILL and host crashes cannot run
+process cleanup.

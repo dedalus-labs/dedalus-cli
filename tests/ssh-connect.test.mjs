@@ -99,3 +99,45 @@ test('invariant SSH uses server trust, propagates exit status and removes creden
     await rm(directory, { recursive: true, force: true })
   }
 })
+
+test('invariant SIGINT and SIGTERM remove private credentials during SSH setup', async () => {
+  const { spawn } = await import('node:child_process')
+  const { once } = await import('node:events')
+  const directory = await mkdtemp(join(tmpdir(), 'dedalus-signal-test-'))
+  const record = join(directory, 'key-path')
+  try {
+    await writeFile(join(directory, 'ssh-keygen'), `#!${process.execPath}\n
+      const fs = require('node:fs'); const args = process.argv.slice(2);
+      const key = args[args.indexOf('-f') + 1];
+      fs.writeFileSync(key, 'fixture-private-key', {mode:0o600});
+      fs.writeFileSync(key + '.pub', 'ssh-ed25519 fixture');
+      fs.writeFileSync(${JSON.stringify(record)}, key);
+    `, {mode:0o755})
+    for (const signal of ['SIGINT', 'SIGTERM']) {
+      const child = spawn(process.execPath, ['--input-type=module', '-e', `
+        import {connectMachine} from ${JSON.stringify(new URL('../dist/esm/custom/ssh.js', import.meta.url).href)};
+        const keepAlive = setInterval(()=>{},1000);
+        await connectMachine({createSSHSession:async()=>{
+          process.send('waiting'); return new Promise(()=>{});
+        }},'dm-test');
+        clearInterval(keepAlive);
+      `], {env:{...process.env,PATH:`${directory}:${process.env.PATH}`},stdio:['ignore','ignore','pipe','ipc']})
+      const exited = once(child, 'exit')
+      try {
+        await once(child, 'message', {signal:AbortSignal.timeout(10000)})
+        const key = await readFile(record, 'utf8')
+        await access(key)
+        child.kill(signal)
+        const [code] = await exited
+        await assert.rejects(access(key), {code:'ENOENT'})
+        assert.equal(code, signal === 'SIGINT' ? 130 : 143)
+      } finally {
+        if(child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+      }
+    }
+  } finally {
+    // Also remove credentials deliberately left behind by the red regression run.
+    try { await rm(join(await readFile(record,'utf8'),'..'),{recursive:true,force:true}) } catch {}
+    await rm(directory,{recursive:true,force:true})
+  }
+})

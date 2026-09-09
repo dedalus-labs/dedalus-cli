@@ -862,3 +862,33 @@ test('invariant a missing credential is reported as source none without a fake H
   })
   assert.equal(networkCalls, 0)
 })
+
+test('invariant staging auth requires an explicit client and stays within staging', () => {
+  const environment = {
+    DEDALUS_CLERK_ISSUER: 'https://clerk.staging.dedaluslabs.ai',
+    DEDALUS_CLERK_CLIENT_ID: 'fixture_staging_client',
+  }
+  assert.deepEqual(cliAuthConfiguration(environment), {
+    issuer: environment.DEDALUS_CLERK_ISSUER,
+    clientId: environment.DEDALUS_CLERK_CLIENT_ID,
+    signInURL: 'https://staging.dedaluslabs.ai/cli/sign-in',
+  })
+  assert.equal(cliOAuthGatewayURL(environment), 'https://staging.admin.api.dedaluslabs.ai/dcs')
+  for (const DEDALUS_BASE_URL of [
+    'https://dev.admin.api.dedaluslabs.ai/dcs', 'https://admin.api.dedaluslabs.ai/dcs',
+    'https://staging.dcs.dedaluslabs.ai',
+  ]) {
+    assert.throws(() => cliOAuthGatewayURL({ ...environment, DEDALUS_BASE_URL }),
+      (error) => error.code === 'environment_mismatch')
+  }
+  assert.throws(() => cliAuthConfiguration({
+    ...environment, DEDALUS_SIGN_IN_URL: 'https://dev.dedaluslabs.ai/cli/sign-in',
+  }), (error) => error.code === 'invalid_configuration')
+  for (const clientId of [undefined, '', 'W27FJtdP5VDfKMTv', ' invalid ']) {
+    assert.throws(() => cliAuthConfiguration({ ...environment, DEDALUS_CLERK_CLIENT_ID: clientId }),
+      (error) => error.code === 'invalid_configuration')
+  }
+  assert.throws(() => cliOAuthGatewayURL({
+    DEDALUS_BASE_URL: 'https://staging.admin.api.dedaluslabs.ai/dcs',
+  }), (error) => error.code === 'environment_mismatch')
+})

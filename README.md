@@ -192,3 +192,20 @@ The custom executable receives its version from `package.json` during every buil
 Review the refreshed release PR only after auth and dependent commands are on
 `scalar-next`; verify its built executable reports the release package version.
 A real Scalar dashboard rebuild is still required to verify platform regeneration.
+
+### Staging OAuth verification
+
+Use the public OAuth client ID provisioned for the staging Clerk application:
+
+```sh
+export DEDALUS_CLERK_ISSUER="https://clerk.staging.dedaluslabs.ai"
+export DEDALUS_CLERK_CLIENT_ID="<staging-public-client-id>"
+dedalus auth login
+```
+
+This selects `https://staging.dedaluslabs.ai/cli/sign-in` and
+`https://staging.admin.api.dedaluslabs.ai/dcs`. An existing `DEDALUS_BASE_URL`
+override must match that gateway; a direct DCS URL is for API-key authentication.
+The staging Admin deployment must have CLI auth enabled with its Clerk client ID
+and secret configured. Missing credentials or cross-environment endpoints fail
+closed. This configuration does not enable any server feature flags.

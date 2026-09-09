@@ -42,6 +42,9 @@ const defaultClerkIssuer = 'https://neat-gator-21.clerk.accounts.dev'
 const defaultClerkClientID = 'W27FJtdP5VDfKMTv'
 const defaultSignInURL = 'https://dev.dedaluslabs.ai/cli/sign-in'
 const developmentGatewayURL = 'https://dev.admin.api.dedaluslabs.ai/dcs'
+const stagingClerkIssuer = 'https://clerk.staging.dedaluslabs.ai'
+const stagingSignInURL = 'https://staging.dedaluslabs.ai/cli/sign-in'
+const stagingGatewayURL = 'https://staging.admin.api.dedaluslabs.ai/dcs'
 
 export { formatDedalusError }
 
@@ -223,6 +226,17 @@ export const cliAuthConfiguration = (
 } => {
   const issuerOverride = environment.DEDALUS_CLERK_ISSUER
   const clientIDOverride = environment.DEDALUS_CLERK_CLIENT_ID
+  if (issuerOverride === stagingClerkIssuer) {
+    if (!clientIDOverride || !/^[A-Za-z0-9_-]+$/u.test(clientIDOverride) ||
+      clientIDOverride === defaultClerkClientID) {
+      throw new AuthProviderError('invalid_configuration')
+    }
+    return {
+      issuer: stagingClerkIssuer,
+      clientId: clientIDOverride,
+      signInURL: cliSignInURL(environment.DEDALUS_SIGN_IN_URL ?? stagingSignInURL, stagingSignInURL),
+    }
+  }
   if (
     (issuerOverride !== undefined && issuerOverride !== defaultClerkIssuer) ||
     (clientIDOverride !== undefined && clientIDOverride !== defaultClerkClientID)
@@ -237,8 +251,8 @@ export const cliAuthConfiguration = (
   }
 }
 
-const cliSignInURL = (raw: string): string => {
-  if (raw === defaultSignInURL) return raw
+const cliSignInURL = (raw: string, expected = defaultSignInURL): string => {
+  if (raw === expected) return raw
   try {
     const value = new URL(raw)
     if (
@@ -328,14 +342,13 @@ export const cliOAuthGatewayURL = (
   flagValue?: string,
 ): string => {
   const issuer = new URL(createClerkAuthProvider(cliAuthConfiguration(environment)).issuer)
-  const developmentIssuer = issuer.hostname.endsWith('.clerk.accounts.dev')
-  if (!developmentIssuer) throw new CredentialStorageError('environment_mismatch')
-  const raw = flagValue ?? environment.DEDALUS_BASE_URL ?? developmentGatewayURL
+  const expectedGateway = issuer.origin === stagingClerkIssuer ? stagingGatewayURL : developmentGatewayURL
+  const raw = flagValue ?? environment.DEDALUS_BASE_URL ?? expectedGateway
   const gatewayURL = validHTTPSBaseURL(raw)
   if (new URL(gatewayURL).pathname !== '/dcs') {
     throw new CredentialStorageError('environment_mismatch')
   }
-  if (gatewayURL !== developmentGatewayURL) {
+  if (gatewayURL !== expectedGateway) {
     throw new CredentialStorageError('environment_mismatch')
   }
   return gatewayURL

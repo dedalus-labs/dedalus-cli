@@ -30,6 +30,7 @@ const capture = async (action) => {
 }
 
 const aliases = (options) => addMachineAliases(new Command()
+  .enablePositionalOptions()
   .option('--format <format>', '', 'auto')
   .option('--format-error <format>', '', 'auto')
   .option('--transform <path>')
@@ -157,4 +158,33 @@ test('each rename receives a fresh idempotency key and preserves it across HTTP 
   assert.ok(keys.every((key) => typeof key === 'string' && key.length > 0))
   assert.equal(keys[0], keys[1])
   assert.notEqual(keys[1], keys[2])
+})
+
+test('invariant_output_format_honors_local_flags_over_global_defaults', async () => {
+  const result = { machine_id: 'dm-00000000-0000-4000-8000-000000000111', name: 'new-name' }
+  for (const [before, after] of [
+    [['--format', 'yaml'], []],
+    [[], ['--format', 'yaml']],
+    [['--format', 'json'], ['--format', 'yaml']],
+  ]) {
+    const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => result }) })
+      .parseAsync([...before, 'rename', 'old', 'new-name', ...after], { from: 'user' }))
+    assert.equal(output.stdout, `machine_id: ${result.machine_id}\nname: new-name\n`)
+    assert.equal(output.stderr, '')
+  }
+})
+
+test('invariant_error_format_honors_local_flags_over_global_defaults', async () => {
+  for (const [before, after] of [
+    [['--format-error', 'yaml'], []],
+    [[], ['--format-error', 'yaml']],
+    [['--format-error', 'json'], ['--format-error', 'yaml']],
+  ]) {
+    const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => {
+      throw new Error('access denied')
+    } }) }).parseAsync([...before, 'rename', 'old', 'new-name', ...after], { from: 'user' }))
+    assert.equal(output.stdout, '')
+    assert.match(output.stderr, /^message: access denied\n/mu)
+    assert.equal(process.exitCode, 1)
+  }
 })

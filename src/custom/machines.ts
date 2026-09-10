@@ -40,7 +40,7 @@ export const addMachineAliases = (
         }
         const flags = command.optsWithGlobals<GlobalOptions>()
         await writeOutput(result, {
-          format: normalizeFormat(flags.format, 'auto'), title: 'rename',
+          format: normalizeFormat(command.opts<GlobalOptions>().format ?? flags.format, 'auto'), title: 'rename',
           ...(flags.transform ? { transform: flags.transform } : {}),
           ...(flags.rawOutput ? { rawOutput: true } : {}),
         })
@@ -85,7 +85,7 @@ const runAlias = async (
     await action(client)
   } catch (error) {
     await writeError(error, {
-      format: normalizeFormat(flags.formatError, 'auto'),
+      format: normalizeFormat(command.opts<GlobalOptions>().formatError ?? flags.formatError, 'auto'),
       ...(flags.transformError ? { transform: flags.transformError } : {}),
       ...(flags.rawOutput ? { rawOutput: true } : {}),
     }, clientOptions, SDK)

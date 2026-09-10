@@ -66,6 +66,11 @@ within the last 15 minutes for the same API host, credentials, and organization.
 metadata. `true` includes a local runtime and proxy-configuration report even when
 no failed command is available. Proxy values are omitted.
 
+For a failed command, the receipt comes from its last API response, including a
+successful response followed by a local connection failure. A later response
+without a receipt clears the candidate. Successful responses are not reported as
+HTTP failures.
+
 The CLI records command names, route templates, response status, duration, and
 server-issued request IDs under `~/.dedalus/debug`. It excludes command arguments,
 request and response bodies, credentials, terminal output, and workspace files.

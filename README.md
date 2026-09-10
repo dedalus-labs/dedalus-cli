@@ -10,6 +10,7 @@ The full API of this library can be found in [api.md](./api.md).
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Feedback](#feedback)
 - [API Reference](./api.md)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
@@ -48,6 +49,33 @@ The examples in the following sections assume a `client` configured as shown abo
 See the [API reference](./api.md) for every available operation.
 
 <br />
+
+## Feedback
+
+```sh
+dedalus feedback "Machine creation failed" --include-logs auto
+dedalus feedback "A suggestion" --include-logs false
+dedalus feedback "Connection problem" --include-logs true
+dedalus doctor --json
+```
+
+`--include-logs auto` is the default. It attaches diagnostics from a failed command
+within the last 15 minutes for the same API host, credentials, and organization.
+`false` sends no files; a recent server request receipt may still be included as
+metadata. `true` includes a local runtime and proxy-configuration report even when
+no failed command is available. Proxy values are omitted.
+
+The CLI records command names, route templates, response status, duration, and
+server-issued request IDs under `~/.dedalus/debug`. It excludes command arguments,
+request and response bodies, credentials, terminal output, and workspace files.
+Files expire after 10 days and the directory is capped at 50 MiB. Cleanup runs
+when recording new diagnostics. Each process partition is capped at 1,000 events
+and 10 MiB. Feedback submissions never become diagnostic candidates themselves.
+
+Selected files are rebuilt from permitted fields and sent with their exact byte
+size and SHA-256 digest. HTTP retries reuse one idempotency key. A successful
+response means the report was accepted for delivery; it does not confirm that
+support has received it yet.
 
 ## Shell Completion
 

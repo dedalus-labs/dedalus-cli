@@ -1,3 +1,5 @@
+// @custom start
+// Verify literal execution arguments through the public command.
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
@@ -125,3 +127,4 @@ test('execution help and completion expose the alias and create options', async 
   const flags = await run(['completion', 'query', '--', 'machines', 'exec', 'create', '--machine'])
   assert.equal(flags.stdout.trim(), '--machine-id')
 })
+// @custom end

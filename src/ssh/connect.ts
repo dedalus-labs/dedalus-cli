@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Ephemeral SSH connection flow used by `machines create --ssh`. */
 
 import { spawn, type ChildProcess } from 'node:child_process'
@@ -241,3 +241,4 @@ const runProcess = (
       resolve(code)
     })
   })
+// @custom end

@@ -493,5 +493,4 @@ test('invariant logout preserves cleanup and verification failures', async () =>
     (error) => error === failure,
   )
 })
-
 // @custom end

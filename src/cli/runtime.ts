@@ -59,8 +59,8 @@ export type CliClientOptionDefinition = {
   readonly defaultValue?: string;
 };
 
-// @custom
-// Keep the constructed client type available to result orchestration.
+// @custom start
+// Carry the SDK client type and authentication/output hooks through command setup.
 export type CreateProgramOptions<Client = unknown> = {
   readonly SDK: new (options: Record<string, unknown>) => Client;
   readonly binaryName: string;
@@ -80,6 +80,7 @@ export type CreateProgramOptions<Client = unknown> = {
   // config disables shell completions, in which case no `completion` command is registered.
   readonly completions?: Readonly<Record<string, string>>;
 };
+// @custom end
 
 type OutputOptions = {
   readonly format: OutputFormat;
@@ -105,6 +106,8 @@ export type GlobalOptions = {
   readonly maxItems?: string;
 };
 
+// @custom start
+// Accept typed authentication and output hooks while using the generated command builder.
 export const createProgram = <Client>({
   SDK,
   binaryName,
@@ -121,6 +124,7 @@ export const createProgram = <Client>({
   // @custom end
   completions,
 }: CreateProgramOptions<Client>): Command => {
+// @custom end
   const program = usageExitCode(new Command());
   program
     .enablePositionalOptions()
@@ -224,14 +228,15 @@ const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   return parts.join(' ');
 };
 
-// @custom
-// Share typed execution hooks without adding positional arguments to registration.
+// @custom start
+// Group the typed runtime dependencies used by registration and execution.
 type CommandRuntime<Client> = {
   readonly SDK: CreateProgramOptions<Client>['SDK'];
   readonly clientOptions: CreateProgramOptions<Client>['clientOptions'];
   readonly formatError: CreateProgramOptions<Client>['formatError'];
   readonly handleResult: CreateProgramOptions<Client>['handleResult'];
 };
+// @custom end
 
 // @custom start
 // Accept the authentication formatter and register nested resources as command words.
@@ -366,7 +371,10 @@ const runGeneratedCommand = async <Client>(
   };
 
   try {
+    // @custom start
+    // Preserve the constructor result type for custom result handlers.
     const client = new SDK(sdkClientOptions(rootOptions, command, clientOptions));
+    // @custom end
     const method = sdkMethod(client, definition);
     const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
 
@@ -400,8 +408,10 @@ const runGeneratedCommand = async <Client>(
       return;
     }
 
-    // @custom: let orchestration consume a result while retaining this SDK instance.
+    // @custom start
+    // Let custom orchestration consume the result before default output.
     if (await handleResult?.(resolved, client, command)) return;
+    // @custom end
     await writeOutput(resolved, outputOptions);
   } catch (error) {
     // @custom start
@@ -440,10 +450,13 @@ const sdkClientOptions = (
   };
 };
 
+// @custom start
+// Inspect the generic client at the dynamic generated-resource boundary.
 const sdkMethod = (
   client: unknown,
   definition: CliCommandDefinition,
 ): ((...args: unknown[]) => unknown) => {
+// @custom end
   let target: unknown = client;
   for (const resource of definition.resourcePath) {
     target = (target as Record<string, unknown>)[resource];
@@ -512,6 +525,7 @@ const callArguments = async (
   return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params, stdin };
   // @custom end
 };
+  // @custom end
 
 const paramsValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {
   if (definition.bodyParamKey === undefined) return params;

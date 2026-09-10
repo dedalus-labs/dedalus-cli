@@ -1,4 +1,4 @@
-# @custom
+# @custom start
 # Run the same ownership declaration check locally and in CI.
 repos:
   - repo: local
@@ -9,3 +9,4 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+# @custom end

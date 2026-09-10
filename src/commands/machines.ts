@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Add SSH orchestration to Scalar's machine commands. */
 import { Command, InvalidArgumentError } from 'commander'
 import type SDK from '../sdk/index.js'
@@ -71,3 +71,4 @@ export const machineResultHandler =
     )
     return true
   }
+// @custom end

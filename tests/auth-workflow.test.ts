@@ -341,36 +341,36 @@ test('invariant logout removes local tokens after confirmed provider revocation'
   assert.equal(await existing.read(), null)
 })
 
-test('invariant logout removes local tokens when provider revocation fails', async () => {
+test('invariant failed revocation preserves its error and credentials for retry', async () => {
   const existing = store(session())
-  assert.deepEqual(
-    await logout(existing, () =>
+  const failure = new Error('offline')
+  await assert.rejects(
+    logout(existing, () =>
       provider({
         revoke: async () => {
-          throw new Error('offline')
+          throw failure
         },
       }),
     ),
-    {
-      status: 'logged_out',
-      revocationConfirmed: false,
-    },
+    (error) => error === failure,
   )
-  assert.equal(await existing.read(), null)
+  assert.deepEqual(await existing.read(), session())
+  await assert.rejects(logout(existing, () => provider({ revoke: async () => false })), {
+    code: 'cli_revocation_unconfirmed',
+  })
+  assert.deepEqual(await existing.read(), session())
 })
 
-test('invariant logout removes local tokens when provider configuration is unavailable', async () => {
+test('invariant logout preserves credentials when provider configuration is unavailable', async () => {
   const existing = store(session())
-  assert.deepEqual(
-    await logout(existing, () => {
-      throw new Error('invalid provider configuration')
+  const failure = new Error('invalid provider configuration')
+  await assert.rejects(
+    logout(existing, () => {
+      throw failure
     }),
-    {
-      status: 'logged_out',
-      revocationConfirmed: false,
-    },
+    (error) => error === failure,
   )
-  assert.equal(await existing.read(), null)
+  assert.deepEqual(await existing.read(), session())
 })
 
 test('invariant logout never sends a session to a different provider', async () => {
@@ -385,12 +385,11 @@ test('invariant logout never sends a session to a different provider', async () 
     },
   })
 
-  assert.deepEqual(await logout(existing, () => otherProvider), {
-    status: 'logged_out',
-    revocationConfirmed: false,
+  await assert.rejects(logout(existing, () => otherProvider), {
+    code: 'cli_session_provider_mismatch',
   })
   assert.equal(revocations, 0)
-  assert.equal(await existing.read(), null)
+  assert.deepEqual(await existing.read(), session())
 })
 
 test('invariant logout is idempotent without a local OAuth session', async () => {
@@ -400,7 +399,7 @@ test('invariant logout is idempotent without a local OAuth session', async () =>
   })
 })
 
-test('invariant logout can remove an obsolete local credential format', async () => {
+test('invariant logout cannot claim revocation of an unreadable credential', async () => {
   let removed = false
   const obsolete = {
     ...store(),
@@ -413,11 +412,44 @@ test('invariant logout can remove an obsolete local credential format', async ()
     },
   }
 
-  assert.deepEqual(await logout(obsolete, () => provider()), {
-    status: 'logged_out',
-    revocationConfirmed: false,
-  })
-  assert.equal(removed, true)
+  await assert.rejects(logout(obsolete, () => provider()), { code: 'invalid_credential' })
+  assert.equal(removed, false)
+})
+
+test('invariant logout verifies local absence after acknowledged deletion', async () => {
+  for (const removed of [false, true]) {
+    await assert.rejects(
+      logout({ ...store(session()), remove: async () => removed }, () => provider()),
+      { code: 'cli_credential_store_failed' },
+    )
+  }
+})
+
+test('invariant logout preserves cleanup and verification failures', async () => {
+  const failure = new Error('keyring locked')
+  await assert.rejects(
+    logout({
+      ...store(session()),
+      remove: async () => { throw failure },
+    }, () => provider()),
+    (error) => error === failure,
+  )
+
+  let removed = false
+  await assert.rejects(
+    logout({
+      ...store(session()),
+      read: async () => {
+        if (removed) throw failure
+        return session()
+      },
+      remove: async () => {
+        removed = true
+        return true
+      },
+    }, () => provider()),
+    (error) => error === failure,
+  )
 })
 
 // @custom end

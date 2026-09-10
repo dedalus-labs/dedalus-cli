@@ -24,7 +24,10 @@ const refreshSkewMs = 60 * 1000
 
 export class CLIAuthWorkflowError extends Error {
   readonly code:
-    'cli_credential_store_failed' | 'cli_session_identity_changed' | 'cli_session_provider_mismatch'
+    | 'cli_credential_store_failed'
+    | 'cli_revocation_unconfirmed'
+    | 'cli_session_identity_changed'
+    | 'cli_session_provider_mismatch'
 
   constructor(code: CLIAuthWorkflowError['code'], options?: ErrorOptions) {
     super(code, options)
@@ -56,7 +59,7 @@ export type AuthStatus =
 
 export type LogoutResult =
   | { readonly status: 'not_logged_in'; readonly revocationConfirmed: false }
-  | { readonly status: 'logged_out'; readonly revocationConfirmed: boolean }
+  | { readonly status: 'logged_out'; readonly revocationConfirmed: true }
 
 export const login = async (dependencies: LoginDependencies): Promise<LoginResult> =>
   dependencies.store.withLifecycleLock(async () => {
@@ -112,34 +115,21 @@ export const logout = async (
   provider: AuthProviderFactory,
 ): Promise<LogoutResult> =>
   store.withLifecycleLock(async () => {
-    let session: OAuthSession | null
-    try {
-      session = await store.read()
-    } catch (error) {
-      if (
-        !(error instanceof CredentialStorageError) ||
-        (error.code !== 'invalid_credential' && error.code !== 'insecure_permissions')
-      ) {
-        throw error
-      }
-      const removed = await store.remove()
-      if (!removed) throw new CLIAuthWorkflowError('cli_credential_store_failed')
-      return { status: 'logged_out', revocationConfirmed: false }
-    }
+    const session = await store.read()
     if (!session) return { status: 'not_logged_in', revocationConfirmed: false }
 
-    let revocationConfirmed = false
-    try {
-      const configuredProvider = provider()
-      requireProviderBinding(session, configuredProvider)
-      revocationConfirmed = await configuredProvider.revoke(session)
-    } catch {
-      revocationConfirmed = false
+    const configuredProvider = provider()
+    requireProviderBinding(session, configuredProvider)
+    if (!(await configuredProvider.revoke(session))) {
+      throw new CLIAuthWorkflowError('cli_revocation_unconfirmed')
     }
 
     const removed = await store.remove()
-    if (!removed) throw new CLIAuthWorkflowError('cli_credential_store_failed')
-    return { status: 'logged_out', revocationConfirmed }
+    if (!removed || (await store.read()) !== null) {
+      throw new CLIAuthWorkflowError('cli_credential_store_failed')
+    }
+    permanentFailures.delete(store)
+    return { status: 'logged_out', revocationConfirmed: true }
   })
 
 /** Recover a rejected token under the same lock used by proactive refresh. */

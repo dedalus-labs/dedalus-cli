@@ -605,14 +605,14 @@ test('invariant repeat login reports provider-neutral session metadata', async (
   assert.equal(output.includes('oauth-access-token'), false)
 })
 
-test('invariant logout reports partial provider revocation accurately', async () => {
+test('invariant logout reports confirmed revocation and cleanup', async () => {
   let output = ''
   const program = new Command()
   addDedalusCommands(program, {
     auth: () => ({
       login: async () => ({ status: 'logged_in', session: metadata }),
       status: async () => ({ source: 'none' }),
-      logout: async () => ({ status: 'logged_out', revocationConfirmed: false }),
+      logout: async () => ({ status: 'logged_out', revocationConfirmed: true }),
     }),
     writeOutput: (value) => {
       output += value
@@ -624,12 +624,13 @@ test('invariant logout reports partial provider revocation accurately', async ()
   assert.deepEqual(JSON.parse(output), {
     status: 'logged_out',
     local_tokens_removed: true,
-    revocation_confirmed: false,
+    revocation_confirmed: true,
   })
 })
 
-test('invariant logout removes local tokens when provider configuration is invalid', async () => {
+test('invariant logout reports configuration failure without deleting credentials', async () => {
   let output = ''
+  let errors = ''
   let stored: OAuthSession | null = session()
   const credentialStore = {
     ...store(),
@@ -646,16 +647,19 @@ test('invariant logout removes local tokens when provider configuration is inval
     writeOutput: (value) => {
       output += value
     },
+    writeError: (value) => { errors += value },
   })
 
-  await program.parseAsync(['node', 'dedalus', 'auth', 'logout', '--json'])
-
-  assert.deepEqual(JSON.parse(output), {
-    status: 'logged_out',
-    local_tokens_removed: true,
-    revocation_confirmed: false,
-  })
-  assert.equal(stored, null)
+  const previousExitCode = process.exitCode
+  try {
+    await program.parseAsync(['node', 'dedalus', 'auth', 'logout', '--json'])
+    assert.equal(process.exitCode, 1)
+    assert.equal(output, '')
+    assert.equal(JSON.parse(errors).error.code, 'cli_invalid_configuration')
+    assert.deepEqual(stored, session())
+  } finally {
+    process.exitCode = previousExitCode
+  }
 })
 
 test('invariant unexpected auth failures never expose internal detail', async () => {

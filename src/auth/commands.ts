@@ -172,7 +172,7 @@ const createAuthCommand = ({
 
   auth
     .command('logout')
-    .description('Revoke the provider token when possible and remove local tokens')
+    .description('Revoke the OAuth session and verify local credential removal')
     .option('--json', 'Print structured JSON output')
     .action(async (_commandOptions: unknown, command: Command) =>
       runAuthAction({

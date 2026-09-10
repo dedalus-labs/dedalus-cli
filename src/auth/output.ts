@@ -236,9 +236,7 @@ const sessionOutput = (session: LoginResult['session']): Record<string, unknown>
 export const logoutOutput = (result: LogoutResult): AuthOutput =>
   result.status === 'logged_out'
     ? {
-        message: result.revocationConfirmed
-          ? 'Logged out and provider revocation was confirmed.'
-          : 'Logged out locally; provider revocation could not be confirmed.',
+        message: 'Logged out. Provider revocation and local credential removal were confirmed.',
         value: {
           status: 'logged_out',
           local_tokens_removed: true,
@@ -442,7 +440,9 @@ const credentialStorageMessage = (code: CredentialStorageError['code']): string 
 const workflowMessage = (code: CLIAuthWorkflowError['code']): string => {
   switch (code) {
     case 'cli_credential_store_failed':
-      return 'Authentication succeeded, but the CLI could not update local token storage.'
+      return 'The CLI could not complete the local credential update.'
+    case 'cli_revocation_unconfirmed':
+      return 'Logout failed because revocation was not confirmed. Credentials were retained. Retry logout.'
     case 'cli_session_identity_changed':
       return "The refreshed login changed identity or organization. Run 'dedalus auth logout', then sign in again."
     case 'cli_session_provider_mismatch':

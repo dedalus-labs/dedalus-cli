@@ -83,9 +83,11 @@ dedalus auth status --offline
 dedalus auth logout
 ```
 
-`--offline` reads local metadata only. Logout attempts Clerk refresh-token
-revocation, always removes local tokens when storage is available, and reports
-whether provider revocation was confirmed. Every auth command accepts `--json`
+`--offline` reads local metadata only. Logout requires provider revocation,
+then deletes local credentials and verifies their absence. Revocation failures
+preserve credentials for another logout attempt. Read, deletion, and verification
+failures fail the command. Completed logout clears the cached refresh failure.
+Every auth command accepts `--json`
 and excludes access tokens, refresh tokens, authorization codes, PKCE values,
 state, and API-key plaintext.
 

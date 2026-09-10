@@ -17,3 +17,10 @@ and symlinked files. The credential digest stays in local filenames.
 The default directory is `~/.dedalus/debug`. Each process records at most 1,000
 events and 10 MiB. New writes prune files older than 10 days and keep the directory
 under 50 MiB. Run `pnpm build && pnpm test` to verify these boundaries.
+
+`buildFeedbackBundle` selects files for the explicit `auto`, `true`, or `false`
+log-inclusion mode. Opt-out sends no files while retaining a recent server
+receipt as metadata. Auto mode attaches only recent failures in the same scope.
+Explicit inclusion adds a runtime and proxy-presence report, even without logs.
+Proxy values are omitted. Each attachment carries its exact byte count and
+SHA-256 digest; the bundle contains at most four files and 1 MiB compressed.

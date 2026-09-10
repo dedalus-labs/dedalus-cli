@@ -71,7 +71,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit",
-    "test": "node --test tests/feedback-*.test.mjs"
+    "test": "node --test tests/feedback-*.test.mjs",
+    "ci:generate": "hollywood generate 'ci/**/*.ts' --source-root ci --output .",
+    "test:package": "node scripts/verify-staging-package.mjs"
   },
   "dependencies": {
     "ansis": "^4.3.0",
@@ -82,7 +84,8 @@
   "devDependencies": {
     "@types/node": "^20.17.0",
     "@types/ws": "^8.5.13",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "@dedalus-labs/hollywood": "0.0.5"
   },
   "license": "Apache-2.0"
 }

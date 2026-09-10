@@ -6,6 +6,7 @@ import { Command } from 'commander'
 import SDK from '../dist/esm/sdk/index.js'
 import { getProgram } from '../dist/esm/index.js'
 import { addMachineAliases, createMachineAPI } from '../dist/esm/custom/machines.js'
+import { awaitSSHSession } from '../dist/esm/custom/ssh.js'
 
 afterEach(() => { process.exitCode = undefined })
 
@@ -43,6 +44,7 @@ const aliases = (options) => addMachineAliases(new Command()
 
 test('public program includes custom aliases alongside generated commands', () => {
   const program = getProgram()
+  assert.ok(program.commands.some((command) => command.name() === 'ssh'))
   assert.ok(program.commands.some((command) => command.name() === 'rename'))
   assert.ok(program.commands.find((command) => command.name() === 'machines').commands.some((command) => command.name() === 'update'))
 })
@@ -54,11 +56,30 @@ test('aliases retain CLI usage exit codes', () => {
 
 test('organization flag is exposed only when the generated commands expose it', () => {
   const plain = addMachineAliases(new Command(), [])
-  assert.equal(plain.commands.find((command) => command.name() === 'rename').options.some((option) =>
+  assert.equal(plain.commands.find((command) => command.name() === 'ssh').options.some((option) =>
     option.long === '--x-dedalus-org-id'), false)
   const generated = getProgram()
-  assert.equal(generated.commands.find((command) => command.name() === 'rename').options.some((option) =>
+  assert.equal(generated.commands.find((command) => command.name() === 'ssh').options.some((option) =>
     option.long === '--x-dedalus-org-id'), true)
+})
+
+test('SSH session creation sends the name; polling stays on canonical ID during rename', async () => {
+  const requests = []
+  const api = createMachineAPI(new SDK({ apiKey: 'test', maxRetries: 0, fetch: async (url, init) => {
+    requests.push({ url: String(url), method: init.method, body: init.body })
+    return Response.json({ machine_id: 'dm-00000000-0000-4000-8000-000000000111', session_id: 'ss-1',
+      status: requests.length === 1 ? 'wake_in_progress' : 'ready', retry_after_ms: 1 })
+  } }))
+  await capture(() => awaitSSHSession(api, 'old-name', 'ssh-ed25519 public'))
+  assert.ok(requests[0].url.endsWith('/v1/machines/old-name/ssh'))
+  assert.deepEqual(JSON.parse(requests[0].body), { public_key: 'ssh-ed25519 public' })
+  assert.ok(requests[1].url.endsWith('/v1/machines/dm-00000000-0000-4000-8000-000000000111/ssh/ss-1'))
+})
+
+test('SSH refuses to poll without a canonical ID', async () => {
+  await assert.rejects(awaitSSHSession({ createSSHSession: async () => ({ session_id: 'ss-1', status: 'wake_in_progress' }),
+    getMachineSSHSession: async () => { throw new Error('must not poll') },
+  }, 'name', 'key'), /omitted machine_id/u)
 })
 
 test('rename sends only the unchanged name and respects auth, org, and JSON output globals', async () => {

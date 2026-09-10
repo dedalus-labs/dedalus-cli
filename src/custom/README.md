@@ -20,3 +20,5 @@ npm run typecheck
 npm run build
 node --test tests/machine-aliases.test.mjs
 ```
+
+`dedalus ssh <name|machine_id>` connects with an ephemeral key and verifies the server host certificate. Session polling uses the canonical machine ID returned by the server.

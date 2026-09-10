@@ -6,20 +6,27 @@ import {
   type CliClientOptionDefinition, type GlobalOptions,
   sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode,
 } from '../cli/runtime.js'
+import { connectMachine, type SSHAPI } from './ssh.js'
 
-export type MachineAPI = {
+export type MachineAPI = SSHAPI & {
   readonly renameMachine: (current: string, name: string) => Promise<unknown>
 }
 
 type AliasOptions = {
   readonly api?: (client: SDK) => MachineAPI
+  readonly connect?: (api: SSHAPI, machineID: string) => Promise<void>
 }
 
 export const createMachineAPI = (client: SDK): MachineAPI => ({
   renameMachine: (current, name) => client.patch(`/v1/machines/${encodeURIComponent(current)}`, {
     body: { name },
   }),
-
+  createSSHSession: (machineID, publicKey) => client.machines.ssh.create({
+    machine_id: machineID, public_key: publicKey,
+  }),
+  getMachineSSHSession: (machineID, sessionID) => client.machines.ssh.retrieve({
+    machine_id: machineID, session_id: sessionID,
+  }),
 })
 
 export const addMachineAliases = (
@@ -28,6 +35,16 @@ export const addMachineAliases = (
   options: AliasOptions = {},
 ): Command => {
   const makeAPI = options.api ?? createMachineAPI
+  const connect = options.connect ?? connectMachine
+  const ssh = aliasCommand(program, 'ssh')
+    .description('Connect to a machine over SSH')
+    .argument('<machine>', 'Machine name or ID')
+    .action(async (target: string, _flags: unknown, command: Command) => {
+      await runAlias(command, clientOptions, async (client) => {
+        const api = makeAPI(client)
+        await connect(api, target)
+      })
+    })
   const rename = aliasCommand(program, 'rename')
     .description('Rename a machine by its current name or ID')
     .argument('<current>', 'Current machine name or ID')
@@ -46,7 +63,7 @@ export const addMachineAliases = (
         })
       })
     })
-  program.addCommand(rename)
+  program.addCommand(ssh).addCommand(rename)
   return program
 }
 

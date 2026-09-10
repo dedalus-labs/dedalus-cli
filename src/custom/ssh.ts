@@ -53,8 +53,8 @@ export const connectMachine = async (api: SSHAPI, machineID: string): Promise<vo
     )
     const code = await runProcess('ssh', [
       '-i', keyPath,
-      '-o', `CertificateFile=${certificatePath}`,
-      '-o', `UserKnownHostsFile=${knownHostsPath}`,
+      '-o', `CertificateFile=${quoteSSHPath(certificatePath)}`,
+      '-o', `UserKnownHostsFile=${quoteSSHPath(knownHostsPath)}`,
       '-o', 'GlobalKnownHostsFile=/dev/null',
       '-o', 'StrictHostKeyChecking=yes',
       '-o', 'IdentitiesOnly=yes',
@@ -163,6 +163,9 @@ const retryDelay = (value: unknown): number => {
 
 const sleep = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds))
+
+// OpenSSH parses -o values as configuration text even when spawn receives an argv array.
+const quoteSSHPath = (path: string): string => `"${path.replace(/[\\"]/gu, '\\$&')}"`
 
 const runProcess = (
   command: string,

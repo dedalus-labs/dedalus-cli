@@ -1,3 +1,5 @@
+// @custom start
+// Verify generated commands through the public executable.
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
@@ -349,3 +351,4 @@ test('completion does not suggest commands as option values', async () => {
   const result = await runCLI(['completion', 'query', '--', '--api-key', ''])
   assert.equal(result.stdout, '')
 })
+// @custom end

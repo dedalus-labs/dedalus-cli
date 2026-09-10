@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Verifies that a clean npm package contains every declared runtime entry. */
 
 import { spawn } from 'node:child_process'
@@ -53,3 +53,4 @@ if (missing.length > 0) {
 }
 
 process.stdout.write(`Package contains ${files.size} files and every declared runtime entry.\n`)
+// @custom end

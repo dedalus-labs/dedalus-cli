@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Dedalus-owned commands and authentication for the generated command-line interface.
  *
@@ -454,3 +454,4 @@ const belongsTo = (command: Command, ancestor: Command): boolean => {
   }
   return false
 }
+// @custom end

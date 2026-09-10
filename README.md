@@ -47,8 +47,8 @@ Scalar generates the SDK, resource commands, API reference, and manual pages fro
 the DCS OpenAPI input. Handwritten code lives with its feature: `src/auth` owns
 login and credentials, while `src/cli/program.ts` assembles the executable.
 
-Mark handwritten modules and modifications with `// @custom`, followed by a normal
-comment explaining the intent. Preserve Scalar's generated provenance headers.
+Wrap handwritten modules and modifications in `// @custom start` and
+`// @custom end`, with a normal comment explaining each range. Preserve Scalar's generated provenance headers.
 These markers document ownership; they do not exempt code from review or tests.
 Scalar carries edits on `scalar-next` through its three-way merge.
 

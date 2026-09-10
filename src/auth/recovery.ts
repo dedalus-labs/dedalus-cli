@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** OAuth recovery attached only to credentials selected by the CLI. */
 import type { CredentialStore } from './credentials.js'
 import type { AuthProvider } from './types.js'
@@ -28,3 +28,4 @@ export const recoverableBearer = async (
 
 export const oauthRecovery = (bearer: unknown): Recovery | undefined =>
   typeof bearer === 'function' ? recoveries.get(bearer as () => string) : undefined
+// @custom end

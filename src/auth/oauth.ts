@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Clerk OAuth 2.0 Authorization Code flow for the Dedalus command-line interface.
  *
@@ -477,3 +477,4 @@ const defaultOpenBrowser = async (url: string): Promise<void> => {
   const { default: open } = await import('open')
   await open(url)
 }
+// @custom end

@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Secret-safe output for command-line authentication and generated API errors.
  *
@@ -449,3 +449,4 @@ const workflowMessage = (code: CLIAuthWorkflowError['code']): string => {
       return "The stored login belongs to a different authentication provider. Run 'dedalus auth logout', then sign in again."
   }
 }
+// @custom end

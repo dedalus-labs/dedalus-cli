@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Render the browser's receipt of an OAuth callback. */
 
 export const oauthCallbackPage = (message: string): string => {
@@ -26,3 +26,4 @@ export const oauthCallbackPage = (message: string): string => {
 </body>
 </html>`
 }
+// @custom end

@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Validates OAuth token and user-info responses from the Clerk issuer.
  *
@@ -281,3 +281,4 @@ const uniqueScopes = (value: string, responseStatus: number): readonly string[] 
   }
   return scopes
 }
+// @custom end

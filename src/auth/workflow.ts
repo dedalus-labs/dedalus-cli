@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Stored OAuth 2.0 session lifecycle for command-line authentication.
  *
@@ -240,3 +240,4 @@ export const selectedCredential = async (
     ...resolution,
     storedAccessToken: async () => (await store().read())?.accessToken ?? null,
   })
+// @custom end

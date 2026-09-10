@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Low-level primitives for the one-use OAuth loopback listener. */
 
 import { timingSafeEqual } from 'node:crypto'
@@ -54,3 +54,4 @@ export const closeServer = (server: Server): Promise<void> =>
     // after closing so a partial local request cannot stall cancellation.
     server.closeAllConnections()
   })
+// @custom end

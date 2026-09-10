@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** One OAuth recovery attempt around Scalar's HTTP request implementation. */
 import SDK from '../sdk/index.js'
 import { APIError } from '../sdk/core/error.js'
@@ -51,3 +51,4 @@ export class AuthenticatedCommandClient extends SDK {
     }
   }
 }
+// @custom end

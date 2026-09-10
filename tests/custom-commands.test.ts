@@ -1,3 +1,5 @@
+// @custom start
+// Exercise authenticated CLI commands.
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import assert from 'node:assert/strict'
@@ -1071,3 +1073,4 @@ test('invariant staging auth requires an explicit client and stays within stagin
     (error) => error instanceof Error && 'code' in error && error.code === 'environment_mismatch',
   )
 })
+// @custom end

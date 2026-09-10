@@ -1475,7 +1475,7 @@ const commands = [
   },
 ] as const satisfies readonly CliCommandDefinition[];
 
-// @custom
+// @custom start
 // Supply authentication through the generated entry point.
 export const getProgram = (overrides: Partial<Parameters<typeof createProgram>[0]> = {}): Command =>
   createProgram({
@@ -1490,3 +1490,4 @@ export const getProgram = (overrides: Partial<Parameters<typeof createProgram>[0
     completions,
     ...overrides,
   });
+// @custom end

@@ -1,3 +1,5 @@
+// @custom start
+// Check local credential storage and serialization.
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import assert from 'node:assert/strict'
@@ -356,3 +358,4 @@ test('invariant credential backend selection follows the host platform', () => {
     'file',
   )
 })
+// @custom end

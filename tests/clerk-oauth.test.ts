@@ -1,3 +1,5 @@
+// @custom start
+// Exercise the native OAuth authorization flow.
 import assert from 'node:assert/strict'
 import { createServer, request as httpRequest, type Server } from 'node:http'
 import { connect } from 'node:net'
@@ -827,3 +829,4 @@ const serverURL = (server: Server) => {
   assert.ok(address && typeof address !== 'string')
   return `http://127.0.0.1:${address.port}`
 }
+// @custom end

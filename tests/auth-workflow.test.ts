@@ -1,3 +1,5 @@
+// @custom start
+// Exercise login, refresh, and logout state transitions.
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import assert from 'node:assert/strict'
@@ -427,3 +429,4 @@ test('invariant logout removes an exposed filesystem credential', async (context
   })
   assert.equal(await credentialStore.read(), null)
 })
+// @custom end

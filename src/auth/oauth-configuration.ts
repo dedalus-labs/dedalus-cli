@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Validate OAuth endpoints before opening a browser or sending credentials. */
 import { ClerkOAuthError } from './oauth-http.js'
 
@@ -52,3 +52,4 @@ export const validSignInURL = (raw: string): URL => {
     throw new ClerkOAuthError('invalid_configuration', { cause: error })
   }
 }
+// @custom end

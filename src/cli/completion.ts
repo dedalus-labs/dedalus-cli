@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Complete the assembled command tree, including nested resources and auth. */
 import { Command, type Option } from 'commander'
 
@@ -84,3 +84,4 @@ export const installCompletion = (program: Command): void => {
     process.stdout.write(shellScript(shell))
   })
 }
+// @custom end

@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Persistent OAuth session format and credential storage error contract.
  *
@@ -201,3 +201,4 @@ const validScopes = (value: readonly unknown[]): readonly string[] => {
 
 const isSymlink = (error: unknown): boolean =>
   error instanceof Error && 'code' in error && error.code === 'ELOOP'
+// @custom end

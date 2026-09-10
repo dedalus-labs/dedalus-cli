@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Provider-neutral contracts for command-line OAuth 2.0 sessions.
  *
@@ -65,3 +65,4 @@ export const oauthSessionMetadata = (session: OAuthSession): OAuthSessionMetadat
     ? {}
     : { providerSessionId: session.providerSessionId }),
 })
+// @custom end

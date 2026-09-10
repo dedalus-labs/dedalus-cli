@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Credential selection and protected storage for the Dedalus command-line interface.
  *
@@ -384,3 +384,4 @@ const noFollowFlag = (): number => {
   if (typeof flag !== 'number') throw new CredentialStorageError('storage_unavailable')
   return flag
 }
+// @custom end

@@ -1,3 +1,5 @@
+// @custom start
+// Exercise credential renewal after rejected requests.
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { AuthenticatedCommandClient } from '../src/auth/client.js'
@@ -230,3 +232,4 @@ test('transient retries cannot start a second OAuth recovery for one request', a
   assert.equal(f.refreshes(), 1)
   assert.equal(f.requests.length, 3)
 })
+// @custom end

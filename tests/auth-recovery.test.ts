@@ -29,7 +29,7 @@ const fixture = async (
   let lock = Promise.resolve()
   let refreshes = 0
   const store: CredentialStore = {
-    backend: 'file',
+    backend: 'keyring',
     read: async () => saved,
     write: async (value) => {
       saved = value

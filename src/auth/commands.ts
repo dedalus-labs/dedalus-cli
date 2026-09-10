@@ -90,7 +90,7 @@ export const addDedalusCommands = (
   const credentialStore =
     options.credentialStore ??
     (() => {
-      stored ??= defaultCredentialStore({ environment })
+      stored ??= defaultCredentialStore()
       return stored
     })
   let configuredProvider: AuthProvider | undefined

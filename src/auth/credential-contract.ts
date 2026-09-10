@@ -115,12 +115,7 @@ export const validCredentialToken = (value: string): string => {
 export const storageError = (error: unknown): CredentialStorageError =>
   error instanceof CredentialStorageError
     ? error
-    : isSymlink(error)
-      ? new CredentialStorageError('insecure_permissions', { cause: error })
-      : new CredentialStorageError('storage_unavailable', { cause: error })
-
-export const isMissing = (error: unknown): boolean =>
-  error instanceof Error && 'code' in error && error.code === 'ENOENT'
+    : new CredentialStorageError('storage_unavailable', { cause: error })
 
 const isVisibleASCII = (value: string): boolean => {
   if (!value) return false
@@ -199,6 +194,4 @@ const validScopes = (value: readonly unknown[]): readonly string[] => {
   return scopes
 }
 
-const isSymlink = (error: unknown): boolean =>
-  error instanceof Error && 'code' in error && error.code === 'ELOOP'
 // @custom end

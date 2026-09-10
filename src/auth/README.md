@@ -56,13 +56,11 @@ The workload `--api-key` flag and stored OAuth session remain distinct during
 selection, then use the same generated OpenAPI `BearerAuth` transport. The
 adapter injects exactly one value only after it has selected the source.
 
-The operating-system keyring is the default on macOS and Windows. Linux uses a
-keyring when a desktop secret service is available; otherwise it uses
-`$XDG_CONFIG_HOME/dedalus/credentials` (or
-`~/.config/dedalus/credentials`). The file store uses a `0700` directory,
-`0600` atomic files, descriptor-based validation, `O_NOFOLLOW`, and a lifecycle
-lock. Windows does not silently use the weaker file path when its keyring is
-unavailable.
+OAuth credentials require the operating-system keyring. macOS uses Keychain,
+Windows uses Credential Manager, and Linux requires a Secret Service keyring.
+An unavailable keyring fails the command with an explicit storage error.
+A filesystem lock serializes lifecycle changes across CLI processes. The lock
+stores no credentials. Operation and lock-release failures are both preserved.
 
 The adapter exposes these explicit ownership boundaries:
 

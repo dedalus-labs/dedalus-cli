@@ -53,7 +53,7 @@ const metadata = {
 }
 
 const store = (value: OAuthSession | null = session()): CredentialStore => ({
-  backend: 'file',
+  backend: 'keyring',
   read: async () => value,
   write: async () => {},
   remove: async () => true,

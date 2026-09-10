@@ -3,12 +3,9 @@
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import assert from 'node:assert/strict'
-import { chmod, mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import test from 'node:test'
 
-import { CredentialStorageError, fileCredentialStore } from '../src/auth/credentials.js'
+import { CredentialStorageError, keyringCredentialStore } from '../src/auth/credentials.js'
 import { createClerkAuthProvider } from '../src/auth/oauth.js'
 import {
   accessTokenForCommand,
@@ -158,7 +155,7 @@ test('invariant workload overrides do not read or refresh OAuth storage', async 
       storeConstructions += 1
       return {
         ...store(session()),
-        backend: 'file',
+        backend: 'keyring',
         read: async () => {
           storedReads += 1
           return session()
@@ -297,10 +294,18 @@ test('invariant an issuer migration requires a fresh login', async () => {
   )
 })
 
-test('invariant canonical issuer survives login, persistence, and a fresh provider process', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-provider-session-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const firstStore = fileCredentialStore(join(root, 'config', 'credentials'))
+test('invariant canonical issuer survives native record serialization', async () => {
+  let serialized: string | null = null
+  const entry = {
+    getPassword: async () => serialized,
+    setPassword: async (value: string) => { serialized = value },
+    deleteCredential: async () => {
+      const existed = serialized !== null
+      serialized = null
+      return existed
+    },
+  }
+  const firstStore = keyringCredentialStore(async () => entry)
   const configured = createClerkAuthProvider({
     issuer: 'https://clerk.example.com/',
     clientId: 'client_cli',
@@ -310,7 +315,7 @@ test('invariant canonical issuer survives login, persistence, and a fresh provid
     store: firstStore,
   })
 
-  const nextStore = fileCredentialStore(join(root, 'config', 'credentials'))
+  const nextStore = keyringCredentialStore(async () => entry)
   const nextProvider = createClerkAuthProvider({
     issuer: 'https://clerk.example.com/',
     clientId: 'client_cli',
@@ -415,18 +420,4 @@ test('invariant logout can remove an obsolete local credential format', async ()
   assert.equal(removed, true)
 })
 
-test('invariant logout removes an exposed filesystem credential', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-logout-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const credentialPath = join(root, 'config', 'credentials')
-  const credentialStore = fileCredentialStore(credentialPath)
-  await credentialStore.write(session())
-  await chmod(credentialPath, 0o644)
-
-  assert.deepEqual(await logout(credentialStore, () => provider()), {
-    status: 'logged_out',
-    revocationConfirmed: false,
-  })
-  assert.equal(await credentialStore.read(), null)
-})
 // @custom end

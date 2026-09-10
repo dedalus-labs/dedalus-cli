@@ -95,6 +95,7 @@ func init() {
 			},
 		},
 		Commands: []*cli.Command{
+			&doctorCmd,
 			{
 				Name:     "usage",
 				Category: "API RESOURCE",
@@ -118,6 +119,7 @@ func init() {
 					&machinesSleep,
 					&machinesWake,
 					&machinesWatch,
+					&machinesWait,
 				},
 			},
 			{

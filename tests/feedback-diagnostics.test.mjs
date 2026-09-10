@@ -50,6 +50,31 @@ test('invariant feedback logs and symlinked files cannot be selected', (t) => {
   assert.equal(selectDiagnostics(scope, dir).events.length, 0);
 });
 
+test('invariant local SSH failure retains the last session API receipt', (t) => {
+  const dir = directory(t);
+  const log = createDiagnostics('dedalus ssh', scope, dir);
+  log.record({ kind: 'response', route: '/v1/machines/{machine_id}/ssh',
+    status_code: 200, duration_ms: 10, request_id: receipt });
+  log.record({ kind: 'command_failure' });
+  const selection = selectDiagnostics(scope, dir);
+  assert.equal(selection.receipt, receipt);
+  assert.equal(selection.failure, undefined);
+  assert.equal(selectDiagnostics(diagnosticScope({ apiKey: 'other-key' }), dir).events.length, 0);
+});
+
+test('invariant a later response without a receipt does not reuse an older receipt', (t) => {
+  const dir = directory(t);
+  const log = createDiagnostics('dedalus ssh', scope, dir);
+  log.record({ kind: 'response', route: '/v1/machines/{machine_id}/ssh',
+    status_code: 500, duration_ms: 10, request_id: receipt });
+  log.record({ kind: 'response', route: '/v1/machines/{machine_id}/ssh/{resource_id}',
+    status_code: 200, duration_ms: 5 });
+  log.record({ kind: 'command_failure' });
+  const selection = selectDiagnostics(scope, dir);
+  assert.equal(selection.receipt, undefined);
+  assert.equal(selection.failure, undefined);
+});
+
 test('invariant partitions are capped and expired logs are pruned', (t) => {
   const dir = directory(t);
   const log = createDiagnostics('dedalus machines list', scope, dir);

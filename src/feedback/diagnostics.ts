@@ -294,15 +294,14 @@ export const selectDiagnostics = (
         (row.kind === 'response' && (row.status_code ?? 0) >= 400),
     );
     if (!failed) continue;
-    const response = events.findLast(
-      (row) => row.kind === 'response' && (row.status_code ?? 0) >= 400,
-    );
+    const response = events.findLast((row) => row.kind === 'response');
     const receipt = response?.request_id;
     return {
       events,
       command: failed.command,
       ...(receipt ? { receipt } : {}),
       ...(response?.status_code !== undefined &&
+      response.status_code >= 400 &&
       response.duration_ms !== undefined &&
       response.route
         ? {

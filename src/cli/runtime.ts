@@ -7,10 +7,18 @@ import { Command } from 'commander';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 import { encodeToon } from './toon.js';
+import { createDiagnostics, diagnosticScope } from '../feedback/diagnostics.js';
 
 type OutputFormat = 'auto' | 'json' | 'jsonl' | 'pretty' | 'raw' | 'toon' | 'yaml';
 
-export type CliValueKind = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'unknown';
+export type CliValueKind =
+  | 'string'
+  | 'number'
+  | 'integer'
+  | 'boolean'
+  | 'object'
+  | 'array'
+  | 'unknown';
 
 export type CliFlagDefinition = {
   readonly name: string;
@@ -118,7 +126,11 @@ export const createProgram = ({
     .option('--base-url <url>', 'Override the base URL for API requests')
     .option('--timeout <ms>', 'Request timeout in milliseconds')
     .option('--max-retries <count>', 'Number of retries for retryable failures')
-    .option('--format <format>', 'Output format: auto, json, jsonl, pretty, raw, toon, yaml', defaultFormat)
+    .option(
+      '--format <format>',
+      'Output format: auto, json, jsonl, pretty, raw, toon, yaml',
+      defaultFormat,
+    )
     .option(
       '--format-error <format>',
       'Error output format: auto, json, jsonl, pretty, raw, toon, yaml',
@@ -222,7 +234,10 @@ const addGeneratedCommand = (
     .option('--timeout <ms>', 'Request timeout in milliseconds')
     .option('--max-retries <count>', 'Number of retries for retryable failures')
     .option('--format <format>', 'Output format: auto, json, jsonl, pretty, raw, toon, yaml')
-    .option('--format-error <format>', 'Error output format: auto, json, jsonl, pretty, raw, toon, yaml')
+    .option(
+      '--format-error <format>',
+      'Error output format: auto, json, jsonl, pretty, raw, toon, yaml',
+    )
     .option('--transform <path>', 'Dot-path transform for data output')
     .option('--transform-error <path>', 'Dot-path transform for error output')
     .option('-r, --raw-output', 'Print transformed string values without JSON quotes')
@@ -234,7 +249,10 @@ const addGeneratedCommand = (
   }
 
   if (definition.iterable)
-    command.option('--max-items <count>', 'Maximum number of streamed items to print; use -1 for unlimited');
+    command.option(
+      '--max-items <count>',
+      'Maximum number of streamed items to print; use -1 for unlimited',
+    );
 
   // Positionals are registered as optional Commander arguments because each one is also
   // accepted as an equivalent flag (e.g. `workers retrieve wkr_1` or `workers retrieve --id
@@ -325,10 +343,26 @@ const runGeneratedCommand = async (
     ...(commandOptions.rawOutput || rootOptions.rawOutput ? { rawOutput: true } : {}),
   };
 
+  const clientConfig = sdkClientOptions(rootOptions, command, clientOptions);
+  let diagnostics: ReturnType<typeof createDiagnostics> | undefined;
   try {
-    const client = new SDK(sdkClientOptions(rootOptions, command, clientOptions)) as Record<string, unknown>;
+    const call = await callArguments(
+      definition,
+      command.opts<Record<string, unknown>>(),
+      positionalValues,
+    );
+    const organization = call.params['X-Dedalus-Org-Id'];
+    const scopeOptions =
+      organization === undefined ? clientConfig : { ...clientConfig, dedalusOrgID: organization };
+    diagnostics = createDiagnostics(
+      'dedalus ' + definition.commandPath.join(' '),
+      diagnosticScope(scopeOptions),
+    );
+    const client = new SDK({ ...clientConfig, fetch: diagnostics.fetch }) as Record<
+      string,
+      unknown
+    >;
     const method = sdkMethod(client, definition);
-    const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
 
     // Required positionals are validated here (not by Commander) because each one may also be
     // supplied through its flag spelling or stdin; `call.params` has all sources merged.
@@ -358,12 +392,15 @@ const runGeneratedCommand = async (
 
     await writeOutput(resolved, outputOptions);
   } catch (error) {
+    diagnostics?.record({ kind: 'command_failure' });
     await writeError(error, errorOptions, clientOptions, SDK);
     process.exitCode = errorExitCode(error, SDK);
+  } finally {
+    diagnostics?.record({ kind: 'command_complete' });
   }
 };
 
-const sdkClientOptions = (
+export const sdkClientOptions = (
   options: GlobalOptions,
   command: Command,
   clientOptions: readonly CliClientOptionDefinition[],
@@ -377,6 +414,8 @@ const sdkClientOptions = (
     const value = raw[option.optionKey];
     if (value !== undefined) forwarded[option.sdkKey] = value;
   }
+  const organization = raw['xDedalusOrgId'] ?? forwarded['dedalusOrgID'] ?? process.env['DEDALUS_ORG_ID'];
+  if (organization !== undefined) forwarded['dedalusOrgID'] = organization;
   return {
     ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
     ...(options.timeout ? { timeout: Number(options.timeout) } : {}),
@@ -384,11 +423,28 @@ const sdkClientOptions = (
     ...(options.debug ? { logLevel: 'debug' } : {}),
     ...forwarded,
     defaultHeaders: {
+      'X-Request-ID': null,
+      ...(organization ? { 'X-Dedalus-Org-Id': organization } : {}),
       'X-Scalar-Lang': 'cli',
       'X-Scalar-Runtime': 'cli',
       'X-Scalar-CLI-Command': command.name(),
+      'X-Dedalus-CLI-Command': commandPath(command),
+      'User-Agent': 'Dedalus/CLI ' + rootCommand(command).version(),
     },
   };
+};
+
+const commandPath = (command: Command): string => {
+  const parts: string[] = [];
+  for (let current: Command | null = command; current; current = current.parent)
+    parts.unshift(current.name());
+  return parts.join(' ');
+};
+
+const rootCommand = (command: Command): Command => {
+  let root = command;
+  while (root.parent) root = root.parent;
+  return root;
 };
 
 const sdkMethod = (
@@ -451,7 +507,10 @@ const callArguments = async (
   return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params };
 };
 
-const paramsValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {
+const paramsValue = (
+  params: Record<string, unknown>,
+  definition: CliCommandDefinition,
+): unknown => {
   if (definition.bodyParamKey === undefined) return params;
   const body = params[definition.bodyParamKey];
   if (body === undefined) return params;
@@ -473,7 +532,9 @@ const bodyValue = (params: Record<string, unknown>, definition: CliCommandDefini
   }
   // A flattenable body is reassembled from its per-property flags into a single object. Leaf flags
   // share their parent property key, so keying by paramKey collapses them back onto that property.
-  const bodyFlags = definition.flags.filter((flag) => flag.location === 'body' && flag.paramKey !== 'send');
+  const bodyFlags = definition.flags.filter(
+    (flag) => flag.location === 'body' && flag.paramKey !== 'send',
+  );
   const body: Record<string, unknown> = {};
   for (const flag of bodyFlags) {
     if (params[flag.paramKey] !== undefined) body[flag.paramKey] = params[flag.paramKey];
@@ -567,7 +628,10 @@ const mergeObjects = (
   ...Object.fromEntries(Object.entries(overlay).filter(([, value]) => value !== undefined)),
 });
 
-const omitParams = (params: Record<string, unknown>, names: readonly string[]): Record<string, unknown> => {
+const omitParams = (
+  params: Record<string, unknown>,
+  names: readonly string[],
+): Record<string, unknown> => {
   const out = { ...params };
   for (const name of names) delete out[name];
   return out;
@@ -698,7 +762,7 @@ const sendSocketValue = (socket: unknown, value: unknown): void => {
   send.call(socket, value);
 };
 
-const writeOutput = async (value: unknown, options: OutputOptions): Promise<void> => {
+export const writeOutput = async (value: unknown, options: OutputOptions): Promise<void> => {
   if (isAsyncIterable(value)) {
     if (options.format === 'jsonl') {
       await writeIterable(value, options);
@@ -710,7 +774,10 @@ const writeOutput = async (value: unknown, options: OutputOptions): Promise<void
   processStdout.write(serializeOutput(transformValue(value, options.transform), options) + '\n');
 };
 
-const collectIterable = async (value: AsyncIterable<unknown>, maxItems?: number): Promise<unknown[]> => {
+const collectIterable = async (
+  value: AsyncIterable<unknown>,
+  maxItems?: number,
+): Promise<unknown[]> => {
   const items: unknown[] = [];
   for await (const item of value) {
     if (maxItems === 0) break;
@@ -775,7 +842,7 @@ const prettyScalar = (value: unknown): string => {
   return String(value);
 };
 
-const writeError = async (
+export const writeError = async (
   error: unknown,
   options: OutputOptions,
   clientOptions: readonly CliClientOptionDefinition[],
@@ -865,9 +932,15 @@ const errorCode = (record: Record<string, unknown>, SDK: CreateProgramOptions['S
 const CONNECTION_ERROR_CODE =
   /^(ECONN|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|EHOSTUNREACH|ENETUNREACH|EPIPE|UND_ERR)/u;
 
-const isConnectionError = (record: Record<string, unknown>, SDK: CreateProgramOptions['SDK']): boolean => {
+const isConnectionError = (
+  record: Record<string, unknown>,
+  SDK: CreateProgramOptions['SDK'],
+): boolean => {
   const connectionError = (SDK as { APIConnectionError?: unknown }).APIConnectionError;
-  if (typeof connectionError === 'function' && record instanceof (connectionError as new () => unknown))
+  if (
+    typeof connectionError === 'function' &&
+    record instanceof (connectionError as new () => unknown)
+  )
     return true;
   const name = typeof record.name === 'string' ? record.name : '';
   const code = typeof record.code === 'string' ? record.code : '';
@@ -891,7 +964,7 @@ const ERROR_EXIT_CODES: Record<string, number> = {
   'connection-error': 15,
 };
 
-const errorExitCode = (error: unknown, SDK: CreateProgramOptions['SDK']): number => {
+export const errorExitCode = (error: unknown, SDK: CreateProgramOptions['SDK']): number => {
   if (!error || typeof error !== 'object') return 1;
   return ERROR_EXIT_CODES[errorCode(error as Record<string, unknown>, SDK)] ?? 1;
 };

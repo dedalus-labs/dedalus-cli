@@ -96,27 +96,22 @@ func TestRenestColonCommands_leaves_orphan_colon_commands_alone(t *testing.T) {
 	assert.Equal(t, "foo:bar", out[0].Name)
 }
 
-// TestRenestColonCommands_matches_generated_machines_shape pins the wrapper
-// against the exact command tree the Stainless generator currently emits
-// for the dedalus-cli (see pkg/cmd/cmd.go). If the generator changes shape,
-// this test surfaces it.
-func TestRenestColonCommands_matches_generated_machines_shape(t *testing.T) {
+// @custom start
+func TestInvariantMachineCommandsMatchPublicContract(t *testing.T) {
 	t.Parallel()
 
-	cmds := []*cli.Command{
-		{Name: "machines"},
-		{Name: "machines:artifacts"},
-		{Name: "machines:previews"},
-		{Name: "machines:ssh"},
-		{Name: "machines:executions"},
-		{Name: "machines:terminals"},
+	if findSub(Command, "usage") != nil {
+		t.Error("usage is outside the public API contract")
 	}
-
-	out := renestColonCommands(cmds)
-
-	require.Len(t, out, 1)
-	m := out[0]
-	for _, sub := range []string{"artifacts", "previews", "ssh", "executions", "terminals"} {
-		assert.NotNil(t, findSub(m, sub), "expected `machines %s` subcommand", sub)
+	machines := findSub(Command, "machines")
+	require.NotNil(t, machines)
+	names := make([]string, 0, len(machines.Commands))
+	for _, command := range machines.Commands {
+		names = append(names, command.Name)
 	}
+	require.ElementsMatch(t, []string{
+		"create", "retrieve", "update", "list", "delete", "sleep", "wake", "ssh", "executions",
+	}, names)
 }
+
+// @custom end

@@ -80,6 +80,12 @@ dedalus machines create \
 
 For details about specific commands, use the `--help` flag.
 
+Machine API commands cover creation, listing, retrieval, updates, deletion,
+sleep, and wake. Secure Shell (SSH) session and execution operations are nested
+under `machines ssh` and `machines executions`.
+
+The generated contract is defined by the [OpenAPI snapshot](https://storage.googleapis.com/stainless-sdk-openapi-specs/dedalus-labs/dedalus-c0e28b234478af75f61bcf42f5f32818d96ec93b1d8239fa0ff1c801c0e4b64f.yml).
+
 ### Running commands on a machine
 
 `exec` is an alias for `executions`. Pass the executable and its arguments after

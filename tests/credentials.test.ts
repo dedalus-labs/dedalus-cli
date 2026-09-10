@@ -18,13 +18,15 @@ const session = (overrides: Partial<OAuthSession> = {}): OAuthSession => ({
   version: 1,
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.example.com/dcs',
   accessToken: 'oauth-access-token',
   accessTokenExpiresAt: 2_000_000_000_000,
   refreshToken: 'oauth-refresh-token',
   userId: 'user_cli',
   organizationId: 'org_cli',
   organizationName: 'Dedalus Labs',
-  grantedScopes: ['offline_access', 'user:org:read'],
+  grantedScopes: ['offline_access', 'dedalus:cli'],
   ...overrides,
 })
 
@@ -128,8 +130,14 @@ test('invariant credential lifecycle mutations are serialized across callers', a
   const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
   context.after(() => rm(root, { recursive: true, force: true }))
   const credentialPath = join(root, 'credentials')
-  const firstStore = { withLifecycleLock: <T>(operation: () => Promise<T>) => withLifecycleLock(credentialPath, operation) }
-  const secondStore = { withLifecycleLock: <T>(operation: () => Promise<T>) => withLifecycleLock(credentialPath, operation) }
+  const firstStore = {
+    withLifecycleLock: <T>(operation: () => Promise<T>) =>
+      withLifecycleLock(credentialPath, operation),
+  }
+  const secondStore = {
+    withLifecycleLock: <T>(operation: () => Promise<T>) =>
+      withLifecycleLock(credentialPath, operation),
+  }
   const events: string[] = []
   let enterFirst!: () => void
   let releaseFirst!: () => void

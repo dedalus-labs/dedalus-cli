@@ -41,6 +41,8 @@ export const serializeOAuthSession = (session: OAuthSession): string =>
     version: 1,
     issuer: validStoredIssuer(session.issuer),
     client_id: validIdentifier(session.clientId),
+    resource: validStoredIssuer(session.resource),
+    gateway_url: validStoredGateway(session.gatewayURL),
     access_token: validCredentialToken(session.accessToken),
     access_token_expires_at: validExpiry(session.accessTokenExpiresAt),
     refresh_token: validCredentialToken(session.refreshToken),
@@ -69,6 +71,8 @@ export const decodeOAuthSession = (raw: string): OAuthSession => {
       record.version !== 1 ||
       typeof record.issuer !== 'string' ||
       typeof record.client_id !== 'string' ||
+      typeof record.resource !== 'string' ||
+      typeof record.gateway_url !== 'string' ||
       typeof record.access_token !== 'string' ||
       typeof record.access_token_expires_at !== 'number' ||
       typeof record.refresh_token !== 'string' ||
@@ -86,6 +90,8 @@ export const decodeOAuthSession = (raw: string): OAuthSession => {
       version: 1,
       issuer: validStoredIssuer(record.issuer),
       clientId: validIdentifier(record.client_id),
+      resource: validStoredIssuer(record.resource),
+      gatewayURL: validStoredGateway(record.gateway_url),
       accessToken: validCredentialToken(record.access_token),
       accessTokenExpiresAt: validExpiry(record.access_token_expires_at),
       refreshToken: validCredentialToken(record.refresh_token),
@@ -154,6 +160,14 @@ const validIdentifier = (value: string): string => {
     throw new CredentialStorageError('invalid_credential')
   }
   return validCredentialToken(value)
+}
+
+const validStoredGateway = (value: string): string => {
+  const url = new URL(value)
+  if (url.pathname !== '/dcs' || value !== url.origin + '/dcs')
+    throw new CredentialStorageError('invalid_credential')
+  validStoredIssuer(url.origin)
+  return value
 }
 
 const validExpiry = (value: number): number => {

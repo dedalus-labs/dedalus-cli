@@ -7,31 +7,36 @@ import { once } from 'node:events'
 import test from 'node:test'
 
 import {
-  beginClerkOAuth,
-  clerkPKCEChallenge,
-  ClerkOAuthError,
-  createClerkAuthProvider,
+  beginDedalusOAuth,
+  pkceChallenge,
+  DedalusOAuthError,
+  createDedalusAuthProvider,
 } from '../src/auth/oauth.js'
 
 const tokenResponse = (overrides = {}) => ({
   access_token: 'oauth-access-token',
   refresh_token: 'oauth-refresh-token',
   expires_in: 86_400,
-  scope: 'offline_access user:org:read',
+  scope: 'offline_access dedalus:cli',
   token_type: 'Bearer',
   ...overrides,
 })
 
 const userInfo = (overrides = {}) => ({
+  iss: 'https://clerk.example.com',
+  client_id: 'client_cli',
+  aud: 'https://dcs.example.com',
+  scope: 'offline_access dedalus:cli',
+  exp: 2_000_000_000,
   sub: 'user_cli',
   org_id: 'org_cli',
   org_name: 'Dedalus Labs',
   ...overrides,
 })
 
-import type { ClerkOAuthAttempt } from '../src/auth/oauth.js'
+import type { DedalusOAuthAttempt } from '../src/auth/oauth.js'
 
-const finishAuthorization = async (attempt: ClerkOAuthAttempt, authorization: URL) => {
+const finishAuthorization = async (attempt: DedalusOAuthAttempt, authorization: URL) => {
   const callback = new URL(attempt.redirectURI)
   callback.searchParams.set('code', 'authorization-code')
   callback.searchParams.set('iss', authorization.origin)
@@ -54,21 +59,26 @@ const finishAuthorization = async (attempt: ClerkOAuthAttempt, authorization: UR
 
 test('invariant PKCE uses the RFC 7636 S256 transform', () => {
   assert.equal(
-    clerkPKCEChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'),
+    pkceChallenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'),
     'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
   )
 })
 
 test('invariant Clerk OAuth stores the complete organization-bound token set', async () => {
   const requests: { input: string; init: RequestInit | undefined }[] = []
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       now: () => 1_000,
       randomBytes: () => Buffer.alloc(32, 7),
       fetch: async (input, init) => {
         requests.push({ input: String(input), init })
-        if (String(input).endsWith('/oauth/token')) return Response.json(tokenResponse())
+        if (String(input).endsWith('/oauth2/token')) return Response.json(tokenResponse())
         return Response.json(userInfo())
       },
     },
@@ -78,12 +88,12 @@ test('invariant Clerk OAuth stores the complete organization-bound token set', a
 
   assert.equal(
     authorization.origin + authorization.pathname,
-    'https://clerk.example.com/oauth/authorize',
+    'https://clerk.example.com/oauth2/auth',
   )
   assert.equal(authorization.searchParams.get('response_type'), 'code')
   assert.equal(authorization.searchParams.get('client_id'), 'client_cli')
   assert.equal(authorization.searchParams.get('redirect_uri'), attempt.redirectURI)
-  assert.equal(authorization.searchParams.get('scope'), 'offline_access user:org:read')
+  assert.equal(authorization.searchParams.get('scope'), 'offline_access dedalus:cli')
   assert.equal(authorization.searchParams.get('code_challenge_method'), 'S256')
   assert.equal(redirect.hostname, '127.0.0.1')
   assert.notEqual(redirect.port, '')
@@ -96,16 +106,17 @@ test('invariant Clerk OAuth stores the complete organization-bound token set', a
     version: 1,
     issuer: 'https://clerk.example.com',
     clientId: 'client_cli',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     accessToken: 'oauth-access-token',
     accessTokenExpiresAt: 86_401_000,
     refreshToken: 'oauth-refresh-token',
     userId: 'user_cli',
     organizationId: 'org_cli',
-    organizationName: 'Dedalus Labs',
-    grantedScopes: ['offline_access', 'user:org:read'],
+    grantedScopes: ['offline_access', 'dedalus:cli'],
   })
   assert(requests[0]?.init)
-  assert.equal(requests[0].input, 'https://clerk.example.com/oauth/token')
+  assert.equal(requests[0].input, 'https://clerk.example.com/oauth2/token')
   assert.equal(requests[0].init.redirect, 'manual')
   assert(requests[0]?.init)
   assert(requests[0].init.body instanceof URLSearchParams)
@@ -114,7 +125,7 @@ test('invariant Clerk OAuth stores the complete organization-bound token set', a
   assert.equal(body.get('client_secret'), null)
   assert.equal(body.get('code_verifier')?.length, 43)
   assert(requests[1]?.init)
-  assert.equal(requests[1].input, 'https://clerk.example.com/oauth/userinfo')
+  assert.equal(requests[1].input, 'https://clerk.example.com/oauth2/userinfo')
   assert.equal(
     new Headers(requests[1].init.headers).get('Authorization'),
     'Bearer oauth-access-token',
@@ -123,10 +134,12 @@ test('invariant Clerk OAuth stores the complete organization-bound token set', a
 })
 
 test('invariant the optional website handoff keeps OAuth state out of HTTP query logs', async () => {
-  const attempt = await beginClerkOAuth({
+  const attempt = await beginDedalusOAuth({
     issuer: 'https://clerk.example.com',
     clientId: 'client_cli',
-    signInURL: 'https://dev.dedaluslabs.ai/cli/sign-in',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
+    signInURL: 'https://website.example.com/cli/sign-in',
   })
   const handoff = new URL(attempt.authorizationURL)
   const fragment = new URLSearchParams(handoff.hash.slice(1))
@@ -134,20 +147,22 @@ test('invariant the optional website handoff keeps OAuth state out of HTTP query
     fragment.get('authorization_url') ?? assert.fail('Missing authorization URL'),
   )
 
-  assert.equal(handoff.origin + handoff.pathname, 'https://dev.dedaluslabs.ai/cli/sign-in')
+  assert.equal(handoff.origin + handoff.pathname, 'https://website.example.com/cli/sign-in')
   assert.equal(handoff.search, '')
   assert.equal(
     authorization.origin + authorization.pathname,
-    'https://clerk.example.com/oauth/authorize',
+    'https://clerk.example.com/oauth2/auth',
   )
   assert.equal(authorization.searchParams.get('redirect_uri'), attempt.redirectURI)
   await attempt.cancel()
 })
 
 test('invariant a partial loopback request cannot stall OAuth cancellation', async () => {
-  const attempt = await beginClerkOAuth({
+  const attempt = await beginDedalusOAuth({
     issuer: 'https://clerk.example.com',
     clientId: 'client_cli',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
   })
   const callback = new URL(attempt.redirectURI)
   const socket = connect(Number(callback.port), callback.hostname)
@@ -160,7 +175,7 @@ test('invariant a partial loopback request cannot stall OAuth cancellation', asy
   await closed
   await assert.rejects(
     attempt.complete(),
-    (error) => error instanceof ClerkOAuthError && error.code === 'login_cancelled',
+    (error) => error instanceof DedalusOAuthError && error.code === 'login_cancelled',
   )
 })
 
@@ -168,22 +183,29 @@ test('invariant the CLI never opens an authorization request the website will re
   const issuer = `https://${'a'.repeat(3_900)}.example.com`
 
   await assert.rejects(
-    beginClerkOAuth({
+    beginDedalusOAuth({
       issuer,
       clientId: 'c'.repeat(1_024),
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
       signInURL: 'https://dedalus.example.com/cli/sign-in',
     }),
-    (error) => error instanceof ClerkOAuthError && error.code === 'invalid_configuration',
+    (error) => error instanceof DedalusOAuthError && error.code === 'invalid_configuration',
   )
 })
 
 test('invariant an invalid OAuth state cannot reach token exchange', async () => {
   let tokenRequests = 0
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input) => {
-        if (String(input).endsWith('/oauth/token')) {
+        if (String(input).endsWith('/oauth2/token')) {
           tokenRequests += 1
           return Response.json(tokenResponse())
         }
@@ -209,8 +231,13 @@ test('invariant an invalid OAuth state cannot reach token exchange', async () =>
 
 test('invariant an authorization response from another issuer cannot reach token exchange', async () => {
   let tokenRequests = 0
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async () => {
         tokenRequests += 1
@@ -233,17 +260,22 @@ test('invariant an authorization response from another issuer cannot reach token
   assert.equal(response.status, 400)
   await assert.rejects(
     attempt.complete(),
-    (error) => error instanceof ClerkOAuthError && error.code === 'issuer_mismatch',
+    (error) => error instanceof DedalusOAuthError && error.code === 'issuer_mismatch',
   )
   assert.equal(tokenRequests, 0)
 })
 
 test('invariant a malformed local request cannot terminate the OAuth callback', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input) =>
-        String(input).endsWith('/oauth/token')
+        String(input).endsWith('/oauth2/token')
           ? Response.json(tokenResponse())
           : Response.json(userInfo()),
     },
@@ -274,8 +306,13 @@ test('invariant a malformed local request cannot terminate the OAuth callback', 
 
 test('invariant OAuth provider denial cannot reach token exchange', async () => {
   let tokenRequests = 0
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async () => {
         tokenRequests += 1
@@ -304,7 +341,7 @@ test('invariant OAuth provider denial cannot reach token exchange', async () => 
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'access_denied' &&
       error.stage === 'provider' &&
       error.message === 'access_denied',
@@ -313,8 +350,13 @@ test('invariant OAuth provider denial cannot reach token exchange', async () => 
 })
 
 test('invariant incomplete Clerk token sets cannot authenticate', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     { fetch: async () => Response.json(tokenResponse({ refresh_token: undefined })) },
   )
   const authorization = new URL(attempt.authorizationURL)
@@ -323,7 +365,7 @@ test('invariant incomplete Clerk token sets cannot authenticate', async () => {
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_token_response' &&
       error.stage === 'local' &&
       error.status === 200,
@@ -331,8 +373,13 @@ test('invariant incomplete Clerk token sets cannot authenticate', async () => {
 })
 
 test('invariant OAuth responses are decoded within a fixed memory bound', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     { fetch: async () => new Response(' '.repeat(513 * 1024)) },
   )
   const authorization = new URL(attempt.authorizationURL)
@@ -341,21 +388,26 @@ test('invariant OAuth responses are decoded within a fixed memory bound', async 
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
-      error.code === 'invalid_token_response' &&
+      error instanceof DedalusOAuthError &&
+      error.code === 'response_too_large' &&
       error.stage === 'local' &&
       error.status === 200,
   )
 })
 
 test('invariant Clerk cannot grant scopes outside the requested V1 bundle', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async () =>
         Response.json(
           tokenResponse({
-            scope: 'offline_access user:org:read admin:all',
+            scope: 'offline_access dedalus:cli admin:all',
           }),
         ),
     },
@@ -366,18 +418,23 @@ test('invariant Clerk cannot grant scopes outside the requested V1 bundle', asyn
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError && error.code === 'invalid_scope' && error.status === 200,
+      error instanceof DedalusOAuthError && error.code === 'invalid_scope' && error.status === 200,
   )
 })
 
 test('invariant a present OAuth scope value must be a string', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async () =>
         Response.json(
           tokenResponse({
-            scope: ['offline_access', 'user:org:read'],
+            scope: ['offline_access', 'dedalus:cli'],
           }),
         ),
     },
@@ -388,13 +445,18 @@ test('invariant a present OAuth scope value must be a string', async () => {
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError && error.code === 'invalid_scope' && error.status === 200,
+      error instanceof DedalusOAuthError && error.code === 'invalid_scope' && error.status === 200,
   )
 })
 
 test('invariant OAuth credentials are never normalized or accepted with whitespace', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     { fetch: async () => Response.json(tokenResponse({ access_token: ' altered-token' })) },
   )
   const authorization = new URL(attempt.authorizationURL)
@@ -403,15 +465,20 @@ test('invariant OAuth credentials are never normalized or accepted with whitespa
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_token_response' &&
       error.status === 200,
   )
 })
 
 test('invariant token endpoint errors retain the provider code and HTTP status', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     { fetch: async () => Response.json({ error: 'provider_specific_error' }, { status: 400 }) },
   )
   const authorization = new URL(attempt.authorizationURL)
@@ -420,7 +487,7 @@ test('invariant token endpoint errors retain the provider code and HTTP status',
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'provider_specific_error' &&
       error.stage === 'provider' &&
       error.status === 400,
@@ -428,11 +495,16 @@ test('invariant token endpoint errors retain the provider code and HTTP status',
 })
 
 test('invariant oversized userinfo identifiers cannot enter credential storage', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input) =>
-        String(input).endsWith('/oauth/token')
+        String(input).endsWith('/oauth2/token')
           ? Response.json(tokenResponse())
           : Response.json(userInfo({ sub: 'u'.repeat(1025) })),
     },
@@ -443,7 +515,7 @@ test('invariant oversized userinfo identifiers cannot enter credential storage',
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_userinfo_response' &&
       error.stage === 'local' &&
       error.status === 200,
@@ -451,8 +523,13 @@ test('invariant oversized userinfo identifiers cannot enter credential storage',
 })
 
 test('invariant unsafe OAuth error codes cannot inject terminal control characters', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     { fetch: async () => Response.json({ error: '\u001b[31mprovider_error' }, { status: 400 }) },
   )
   const authorization = new URL(attempt.authorizationURL)
@@ -461,13 +538,18 @@ test('invariant unsafe OAuth error codes cannot inject terminal control characte
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError && error.code === 'oauth_error' && error.status === 400,
+      error instanceof DedalusOAuthError && error.code === 'oauth_error' && error.status === 400,
   )
 })
 
 test('invariant token expiry must fit in a safe timestamp', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       now: () => Number.MAX_SAFE_INTEGER - 100,
       fetch: async () => Response.json(tokenResponse({ expires_in: 1 })),
@@ -479,15 +561,20 @@ test('invariant token expiry must fit in a safe timestamp', async () => {
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_token_response' &&
       error.status === 200,
   )
 })
 
 test('invariant token expiry must fit in the JavaScript date range', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       now: () => 0,
       fetch: async () => Response.json(tokenResponse({ expires_in: 8_700_000_000_000 })),
@@ -499,18 +586,23 @@ test('invariant token expiry must fit in the JavaScript date range', async () =>
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_token_response' &&
       error.status === 200,
   )
 })
 
 test('invariant login requires Clerk organization identity', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input) =>
-        String(input).endsWith('/oauth/token')
+        String(input).endsWith('/oauth2/token')
           ? Response.json(tokenResponse())
           : Response.json(userInfo({ org_id: undefined })),
     },
@@ -521,18 +613,23 @@ test('invariant login requires Clerk organization identity', async () => {
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_userinfo_response' &&
       error.status === 200,
   )
 })
 
 test('invariant login requires Clerk userinfo sub without an alternate identity fallback', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input) =>
-        String(input).endsWith('/oauth/token')
+        String(input).endsWith('/oauth2/token')
           ? Response.json(tokenResponse())
           : Response.json(userInfo({ sub: undefined, user_id: 'alternate_user' })),
     },
@@ -543,18 +640,23 @@ test('invariant login requires Clerk userinfo sub without an alternate identity 
   await assert.rejects(
     attempt.complete(),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_userinfo_response' &&
       error.status === 200,
   )
 })
 
 test('invariant opaque access tokens with dot separators remain supported', async () => {
-  const attempt = await beginClerkOAuth(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const attempt = await beginDedalusOAuth(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input) =>
-        String(input).endsWith('/oauth/token')
+        String(input).endsWith('/oauth2/token')
           ? Response.json(tokenResponse({ access_token: 'opaque.access.token' }))
           : Response.json(userInfo()),
     },
@@ -578,8 +680,13 @@ test('invariant OAuth token exchange never follows redirects', async () => {
   await listen(tokenEndpoint)
 
   try {
-    const attempt = await beginClerkOAuth(
-      { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+    const attempt = await beginDedalusOAuth(
+      {
+        issuer: 'https://clerk.example.com',
+        clientId: 'client_cli',
+        resource: 'https://dcs.example.com',
+        gatewayURL: 'https://admin.example.com/dcs',
+      },
       { fetch: (_input, init) => fetch(serverURL(tokenEndpoint), init) },
     )
     const authorization = new URL(attempt.authorizationURL)
@@ -588,7 +695,10 @@ test('invariant OAuth token exchange never follows redirects', async () => {
     await assert.rejects(
       attempt.complete(),
       (error) =>
-        error instanceof ClerkOAuthError && error.code === 'oauth_error' && error.status === 307,
+        error instanceof DedalusOAuthError &&
+        error.code === 'invalid_json_response' &&
+        error.status === 307 &&
+        error.cause instanceof SyntaxError,
     )
     assert.equal(forwardedRequests, 0)
   } finally {
@@ -611,11 +721,16 @@ test('invariant OAuth userinfo requests never forward access tokens across redir
   await listen(userinfoEndpoint)
 
   try {
-    const attempt = await beginClerkOAuth(
-      { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+    const attempt = await beginDedalusOAuth(
+      {
+        issuer: 'https://clerk.example.com',
+        clientId: 'client_cli',
+        resource: 'https://dcs.example.com',
+        gatewayURL: 'https://admin.example.com/dcs',
+      },
       {
         fetch: (input, init) =>
-          String(input).endsWith('/oauth/token')
+          String(input).endsWith('/oauth2/token')
             ? Promise.resolve(Response.json(tokenResponse()))
             : fetch(serverURL(userinfoEndpoint), init),
       },
@@ -626,7 +741,10 @@ test('invariant OAuth userinfo requests never forward access tokens across redir
     await assert.rejects(
       attempt.complete(),
       (error) =>
-        error instanceof ClerkOAuthError && error.code === 'oauth_error' && error.status === 307,
+        error instanceof DedalusOAuthError &&
+        error.code === 'invalid_json_response' &&
+        error.status === 307 &&
+        error.cause instanceof SyntaxError,
     )
     assert.equal(forwardedRequests, 0)
   } finally {
@@ -637,17 +755,22 @@ test('invariant OAuth userinfo requests never forward access tokens across redir
 
 test('invariant Clerk refresh preserves verified metadata without a userinfo request', async () => {
   const requests: { input: string; init: RequestInit | undefined }[] = []
-  const provider = createClerkAuthProvider(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const provider = createDedalusAuthProvider(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       now: () => 10_000,
       fetch: async (input, init) => {
         requests.push({ input: String(input), init })
-        if (String(input).endsWith('/oauth/token')) {
+        if (String(input).endsWith('/oauth2/token')) {
           return Response.json(
             tokenResponse({
               access_token: 'refreshed-access-token',
-              refresh_token: undefined,
+              refresh_token: 'rotated-refresh-token',
               expires_in: 3_600,
             }),
           )
@@ -660,18 +783,20 @@ test('invariant Clerk refresh preserves verified metadata without a userinfo req
     version: 1,
     issuer: 'https://clerk.example.com',
     clientId: 'client_cli',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     accessToken: 'expired-access-token',
     accessTokenExpiresAt: 1,
     refreshToken: 'original-refresh-token',
     userId: 'user_cli',
     organizationId: 'org_cli',
     organizationName: 'Dedalus Labs',
-    grantedScopes: ['offline_access', 'user:org:read'],
+    grantedScopes: ['offline_access', 'dedalus:cli'],
     providerSessionId: 'session_cli',
   })
 
   assert.equal(refreshed.accessToken, 'refreshed-access-token')
-  assert.equal(refreshed.refreshToken, 'original-refresh-token')
+  assert.equal(refreshed.refreshToken, 'rotated-refresh-token')
   assert.equal(refreshed.accessTokenExpiresAt, 3_610_000)
   assert.equal(refreshed.organizationName, 'Dedalus Labs')
   assert.equal(refreshed.providerSessionId, 'session_cli')
@@ -685,8 +810,13 @@ test('invariant Clerk refresh preserves verified metadata without a userinfo req
 })
 
 test('invariant a malformed returned refresh token cannot masquerade as omission', async () => {
-  const authProvider = createClerkAuthProvider(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const authProvider = createDedalusAuthProvider(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     { fetch: async () => Response.json(tokenResponse({ refresh_token: 'malformed token' })) },
   )
 
@@ -695,27 +825,34 @@ test('invariant a malformed returned refresh token cannot masquerade as omission
       version: 1,
       issuer: 'https://clerk.example.com',
       clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
       accessToken: 'expired-access-token',
       accessTokenExpiresAt: 1,
       refreshToken: 'original-refresh-token',
       userId: 'user_cli',
       organizationId: 'org_cli',
-      grantedScopes: ['offline_access', 'user:org:read'],
+      grantedScopes: ['offline_access', 'dedalus:cli'],
     }),
     (error) =>
-      error instanceof ClerkOAuthError &&
+      error instanceof DedalusOAuthError &&
       error.code === 'invalid_token_response' &&
       error.status === 200,
   )
 })
 
-test('invariant Clerk revocation sends only the refresh token and reports confirmation', async () => {
-  let request!: { input: string; init: RequestInit | undefined }
-  const provider = createClerkAuthProvider(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+test('invariant AS revocation confirms refresh and access token revocation', async () => {
+  const requests: { input: string; init: RequestInit | undefined }[] = []
+  const provider = createDedalusAuthProvider(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       fetch: async (input, init) => {
-        request = { input: String(input), init }
+        requests.push({ input: String(input), init })
         return new Response(null, { status: 200 })
       },
     },
@@ -724,20 +861,27 @@ test('invariant Clerk revocation sends only the refresh token and reports confir
     version: 1,
     issuer: 'https://clerk.example.com',
     clientId: 'client_cli',
-    accessToken: 'access-token-must-not-be-sent',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
+    accessToken: 'access-token',
     accessTokenExpiresAt: 2_000_000_000_000,
     refreshToken: 'refresh-token',
     userId: 'user_cli',
     organizationId: 'org_cli',
-    grantedScopes: ['offline_access', 'user:org:read'],
+    grantedScopes: ['offline_access', 'dedalus:cli'],
   })
 
   assert.equal(confirmed, true)
-  assert(request.init)
-  assert.equal(request.input, 'https://clerk.example.com/oauth/token/revoke')
-  assert.equal(request.input.includes('refresh-token'), false)
-  assert.equal(new URLSearchParams(String(request.init.body)).get('token'), 'refresh-token')
-  assert.equal(request.init.redirect, 'manual')
+  assert.equal(requests.length, 2)
+  assert.deepEqual(
+    requests.map((request) => new URLSearchParams(String(request.init?.body)).get('token')),
+    ['refresh-token', 'access-token'],
+  )
+  for (const request of requests) {
+    assert(request.init)
+    assert.equal(request.input, 'https://clerk.example.com/oauth2/revoke')
+    assert.equal(request.init.redirect, 'manual')
+  }
 })
 
 test('invariant Clerk revocation never forwards a refresh token across redirects', async () => {
@@ -755,23 +899,33 @@ test('invariant Clerk revocation never forwards a refresh token across redirects
   await listen(revocationEndpoint)
 
   try {
-    const authProvider = createClerkAuthProvider(
-      { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+    const authProvider = createDedalusAuthProvider(
+      {
+        issuer: 'https://clerk.example.com',
+        clientId: 'client_cli',
+        resource: 'https://dcs.example.com',
+        gatewayURL: 'https://admin.example.com/dcs',
+      },
       { fetch: (_input, init) => fetch(serverURL(revocationEndpoint), init) },
     )
-    assert.equal(
-      await authProvider.revoke({
+    await assert.rejects(
+      authProvider.revoke({
         version: 1,
         issuer: 'https://clerk.example.com',
         clientId: 'client_cli',
+        resource: 'https://dcs.example.com',
+        gatewayURL: 'https://admin.example.com/dcs',
         accessToken: 'access-token',
         accessTokenExpiresAt: 2_000_000_000_000,
         refreshToken: 'refresh-token',
         userId: 'user_cli',
         organizationId: 'org_cli',
-        grantedScopes: ['offline_access', 'user:org:read'],
+        grantedScopes: ['offline_access', 'dedalus:cli'],
       }),
-      false,
+      (error) =>
+        error instanceof DedalusOAuthError &&
+        error.code === 'revocation_failed' &&
+        error.status === 307,
     )
     assert.equal(forwardedRequests, 0)
   } finally {
@@ -782,31 +936,50 @@ test('invariant Clerk revocation never forwards a refresh token across redirects
 
 test('invariant OAuth configuration rejects non-TLS Clerk issuers and handoffs', async () => {
   await assert.rejects(
-    beginClerkOAuth({ issuer: 'http://clerk.example.com', clientId: 'client_cli' }),
-    (error) => error instanceof ClerkOAuthError && error.code === 'invalid_configuration',
+    beginDedalusOAuth({
+      issuer: 'http://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    }),
+    (error) => error instanceof DedalusOAuthError && error.code === 'invalid_configuration',
   )
   await assert.rejects(
-    beginClerkOAuth({
+    beginDedalusOAuth({
       issuer: 'https://clerk.example.com',
       clientId: 'client_cli',
-      signInURL: 'http://dev.dedaluslabs.ai/cli/sign-in',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+      signInURL: 'http://website.example.com/cli/sign-in',
     }),
-    (error) => error instanceof ClerkOAuthError && error.code === 'invalid_configuration',
+    (error) => error instanceof DedalusOAuthError && error.code === 'invalid_configuration',
   )
   await assert.rejects(
-    beginClerkOAuth({ issuer: ' https://clerk.example.com', clientId: 'client_cli' }),
-    (error) => error instanceof ClerkOAuthError && error.code === 'invalid_configuration',
+    beginDedalusOAuth({
+      issuer: ' https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    }),
+    (error) => error instanceof DedalusOAuthError && error.code === 'invalid_configuration',
   )
   await assert.rejects(
-    beginClerkOAuth({ issuer: 'https://clerk.example.com', clientId: ' client_cli' }),
-    (error) => error instanceof ClerkOAuthError && error.code === 'invalid_configuration',
+    beginDedalusOAuth({
+      issuer: 'https://clerk.example.com',
+      clientId: ' client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    }),
+    (error) => error instanceof DedalusOAuthError && error.code === 'invalid_configuration',
   )
 })
 
 test('invariant OAuth configuration permits a loopback website handoff in development', async () => {
-  const attempt = await beginClerkOAuth({
+  const attempt = await beginDedalusOAuth({
     issuer: 'https://clerk.example.com',
     clientId: 'client_cli',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     signInURL: 'http://localhost:3000/cli/sign-in',
   })
   assert.equal(new URL(attempt.authorizationURL).origin, 'http://localhost:3000')

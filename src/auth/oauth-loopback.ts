@@ -4,22 +4,19 @@
 import { timingSafeEqual } from 'node:crypto'
 import type { Server } from 'node:http'
 
-import { ClerkOAuthError } from './oauth-http.js'
+import { DedalusOAuthError } from './oauth-http.js'
 
 export type Deferred<T> = {
   readonly promise: Promise<T>
   readonly resolve: (value: T) => void
-  readonly reject: (error: unknown) => void
 }
 
 export const deferred = <T>(): Deferred<T> => {
   let resolve!: (value: T) => void
-  let reject!: (error: unknown) => void
-  const promise = new Promise<T>((onResolve, onReject) => {
+  const promise = new Promise<T>((onResolve) => {
     resolve = onResolve
-    reject = onReject
   })
-  return { promise, resolve, reject }
+  return { promise, resolve }
 }
 
 export const equalSecret = (actual: string, expected: string): boolean => {
@@ -39,7 +36,7 @@ export const listenOnLoopback = async (server: Server): Promise<void> => {
       })
     })
   } catch (error: unknown) {
-    throw new ClerkOAuthError('callback_unavailable', { cause: error })
+    throw new DedalusOAuthError('callback_unavailable', { cause: error })
   }
 }
 

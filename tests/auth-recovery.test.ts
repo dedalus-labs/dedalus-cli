@@ -19,12 +19,14 @@ const fixture = async (
     version: 1,
     issuer: 'https://clerk.test',
     clientId: 'client',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     accessToken: 'old',
     refreshToken: 'refresh-old',
     accessTokenExpiresAt: Date.now() + 3600000,
     userId: 'user',
     organizationId: 'org',
-    grantedScopes: ['offline_access', 'user:org:read'],
+    grantedScopes: ['offline_access', 'dedalus:cli'],
   }
   let lock = Promise.resolve()
   let refreshes = 0
@@ -47,6 +49,8 @@ const fixture = async (
   const provider: AuthProvider = {
     issuer: saved.issuer,
     clientId: saved.clientId,
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     refresh: async (s) => {
       refreshes++
       if (refreshError?.()) throw refreshError()

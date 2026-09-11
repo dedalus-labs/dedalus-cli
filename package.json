@@ -85,6 +85,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "oxfmt": "0.37.0",
     "zod": "4.3.6",
     "tsx": "^4.20.0",
     "@types/node": "^20.17.0",

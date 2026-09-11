@@ -1,3 +1,4 @@
+// @custom start
 import { command, workflow } from '@dedalus-labs/hollywood';
 
 export const sdkCI = workflow({
@@ -16,7 +17,7 @@ export const sdkCI = workflow({
         },
         {
           uses: 'pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a',
-          with: { version: '10.20.0' },
+          with: { version: '10.34.5' },
         },
         {
           name: 'Install dependencies',
@@ -37,15 +38,17 @@ export const sdkCI = workflow({
           }),
         },
         { name: 'Build CLI', run: command({ file: 'pnpm', args: ['run', 'build'] }) },
+        { name: 'Check public source and build', run: command({ file: 'pnpm', args: ['run', 'public:check'] }) },
+        { name: 'Test public scanner', run: command({ file: 'pnpm', args: ['run', 'test:public'] }) },
         {
-          name: 'Install and test staging package',
-          run: command({ file: 'node', args: ['scripts/verify-staging-package.mjs'] }),
+          name: 'Install and test preview package',
+          run: command({ file: 'pnpm', args: ['run', 'test:package'] }),
         },
         {
-          name: 'Upload tested staging package',
+          name: 'Upload tested preview package',
           uses: 'actions/upload-artifact@v7',
           with: {
-            name: 'dedalus-cli-staging',
+            name: 'dedalus-cli-preview',
             path: 'artifacts/*',
             'if-no-files-found': 'error',
             'retention-days': 7,
@@ -55,3 +58,4 @@ export const sdkCI = workflow({
     },
   },
 });
+// @custom end

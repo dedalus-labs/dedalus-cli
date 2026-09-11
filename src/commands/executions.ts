@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Extend execution syntax while retaining the generated request path. */
 import type { Command } from 'commander'
 
@@ -48,3 +48,4 @@ export const addExecutionCommands = (program: Command): void => {
     return parsed
   }
 }
+// @custom end

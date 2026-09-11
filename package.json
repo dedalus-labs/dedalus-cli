@@ -69,6 +69,8 @@
     "./man/dedalus-completion.1"
   ],
   "scripts": {
+    "lint": "node --import tsx scripts/check-custom.ts",
+    "pretypecheck": "npm run lint",
     "build": "node --import tsx scripts/prepare-build.ts && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
     "pack:check": "node --import tsx scripts/check-package.ts",
     "prepack": "npm run build",

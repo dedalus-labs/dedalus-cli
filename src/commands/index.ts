@@ -2,7 +2,10 @@
 
 import type { Command } from 'commander';
 import SDK from '../sdk/index';
+// @custom start
+// Use the typed client contract when configuring the command tree.
 import { createProgram, type CreateProgramOptions, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
+// @custom end
 import { completions } from '../cli/completions';
 import { addMachineAliases } from '../custom/machines.js';
 

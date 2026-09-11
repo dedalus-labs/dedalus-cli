@@ -1,7 +1,7 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
 // Smoke test: invokes the generated CLI once per operation to confirm each command can reach
-// its endpoint. Build the CLI first, then run this from the repo
+// its endpoint. Build the CLI first (so dist/esm/bin.js exists), then run this from the repo
 // with `bun tests/smoke-test.ts`. Each case below holds the argv for one command, minus the
 // base URL and credentials — the embedded SDK reads those from the environment, so set
 // <PREFIX>_BASE_URL and the auth variables before running.

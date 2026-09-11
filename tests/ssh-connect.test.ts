@@ -1,3 +1,5 @@
+// @custom start
+// Verify SSH credentials, subprocess status, and cancellation cleanup.
 import assert from 'node:assert/strict'
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -189,3 +191,4 @@ test('invariant SIGINT and SIGTERM remove private credentials during SSH setup',
     await rm(directory, { recursive: true, force: true })
   }
 })
+// @custom end

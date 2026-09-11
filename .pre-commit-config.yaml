@@ -1,0 +1,12 @@
+# @custom start
+# Run the same ownership declaration check locally and in CI.
+repos:
+  - repo: local
+    hooks:
+      - id: custom-markers
+        name: custom markers
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        always_run: true
+# @custom end

@@ -1,3 +1,5 @@
+// @custom start
+// Exercise creation followed by SSH with the authenticated client.
 import assert from 'node:assert/strict'
 import test, { type TestContext } from 'node:test'
 import { createProgram } from '../src/cli/runtime.js'
@@ -324,3 +326,4 @@ test('result hooks receive the constructed client with its inferred instance typ
   await program.parseAsync(['node', 'fixture', 'execute'])
   assert.equal(handled, true)
 })
+// @custom end

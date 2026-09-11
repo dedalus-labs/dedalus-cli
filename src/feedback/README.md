@@ -24,3 +24,8 @@ receipt as metadata. Auto mode attaches only recent failures in the same scope.
 Explicit inclusion adds a runtime and proxy-presence report, even without logs.
 Proxy values are omitted. Each attachment carries its exact byte count and
 SHA-256 digest; the bundle contains at most four files and 1 MiB compressed.
+
+Generated HTTP commands record request starts, responses, failures, and command
+completion through the SDK fetch hook. Scope includes a per-call organization
+override. The CLI sends its command name without arguments and never forwards
+a saved server receipt as an outbound `X-Request-ID`.

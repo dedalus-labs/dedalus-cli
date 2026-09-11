@@ -11,7 +11,7 @@ The full API of this library can be found in [api.md](./api.md).
 - [Installation](#installation)
 - [Usage](#usage)
 - [Feedback](#feedback)
-- [Staging package testing](#staging-package-testing)
+- [Preview package testing](#preview-package-testing)
 - [API Reference](./api.md)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
@@ -83,26 +83,27 @@ size and SHA-256 digest. HTTP retries reuse one idempotency key. A successful
 response means the report was accepted for delivery; it does not confirm that
 support has received it yet.
 
-## Staging package testing
+## Preview package testing
 
 The `CLI SDK CI` workflow builds a versioned package, installs it in a temporary
 directory, runs the feedback tests against the installed package, and uploads the
-`dedalus-cli-staging` artifact. The artifact contains a `.tgz` and its checksum
+`dedalus-cli-preview` artifact. The artifact contains a `.tgz` and its checksum
 record. This workflow does not publish to npm or Homebrew.
 
-Staging packages are marked private and default to `https://staging.dcs.dedaluslabs.ai`.
-Pass the staging URL explicitly when testing a downloaded package:
+Preview packages are marked private and use the public DCS API at
+`https://dcs.dedaluslabs.ai`. An explicit `--base-url` selects another authorized target.
 
 ```sh
 mkdir -p /tmp/dedalus-feedback-test
 npm install --prefix /tmp/dedalus-feedback-test /absolute/path/to/dedalus-cli-VERSION.tgz
 /tmp/dedalus-feedback-test/node_modules/.bin/dedalus doctor --json
-/tmp/dedalus-feedback-test/node_modules/.bin/dedalus feedback "Staging smoke test" \
-  --include-logs false --base-url https://staging.dcs.dedaluslabs.ai
+/tmp/dedalus-feedback-test/node_modules/.bin/dedalus feedback "Preview smoke test" \
+  --include-logs false
 ```
 
-Set `DEDALUS_API_KEY` to a staging credential before submitting. To reproduce CI
-locally, run `pnpm install --frozen-lockfile`, `pnpm build`, and `pnpm test:package`.
+Set `DEDALUS_API_KEY` to a credential authorized for the target before submitting.
+To reproduce CI locally, run `pnpm install --frozen-lockfile`, `pnpm build`, and
+`pnpm test:package`.
 Custom feedback code lives under `src/feedback` and is integrated on `scalar-next`.
 Validate Scalar regeneration there before promoting a release.
 

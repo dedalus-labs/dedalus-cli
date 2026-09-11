@@ -20,7 +20,7 @@ test('invariant idempotency keys match the server UUIDv7 contract', () => {
 
 const runCLI = async (args, env = {}) => {
   const child = spawn(process.execPath, [join(root, 'dist/esm/bin.js'), ...args], {
-    env: { PATH: process.env.PATH, ...env },
+    env: { PATH: process.env.PATH, HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE, ...env },
   });
   let stdout = '',
     stderr = '';

@@ -17,7 +17,7 @@ jobs:
           node-version: "24"
       - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a
         with:
-          version: 10.20.0
+          version: 10.34.5
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
         shell: bash
@@ -30,13 +30,19 @@ jobs:
       - name: Build CLI
         run: pnpm run build
         shell: bash
-      - name: Install and test staging package
-        run: node scripts/verify-staging-package.mjs
+      - name: Check public source and build
+        run: pnpm run public:check
         shell: bash
-      - name: Upload tested staging package
+      - name: Test public scanner
+        run: pnpm run test:public
+        shell: bash
+      - name: Install and test preview package
+        run: pnpm run test:package
+        shell: bash
+      - name: Upload tested preview package
         uses: actions/upload-artifact@v7
         with:
-          name: dedalus-cli-staging
+          name: dedalus-cli-preview
           path: artifacts/*
           if-no-files-found: error
           retention-days: 7

@@ -1,4 +1,5 @@
-// Build first, then package an isolated, non-publishable CLI for staging validation.
+// @custom start
+// Build first, then package an isolated, non-publishable CLI for preview validation.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -17,12 +18,11 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const version = process.argv[2];
-if (!version || !/^\d+\.\d+\.\d+-staging\.[a-zA-Z0-9.-]+$/.test(version)) {
-  throw new Error('usage: node scripts/package-staging.mjs X.Y.Z-staging.ID [output-directory]');
+if (!version || !/^\d+\.\d+\.\d+-preview\.[a-zA-Z0-9.-]+$/.test(version)) {
+  throw new Error('usage: node scripts/package-preview.mjs X.Y.Z-preview.ID [output-directory]');
 }
 const output = resolve(process.argv[3] ?? join(root, 'artifacts'));
-const staging = mkdtempSync(join(tmpdir(), 'dedalus-staging-package-'));
-const stagingURL = 'https://staging.dcs.dedaluslabs.ai';
+const staging = mkdtempSync(join(tmpdir(), 'dedalus-preview-package-'));
 mkdirSync(output, { recursive: true });
 
 const patchBuild = (directory) => {
@@ -34,12 +34,10 @@ const patchBuild = (directory) => {
     }
     if (!/\.(js|map)$/.test(entry.name)) continue;
     const source = readFileSync(path, 'utf8');
-    const staged = source
-      .replaceAll('https://dcs.dedaluslabs.ai', stagingURL)
-      .replace(
-        /(['"])[0-9]+\.[0-9]+\.[0-9]+\1(?=;?,?\s*\/\/ x-release-please-version)/g,
-        (_, quote) => quote + version + quote,
-      );
+    const staged = source.replace(
+      /(['"])[0-9]+\.[0-9]+\.[0-9]+\1(?=;?,?\s*\/\/ x-release-please-version)/g,
+      (_, quote) => quote + version + quote,
+    );
     writeFileSync(path, staged);
   }
 };
@@ -66,7 +64,7 @@ try {
     filename,
     version,
     private: true,
-    default_api: stagingURL,
+    default_api: 'https://dcs.dedaluslabs.ai',
     sha256: createHash('sha256').update(bytes).digest('hex'),
   };
   writeFileSync(path + '.json', JSON.stringify(record, null, 2) + '\n');
@@ -74,3 +72,4 @@ try {
 } finally {
   rmSync(staging, { recursive: true, force: true });
 }
+// @custom end

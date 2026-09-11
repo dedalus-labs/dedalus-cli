@@ -43,9 +43,16 @@ dedalus [resource] [command] [flags]
 dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
 ```
 
+Create a machine with API defaults and open an interactive shell:
+
+```sh
+dedalus machines create --ssh
+```
+
 Scalar generates the SDK, resource commands, API reference, and manual pages from
 the DCS OpenAPI input. Handwritten code lives with its feature: `src/auth` owns
-login and credentials, while `src/cli/program.ts` assembles the executable.
+login and credentials, `src/ssh/connect.ts` owns the interactive connection, and
+`src/cli/program.ts` assembles the executable.
 
 Wrap handwritten modules and modifications in `// @custom start` and
 `// @custom end`, with a normal comment explaining each range. Preserve Scalar's generated provenance headers.
@@ -198,6 +205,7 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 ## Requirements
 
 - Node.js 20 or newer
+- OpenSSH (`ssh` and `ssh-keygen`) when using `machines create --ssh`
 
 Powered by Scalar.
 
@@ -218,3 +226,14 @@ if a rotated refresh-token response is lost before it can be saved.
 Recovery lives in `src/auth/client.ts` and `src/auth/`. The SDK's shared
 request method has one visibility change (`private` to `protected`); Scalar still
 owns request construction, pagination, response parsing, and transient retries.
+
+`machines create --ssh` extends Scalar's generated create command, then uses its
+native SSH session methods. Scalar still handles flags, piped JSON, authentication,
+request construction, and output formats. The DCS input currently marks CPU,
+memory, and storage as required even though the server accepts defaults; a narrow
+command-definition hook makes only those three fields optional. Remove that hook
+when the source OpenAPI contract is corrected.
+
+Temporary SSH credentials are removed on normal exit and on SIGINT, SIGTERM, or
+SIGHUP. Cancellation also signals the active SSH subprocess. It does not delete
+the created machine. SIGKILL and host crashes cannot run process cleanup.

@@ -59,8 +59,10 @@ export type CliClientOptionDefinition = {
   readonly defaultValue?: string;
 };
 
-export type CreateProgramOptions = {
-  readonly SDK: new (...args: any[]) => unknown;
+// @custom
+// Keep the constructed client type available to result orchestration.
+export type CreateProgramOptions<Client = unknown> = {
+  readonly SDK: new (options: Record<string, unknown>) => Client;
   readonly binaryName: string;
   readonly version: string;
   readonly description: string;
@@ -68,6 +70,8 @@ export type CreateProgramOptions = {
   readonly defaultErrorFormat: OutputFormat;
   readonly clientOptions: readonly CliClientOptionDefinition[];
   readonly commands: readonly CliCommandDefinition[];
+  // Return true when custom orchestration has handled the result and owns its output.
+  readonly handleResult?: (result: unknown, client: Client, command: Command) => Promise<boolean>;
   // @custom start
   // Accept the authentication formatter at the generated output boundary.
   readonly formatError?: (error: unknown, command: Command) => Record<string, unknown> | undefined;
@@ -101,7 +105,7 @@ export type GlobalOptions = {
   readonly maxItems?: string;
 };
 
-export const createProgram = ({
+export const createProgram = <Client>({
   SDK,
   binaryName,
   version,
@@ -113,9 +117,10 @@ export const createProgram = ({
   // @custom start
   // Receive the formatter supplied by the authentication entry point.
   formatError,
+  handleResult,
   // @custom end
   completions,
-}: CreateProgramOptions): Command => {
+}: CreateProgramOptions<Client>): Command => {
   const program = usageExitCode(new Command());
   program
     .enablePositionalOptions()
@@ -146,7 +151,7 @@ export const createProgram = ({
   // @custom start
   // Pass the same authentication formatter to each generated command.
   for (const definition of commands)
-    addGeneratedCommand(program, SDK, clientOptions, definition, formatError);
+    addGeneratedCommand(program, definition, { SDK, clientOptions, formatError, handleResult });
   // @custom end
 
   if (completions) addCompletionCommand(program, binaryName, completions);
@@ -219,15 +224,23 @@ const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   return parts.join(' ');
 };
 
+// @custom
+// Share typed execution hooks without adding positional arguments to registration.
+type CommandRuntime<Client> = {
+  readonly SDK: CreateProgramOptions<Client>['SDK'];
+  readonly clientOptions: CreateProgramOptions<Client>['clientOptions'];
+  readonly formatError: CreateProgramOptions<Client>['formatError'];
+  readonly handleResult: CreateProgramOptions<Client>['handleResult'];
+};
+
 // @custom start
 // Accept the authentication formatter and register nested resources as command words.
-const addGeneratedCommand = (
+const addGeneratedCommand = <Client>(
   program: Command,
-  SDK: CreateProgramOptions['SDK'],
-  clientOptions: readonly CliClientOptionDefinition[],
   definition: CliCommandDefinition,
-  formatError: CreateProgramOptions['formatError'],
+  runtime: CommandRuntime<Client>,
 ): void => {
+  const { clientOptions } = runtime;
   // Scalar 0.32 emits colon-delimited resource segments; the public CLI uses words.
   const commandPath = definition.commandPath.flatMap((segment) => segment.split(':'));
   const parent = ensureCommandPath(program, commandPath.slice(0, -1));
@@ -297,7 +310,7 @@ const addGeneratedCommand = (
     const positionalValues = args.slice(0, -1);
     // @custom start
     // Apply the authentication formatter when the selected command runs.
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, formatError);
+    await runGeneratedCommand(runtime, definition, command, positionalValues);
     // @custom end
   });
 
@@ -321,14 +334,13 @@ const ensureCommandPath = (program: Command, path: readonly string[]): Command =
 
 // @custom start
 // Carry the authentication formatter into command execution.
-const runGeneratedCommand = async (
-  SDK: CreateProgramOptions['SDK'],
-  clientOptions: readonly CliClientOptionDefinition[],
+const runGeneratedCommand = async <Client>(
+  runtime: CommandRuntime<Client>,
   definition: CliCommandDefinition,
   command: Command,
   positionalValues: readonly unknown[],
-  formatError: CreateProgramOptions['formatError'],
 ): Promise<void> => {
+  const { SDK, clientOptions, formatError, handleResult } = runtime;
 // @custom end
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
@@ -354,7 +366,7 @@ const runGeneratedCommand = async (
   };
 
   try {
-    const client = new SDK(sdkClientOptions(rootOptions, command, clientOptions)) as Record<string, unknown>;
+    const client = new SDK(sdkClientOptions(rootOptions, command, clientOptions));
     const method = sdkMethod(client, definition);
     const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
 
@@ -388,6 +400,8 @@ const runGeneratedCommand = async (
       return;
     }
 
+    // @custom: let orchestration consume a result while retaining this SDK instance.
+    if (await handleResult?.(resolved, client, command)) return;
     await writeOutput(resolved, outputOptions);
   } catch (error) {
     // @custom start
@@ -427,7 +441,7 @@ const sdkClientOptions = (
 };
 
 const sdkMethod = (
-  client: Record<string, unknown>,
+  client: unknown,
   definition: CliCommandDefinition,
 ): ((...args: unknown[]) => unknown) => {
   let target: unknown = client;

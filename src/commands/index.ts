@@ -2,7 +2,7 @@
 
 import type { Command } from 'commander';
 import SDK from '../sdk/index';
-import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
+import { createProgram, type CreateProgramOptions, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
 import { completions } from '../cli/completions';
 import { addMachineAliases } from '../custom/machines.js';
 
@@ -1478,7 +1478,7 @@ const commands = [
 
 // @custom start
 // Supply authentication through the generated entry point.
-export const getProgram = (overrides: Partial<Parameters<typeof createProgram>[0]> = {}): Command =>
+export const getProgram = (overrides: Partial<CreateProgramOptions<SDK>> = {}): Command =>
   addMachineAliases(createProgram({
     SDK,
     binaryName: 'dedalus',

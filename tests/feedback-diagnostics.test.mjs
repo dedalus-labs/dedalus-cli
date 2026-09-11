@@ -22,6 +22,10 @@ test('invariant selection requires a recent failure in the same credential scope
   log.record({ kind: 'response', route: '/v1/machines', status_code: 200, duration_ms: 1 });
   assert.equal(selectDiagnostics(scope, dir).events.length, 0);
   log.record({ kind: 'transport_failure', route: '/v1/machines', duration_ms: 3 });
+  assert.equal(selectDiagnostics(scope, dir).events.length, 0);
+  log.record({ kind: 'command_failure' });
+  assert.ok(selectDiagnostics(scope, dir).events.length > 0);
+  log.record({ kind: 'command_complete' });
   assert.ok(selectDiagnostics(scope, dir).events.length > 0);
   assert.equal(selectDiagnostics(diagnosticScope({ apiKey: 'other-key' }), dir).events.length, 0);
   assert.equal(selectDiagnostics(scope, dir, Date.now() + 16 * 60 * 1000).events.length, 0);
@@ -37,6 +41,7 @@ test('invariant recording drops fields outside the diagnostic contract', (t) => 
   });
   const raw = readFileSync(join(dir, readdirSync(dir)[0]), 'utf8');
   assert.doesNotMatch(raw, /super-secret|secret-password|private workspace/);
+  log.record({ kind: 'command_failure' });
   assert.equal(selectDiagnostics(scope, dir).receipt, receipt);
 });
 
@@ -71,8 +76,33 @@ test('invariant transport capture preserves receipts without request data', asyn
   await diagnostics.fetch('https://staging.invalid/v1/machines/private-machine?token=secret-query', {
     headers: { Authorization: 'Bearer secret-key' },
   });
+  diagnostics.record({ kind: 'command_failure' });
   const selection = selectDiagnostics(scope, dir);
   assert.equal(selection.receipt, receipt);
   assert.equal(selection.failure.route, '/v1/machines/{machine_id}');
   assert.doesNotMatch(JSON.stringify(selection), /private-machine|secret-query|secret-key|private response/);
+});
+
+test('invariant successful commands exclude recovered attempts from selection', (t) => {
+  for (const kind of ['response', 'transport_failure']) {
+    const dir = directory(t);
+    const log = createDiagnostics('dedalus machines list', scope, dir);
+    log.record({ kind, status_code: 503, route: '/v1/machines', request_id: receipt, duration_ms: 1 });
+    log.record({ kind: 'response', status_code: 200, route: '/v1/machines', duration_ms: 1 });
+    log.record({ kind: 'command_complete' });
+    assert.deepEqual(selectDiagnostics(scope, dir), { events: [] }, kind);
+  }
+});
+
+test('invariant client processing failures retain the latest valid response receipt', (t) => {
+  const dir = directory(t);
+  const latestReceipt = '01973f7b7cf6726a9a9f4f37d4b47a22';
+  const log = createDiagnostics('dedalus machines list', scope, dir);
+  log.record({ kind: 'response', status_code: 503, route: '/v1/machines', request_id: receipt, duration_ms: 1 });
+  log.record({ kind: 'response', status_code: 200, route: '/v1/machines', request_id: latestReceipt, duration_ms: 2 });
+  log.record({ kind: 'command_failure' });
+  const selection = selectDiagnostics(scope, dir);
+  assert.equal(selection.receipt, latestReceipt);
+  assert.equal(selection.command, 'dedalus machines list');
+  assert.equal(selection.failure, undefined);
 });

@@ -7,7 +7,11 @@ stderr and stop local recording without interrupting the API command.
 
 `diagnosticScope` separates API hosts, credentials, and organization overrides.
 `selectDiagnostics` returns a failed command from the last 15 minutes in that
-scope. It rebuilds permitted fields when reading and excludes feedback commands
+scope, selected by its terminal `command_failure` event. Attempts that recover
+before `command_complete` do not qualify. A failed command retains the final
+response's valid receipt even if a successful HTTP response could not be processed;
+failure status metadata requires the final HTTP response to be an error.
+Selection rebuilds permitted fields when reading and excludes feedback commands
 and symlinked files. The credential digest stays in local filenames.
 
 The default directory is `~/.dedalus/debug`. Each process records at most 1,000

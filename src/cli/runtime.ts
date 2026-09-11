@@ -900,7 +900,7 @@ const errorBody = (
       status: record.status,
       requestId: record.requestID ?? record.requestId,
       ...(hint !== undefined ? { hint } : {}),
-      body: record.body,
+      body: record.body ?? record.error,
     };
   }
   return { code: 'error', message: String(error) };

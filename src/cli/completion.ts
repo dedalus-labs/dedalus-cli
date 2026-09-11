@@ -36,7 +36,7 @@ export const completionCandidates = (program: Command, words: readonly string[])
     if (!child) return []
     command = child
   }
-  const names = command.commands.map((child) => child.name())
+  const names = command.commands.flatMap((child) => [child.name(), ...child.aliases()])
   const flags = commandOptions(command).flatMap((option) =>
     [option.long, option.short].filter((flag): flag is string => flag !== undefined),
   )

@@ -16,6 +16,7 @@ Untrusted metadata/session -> schema validation -> typed auth values
 | `dfa.ts` | Allowed observations for the authentication lifecycle. |
 | `credential-contract.ts` | Decode one bounded native record into a validated session. |
 | `credentials.ts` | Select one credential and provide native storage with a lifecycle lock. |
+| `workflow.ts` | Serialize login, status, refresh and logout against one stored identity. |
 
 Workload flags take priority over workload environment variables, then the
 stored session. Credentials at the same priority cannot be combined.
@@ -24,6 +25,11 @@ Credential-bearing custom headers are rejected.
 Native sessions use Keychain, Credential Manager, or Secret Service. A missing
 entry differs from an unreadable entry. The lifecycle lock preserves both an
 operation failure and any lock-release failure.
+
+Login keeps a usable stored grant and refreshes an expiring grant under the
+lifecycle lock. A provider result becomes usable after its native write succeeds.
+A failed write revokes the new grant. Refresh cannot change the user, organization,
+issuer, client or resource. The caller supplies the provider implementation.
 
 Run `pnpm run build`, `pnpm run typecheck`, and
 `node --import tsx --test tests/auth/*.test.ts`.

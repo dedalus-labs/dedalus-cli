@@ -251,64 +251,64 @@ export const createDiagnostics = (command: string, scope: string, directory = de
 };
 
 export const selectDiagnostics = (
-  scope: string,
-  directory = debugDirectory(),
-  now = Date.now(),
+	scope: string,
+	directory = debugDirectory(),
+	now = Date.now(),
 ): DiagnosticSelection => {
-  const candidates = files(directory)
-    .filter(
-      (file) =>
-        file.name.startsWith(scope + '.') &&
-        file.time >= now - recentMS &&
-        file.size <= partitionLimit,
-    )
-    .sort((a, b) => b.time - a.time);
-  for (const file of candidates) {
-    const fd = openSync(file.path, constants.O_RDONLY | constants.O_NOFOLLOW);
-    let text: string;
-    try {
-      text = readFileSync(fd, 'utf8');
-    } finally {
-      closeSync(fd);
-    }
-    const events = text
-      .split('\n')
-      .filter(Boolean)
-      .slice(-1000)
-      .flatMap((line) => {
-        try {
-          const event = parseEvent(JSON.parse(line));
-          return event &&
-            event.command !== 'dedalus feedback' &&
-            Date.parse(event.ts) >= now - recentMS
-            ? [event]
-            : [];
-        } catch {
-          return [];
-        }
-      });
-    const outcome = events.findLast((row) => row.kind === 'command_failure');
-    if (!outcome) continue;
-    const response = events.findLast((row) => row.kind === 'response');
-    const receipt = response?.request_id;
-    return {
-      events,
-      command: outcome.command,
-      ...(receipt ? { receipt } : {}),
-      ...(response?.status_code !== undefined &&
-      response.status_code >= 400 &&
-      response.duration_ms !== undefined &&
-      response.route
-        ? {
-            failure: {
-              status_code: response.status_code,
-              duration_ms: response.duration_ms,
-              route: response.route,
-            },
-          }
-        : {}),
-    };
-  }
-  return { events: [] };
+	const candidates = files(directory)
+		.filter(
+			(file) =>
+				file.name.startsWith(scope + ".") &&
+				file.time >= now - recentMS &&
+				file.size <= partitionLimit,
+		)
+		.sort((a, b) => b.time - a.time);
+	for (const file of candidates) {
+		const fd = openSync(file.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+		let text: string;
+		try {
+			text = readFileSync(fd, "utf8");
+		} finally {
+			closeSync(fd);
+		}
+		const events = text
+			.split("\n")
+			.filter(Boolean)
+			.slice(-1000)
+			.flatMap((line) => {
+				try {
+					const event = parseEvent(JSON.parse(line));
+					return event &&
+						event.command !== "dedalus feedback" &&
+						Date.parse(event.ts) >= now - recentMS
+						? [event]
+						: [];
+				} catch {
+					return [];
+				}
+			});
+		const outcome = events.findLast((row) => row.kind === "command_failure");
+		if (!outcome) continue;
+		const response = events.findLast((row) => row.kind === "response");
+		const receipt = response?.request_id;
+		return {
+			events,
+			command: outcome.command,
+			...(receipt ? { receipt } : {}),
+			...(response?.status_code !== undefined &&
+			response.status_code >= 400 &&
+			response.duration_ms !== undefined &&
+			response.route
+				? {
+						failure: {
+							status_code: response.status_code,
+							duration_ms: response.duration_ms,
+							route: response.route,
+						},
+					}
+				: {}),
+		};
+	}
+	return { events: [] };
 };
 // @custom end

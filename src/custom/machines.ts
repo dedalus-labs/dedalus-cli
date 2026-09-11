@@ -2,6 +2,8 @@
 
 import { Command, Option } from 'commander'
 import SDK from '../sdk/index.js'
+import { AuthenticatedCommandClient } from '../auth/client.js'
+import { formatDedalusError } from '../auth/commands.js'
 import {
   type CliClientOptionDefinition, type GlobalOptions,
   sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode,
@@ -107,7 +109,7 @@ const runAlias = async (
 ): Promise<void> => {
   const flags = command.optsWithGlobals<GlobalOptions & { xDedalusOrgId?: string }>()
   try {
-    const client = new SDK({
+    const client = new AuthenticatedCommandClient({
       ...sdkClientOptions(flags, command, clientOptions),
       ...(flags.xDedalusOrgId ? { defaultHeaders: {
         'X-Scalar-Lang': 'cli', 'X-Scalar-Runtime': 'cli',
@@ -120,7 +122,7 @@ const runAlias = async (
       format: normalizeFormat(command.opts<GlobalOptions>().formatError ?? flags.formatError, 'auto'),
       ...(flags.transformError ? { transform: flags.transformError } : {}),
       ...(flags.rawOutput ? { rawOutput: true } : {}),
-    }, clientOptions, SDK)
+    }, clientOptions, SDK, command, formatDedalusError)
     process.exitCode = errorExitCode(error, SDK)
   }
 }

@@ -68,6 +68,10 @@ export type CreateProgramOptions = {
   readonly defaultErrorFormat: OutputFormat;
   readonly clientOptions: readonly CliClientOptionDefinition[];
   readonly commands: readonly CliCommandDefinition[];
+  // @custom start
+  // Accept the authentication formatter at the generated output boundary.
+  readonly formatError?: (error: unknown, command: Command) => Record<string, unknown> | undefined;
+  // @custom end
   // Completion script per shell, generated alongside the command table. Absent when the SDK
   // config disables shell completions, in which case no `completion` command is registered.
   readonly completions?: Readonly<Record<string, string>>;
@@ -106,6 +110,10 @@ export const createProgram = ({
   defaultErrorFormat,
   clientOptions,
   commands,
+  // @custom start
+  // Receive the formatter supplied by the authentication entry point.
+  formatError,
+  // @custom end
   completions,
 }: CreateProgramOptions): Command => {
   const program = usageExitCode(new Command());
@@ -135,7 +143,11 @@ export const createProgram = ({
     program.option('--' + option.name + ' <value>', clientOptionDescription(option));
   }
 
-  for (const definition of commands) addGeneratedCommand(program, SDK, clientOptions, definition);
+  // @custom start
+  // Pass the same authentication formatter to each generated command.
+  for (const definition of commands)
+    addGeneratedCommand(program, SDK, clientOptions, definition, formatError);
+  // @custom end
 
   if (completions) addCompletionCommand(program, binaryName, completions);
 
@@ -207,13 +219,19 @@ const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   return parts.join(' ');
 };
 
+// @custom start
+// Accept the authentication formatter and register nested resources as command words.
 const addGeneratedCommand = (
   program: Command,
   SDK: CreateProgramOptions['SDK'],
   clientOptions: readonly CliClientOptionDefinition[],
   definition: CliCommandDefinition,
+  formatError: CreateProgramOptions['formatError'],
 ): void => {
-  const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1));
+  // Scalar 0.32 emits colon-delimited resource segments; the public CLI uses words.
+  const commandPath = definition.commandPath.flatMap((segment) => segment.split(':'));
+  const parent = ensureCommandPath(program, commandPath.slice(0, -1));
+// @custom end
   const commandName = definition.commandPath.at(-1) ?? definition.methodName;
   const command = usageExitCode(new Command(commandName))
     .description(definition.summary ?? definition.description ?? '')
@@ -277,7 +295,10 @@ const addGeneratedCommand = (
     const command = args.at(-1);
     if (!(command instanceof Command)) throw new Error('Expected Commander command context');
     const positionalValues = args.slice(0, -1);
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues);
+    // @custom start
+    // Apply the authentication formatter when the selected command runs.
+    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, formatError);
+    // @custom end
   });
 
   parent.addCommand(command);
@@ -298,19 +319,26 @@ const ensureCommandPath = (program: Command, path: readonly string[]): Command =
   return parent;
 };
 
+// @custom start
+// Carry the authentication formatter into command execution.
 const runGeneratedCommand = async (
   SDK: CreateProgramOptions['SDK'],
   clientOptions: readonly CliClientOptionDefinition[],
   definition: CliCommandDefinition,
   command: Command,
   positionalValues: readonly unknown[],
+  formatError: CreateProgramOptions['formatError'],
 ): Promise<void> => {
+// @custom end
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
   const maxItems = definition.iterable ? normalizeMaxItems(commandOptions.maxItems) : undefined;
   const outputOptions: OutputOptions = {
     format: normalizeFormat(commandOptions.format ?? rootOptions.format, 'auto'),
-    title: definition.commandPath.join(' '),
+    // @custom start
+    // Display the public space-separated command path.
+    title: definition.commandPath.join(' ').replaceAll(':', ' '),
+    // @custom end
     ...((commandOptions.transform ?? rootOptions.transform)
       ? { transform: commandOptions.transform ?? rootOptions.transform }
       : {}),
@@ -330,18 +358,22 @@ const runGeneratedCommand = async (
     const method = sdkMethod(client, definition);
     const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
 
-    // Required positionals are validated here (not by Commander) because each one may also be
-    // supplied through its flag spelling or stdin; `call.params` has all sources merged.
-    for (const param of definition.positional) {
+    // @custom start
+    // Validate required values after merging positional arguments, flags, and piped input.
+    for (const param of [...definition.positional, ...definition.flags]) {
       if (param.required && call.params[param.paramKey] === undefined) {
-        command.error("error: missing required argument '" + param.name + "'", { exitCode: 2 });
+        command.error("error: missing required value '" + param.name + "'", { exitCode: 2 });
       }
     }
+    // @custom end
 
     const result = method(...call.args);
 
     if (definition.transport === 'websocket') {
-      await handleWebSocket(result, call.params, outputOptions);
+      // @custom start
+      // Forward the already-read input to the WebSocket sender.
+      await handleWebSocket(result, call.params, call.stdin, outputOptions);
+      // @custom end
       return;
     }
 
@@ -358,7 +390,10 @@ const runGeneratedCommand = async (
 
     await writeOutput(resolved, outputOptions);
   } catch (error) {
-    await writeError(error, errorOptions, clientOptions, SDK);
+    // @custom start
+    // Apply the authentication formatter before printing the error.
+    await writeError(error, errorOptions, clientOptions, SDK, command, formatError);
+    // @custom end
     process.exitCode = errorExitCode(error, SDK);
   }
 };
@@ -409,11 +444,18 @@ const sdkMethod = (
   return method.bind(target) as (...args: unknown[]) => unknown;
 };
 
+// @custom start
+// Return piped input separately for WebSocket message delivery.
 const callArguments = async (
   definition: CliCommandDefinition,
   options: Record<string, unknown>,
   positionalValues: readonly unknown[],
-): Promise<{ readonly args: readonly unknown[]; readonly params: Record<string, unknown> }> => {
+): Promise<{
+  readonly args: readonly unknown[];
+  readonly params: Record<string, unknown>;
+  readonly stdin: Record<string, unknown>;
+}> => {
+// @custom end
   const positionalParams: Record<string, unknown> = {};
   definition.positional.forEach((param, index) => {
     const value = positionalValues[index] ?? options[param.optionKey];
@@ -441,14 +483,20 @@ const callArguments = async (
   }
 
   const stdin = await readStdinValue();
-  const params = mergeObjects(stdin, { ...flagParams, ...positionalParams });
+  // @custom start
+  // Keep HTTP parameters and WebSocket message bodies separate when composing SDK arguments.
+  const params = mergeObjects(definition.transport === 'websocket' ? {} : stdin, {
+    ...flagParams,
+    ...positionalParams,
+  });
   const positionalArgs = definition.positional.map((param) => params[param.paramKey]);
   const sdkParams = definition.transport === 'websocket' ? omitParams(params, ['send']) : params;
 
-  if (definition.callShape === 'options') return { args: [...positionalArgs, undefined], params };
+  if (definition.callShape === 'options') return { args: [...positionalArgs, undefined], params, stdin };
   if (definition.callShape === 'body')
-    return { args: [...positionalArgs, bodyValue(sdkParams, definition), undefined], params };
-  return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params };
+    return { args: [...positionalArgs, bodyValue(sdkParams, definition), undefined], params, stdin };
+  return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params, stdin };
+  // @custom end
 };
 
 const paramsValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {
@@ -491,18 +539,18 @@ const readStdinValue = async (): Promise<Record<string, unknown>> => {
   return { body: parsed };
 };
 
+// @custom start
+// Wait for the complete piped input before constructing a request.
 const readStdinSource = async (): Promise<string> => {
   const chunks: Buffer[] = [];
   const done = new Promise<string>((resolve, reject) => {
     const cleanup = () => {
-      clearTimeout(timer);
       processStdin.off('data', onData);
       processStdin.off('end', onEnd);
       processStdin.off('error', onError);
       processStdin.pause();
     };
     const onData = (chunk: Buffer | string) => {
-      clearTimeout(timer);
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     };
     const onEnd = () => {
@@ -513,10 +561,6 @@ const readStdinSource = async (): Promise<string> => {
       cleanup();
       reject(error);
     };
-    const timer = setTimeout(() => {
-      cleanup();
-      resolve('');
-    }, 25);
     processStdin.on('data', onData);
     processStdin.on('end', onEnd);
     processStdin.on('error', onError);
@@ -524,6 +568,7 @@ const readStdinSource = async (): Promise<string> => {
   processStdin.resume();
   return done;
 };
+// @custom end
 
 // An empty argument is an empty STRING, not YAML's empty document. `--tag ''` asks for one
 // empty tag; parsing it as YAML answers `null`, which the request builder then refuses
@@ -655,9 +700,12 @@ const countsTowardLimit = (item: unknown, options: OutputOptions): boolean => {
 };
 
 // WebSocket SDKs expose lifecycle events as iterator values; error events should fail CLI commands.
+// @custom start
+// Send piped input once and close the socket after completion or interruption.
 const handleWebSocket = async (
   socket: unknown,
   params: Record<string, unknown>,
+  stdin: Record<string, unknown>,
   options: OutputOptions,
 ): Promise<void> => {
   const closer = () => {
@@ -673,15 +721,14 @@ const handleWebSocket = async (
     await Promise.resolve();
     const sendValue = params.send;
     if (sendValue !== undefined) sendSocketValue(socket, sendValue);
-    if (!processStdin.isTTY) {
-      const stdin = await readStdinValue();
-      if (Object.keys(stdin).length > 0) sendSocketValue(socket, stdin.body ?? stdin);
-    }
+    if (Object.keys(stdin).length > 0) sendSocketValue(socket, stdin.body ?? stdin);
     await output;
   } finally {
     process.off('SIGINT', closer);
+    closeSocket(socket, 'finished');
   }
 };
+// @custom end
 
 const closeSocket = (socket: unknown, reason: string): void => {
   const close = (socket as { close?: (options?: unknown) => void }).close;
@@ -775,13 +822,21 @@ const prettyScalar = (value: unknown): string => {
   return String(value);
 };
 
+// @custom start
+// Allow the authentication formatter to sanitize errors before output transforms.
 const writeError = async (
   error: unknown,
   options: OutputOptions,
   clientOptions: readonly CliClientOptionDefinition[],
   SDK: CreateProgramOptions['SDK'],
+  command: Command,
+  formatError: CreateProgramOptions['formatError'],
 ): Promise<void> => {
-  const body = transformValue(errorBody(error, clientOptions, SDK), options.transform);
+  const body = transformValue(
+    formatError?.(error, command) ?? errorBody(error, clientOptions, SDK),
+    options.transform,
+  );
+// @custom end
   if (options.rawOutput && typeof body === 'string') {
     process.stderr.write(body + '\n');
     return;

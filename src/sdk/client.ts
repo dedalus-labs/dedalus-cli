@@ -428,11 +428,14 @@ export class Dedalus {
     return new APIPromise(this, this.makeRequest(options, remainingRetries, undefined));
   }
 
-  private async makeRequest(
+  // @custom start
+  // Let OAuth recovery wrap the shared request path, including pagination.
+  protected async makeRequest(
     optionsInput: PromiseOrValue<FinalRequestOptions>,
     retriesRemaining: number | null,
     retryOfRequestLogID: string | undefined,
   ): Promise<APIResponseProps> {
+    // @custom end
     const options = await optionsInput;
     const maxRetries = options.maxRetries ?? this.maxRetries;
     if (retriesRemaining == null) {

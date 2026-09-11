@@ -16,7 +16,8 @@ unchanged. Success requires the response to confirm the requested name and a
 canonical machine ID; an explicit input ID must match the returned ID. The CLI
 supplies a fresh idempotency key per rename and preserves it across retries.
 Global authentication, output formats, transforms, and error formatting apply
-to both aliases. For example:
+to both aliases. Both use the auth-aware client to refresh a rejected OAuth token
+once, preserving the request body and idempotency key. For example:
 
 ```sh
 dedalus rename dev-box build-box --format pretty

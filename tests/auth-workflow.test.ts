@@ -1,13 +1,12 @@
+// @custom start
+// Exercise login, refresh, and logout state transitions.
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import assert from 'node:assert/strict'
-import { chmod, mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import test from 'node:test'
 
-import { CredentialStorageError, fileCredentialStore } from '../src/auth/credentials.js'
-import { createClerkAuthProvider } from '../src/auth/oauth.js'
+import { CredentialStorageError, keyringCredentialStore } from '../src/auth/credentials.js'
+import { createDedalusAuthProvider } from '../src/auth/oauth.js'
 import {
   accessTokenForCommand,
   CLIAuthWorkflowError,
@@ -22,13 +21,15 @@ const session = (overrides: Partial<OAuthSession> = {}): OAuthSession => ({
   version: 1,
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.example.com/dcs',
   accessToken: 'oauth-access-token',
   accessTokenExpiresAt: 2_000_000_000_000,
   refreshToken: 'oauth-refresh-token',
   userId: 'user_cli',
   organizationId: 'org_cli',
   organizationName: 'Dedalus Labs',
-  grantedScopes: ['offline_access', 'user:org:read'],
+  grantedScopes: ['offline_access', 'dedalus:cli'],
   ...overrides,
 })
 
@@ -52,6 +53,8 @@ const store = (initial?: OAuthSession): CredentialStore => {
 const provider = (overrides: Partial<AuthProvider> = {}): AuthProvider => ({
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.example.com/dcs',
   login: async () => session(),
   refresh: async (current) => current,
   revoke: async () => true,
@@ -77,7 +80,7 @@ test('invariant an existing OAuth login performs no provider work', async () => 
   assert.deepEqual(await existing.read(), session())
 })
 
-test('invariant login replaces an expired OAuth session', async () => {
+test('invariant login refreshes an existing grant instead of abandoning its tokens', async () => {
   const events: string[] = []
   const expired = store(
     session({
@@ -90,8 +93,8 @@ test('invariant login replaces an expired OAuth session', async () => {
 
   const result = await login({
     provider: provider({
-      login: async () => {
-        events.push('login')
+      refresh: async () => {
+        events.push('refresh')
         return fresh
       },
     }),
@@ -100,7 +103,7 @@ test('invariant login replaces an expired OAuth session', async () => {
   })
 
   assert.equal(result.status, 'logged_in')
-  assert.deepEqual(events, ['login'])
+  assert.deepEqual(events, ['refresh'])
   assert.deepEqual(await expired.read(), fresh)
 })
 
@@ -131,9 +134,15 @@ test('invariant login durably stores the Clerk token set without returning secre
 })
 
 test('invariant login success is not reported after a failed durable write', async () => {
+  let revocations = 0
   await assert.rejects(
     login({
-      provider: provider(),
+      provider: provider({
+        revoke: async () => {
+          revocations++
+          return true
+        },
+      }),
       store: {
         ...store(),
         write: async () => {
@@ -144,6 +153,7 @@ test('invariant login success is not reported after a failed durable write', asy
     (error) =>
       error instanceof CLIAuthWorkflowError && error.code === 'cli_credential_store_failed',
   )
+  assert.equal(revocations, 1)
 })
 
 test('invariant workload overrides do not read or refresh OAuth storage', async () => {
@@ -156,7 +166,7 @@ test('invariant workload overrides do not read or refresh OAuth storage', async 
       storeConstructions += 1
       return {
         ...store(session()),
-        backend: 'file',
+        backend: 'keyring',
         read: async () => {
           storedReads += 1
           return session()
@@ -201,17 +211,23 @@ test('invariant offline status returns local metadata without provider calls', a
 test('invariant refresh persists before any unrelated provider request', async () => {
   const existing = store(session({ accessTokenExpiresAt: 1 }))
   const requests: string[] = []
-  const authProvider = createClerkAuthProvider(
-    { issuer: 'https://clerk.example.com', clientId: 'client_cli' },
+  const authProvider = createDedalusAuthProvider(
+    {
+      issuer: 'https://clerk.example.com',
+      clientId: 'client_cli',
+      resource: 'https://dcs.example.com',
+      gatewayURL: 'https://admin.example.com/dcs',
+    },
     {
       now: () => 1_000,
       fetch: async (input) => {
         requests.push(String(input))
-        if (!String(input).endsWith('/oauth/token')) throw new Error('userinfo is unavailable')
+        if (!String(input).endsWith('/oauth2/token')) throw new Error('userinfo is unavailable')
         return Response.json({
           access_token: 'refreshed-access-token',
+          refresh_token: 'oauth-refresh-token',
           expires_in: 3_600,
-          scope: 'offline_access user:org:read',
+          scope: 'offline_access dedalus:cli',
           token_type: 'Bearer',
         })
       },
@@ -220,7 +236,7 @@ test('invariant refresh persists before any unrelated provider request', async (
   const token = await accessTokenForCommand(existing, authProvider, () => 1_000)
 
   assert.equal(token, 'refreshed-access-token')
-  assert.deepEqual(requests, ['https://clerk.example.com/oauth/token'])
+  assert.deepEqual(requests, ['https://clerk.example.com/oauth2/token'])
   assert.deepEqual(
     await existing.read(),
     session({
@@ -295,23 +311,37 @@ test('invariant an issuer migration requires a fresh login', async () => {
   )
 })
 
-test('invariant canonical issuer survives login, persistence, and a fresh provider process', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-provider-session-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const firstStore = fileCredentialStore(join(root, 'config', 'credentials'))
-  const configured = createClerkAuthProvider({
+test('invariant canonical issuer survives native record serialization', async () => {
+  let serialized: string | null = null
+  const entry = {
+    getPassword: async () => serialized,
+    setPassword: async (value: string) => {
+      serialized = value
+    },
+    deleteCredential: async () => {
+      const existed = serialized !== null
+      serialized = null
+      return existed
+    },
+  }
+  const firstStore = keyringCredentialStore(async () => entry)
+  const configured = createDedalusAuthProvider({
     issuer: 'https://clerk.example.com/',
     clientId: 'client_cli',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
   })
   await login({
     provider: { ...configured, login: async () => session({ issuer: configured.issuer }) },
     store: firstStore,
   })
 
-  const nextStore = fileCredentialStore(join(root, 'config', 'credentials'))
-  const nextProvider = createClerkAuthProvider({
+  const nextStore = keyringCredentialStore(async () => entry)
+  const nextProvider = createDedalusAuthProvider({
     issuer: 'https://clerk.example.com/',
     clientId: 'client_cli',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
   })
   const result = await status(
     { flags: {}, environment: {} },
@@ -334,36 +364,39 @@ test('invariant logout removes local tokens after confirmed provider revocation'
   assert.equal(await existing.read(), null)
 })
 
-test('invariant logout removes local tokens when provider revocation fails', async () => {
+test('invariant failed revocation preserves its error and credentials for retry', async () => {
   const existing = store(session())
-  assert.deepEqual(
-    await logout(existing, () =>
+  const failure = new Error('offline')
+  await assert.rejects(
+    logout(existing, () =>
       provider({
         revoke: async () => {
-          throw new Error('offline')
+          throw failure
         },
       }),
     ),
+    (error) => error === failure,
+  )
+  assert.deepEqual(await existing.read(), session())
+  await assert.rejects(
+    logout(existing, () => provider({ revoke: async () => false })),
     {
-      status: 'logged_out',
-      revocationConfirmed: false,
+      code: 'cli_revocation_unconfirmed',
     },
   )
-  assert.equal(await existing.read(), null)
+  assert.deepEqual(await existing.read(), session())
 })
 
-test('invariant logout removes local tokens when provider configuration is unavailable', async () => {
+test('invariant logout preserves credentials when provider configuration is unavailable', async () => {
   const existing = store(session())
-  assert.deepEqual(
-    await logout(existing, () => {
-      throw new Error('invalid provider configuration')
+  const failure = new Error('invalid provider configuration')
+  await assert.rejects(
+    logout(existing, () => {
+      throw failure
     }),
-    {
-      status: 'logged_out',
-      revocationConfirmed: false,
-    },
+    (error) => error === failure,
   )
-  assert.equal(await existing.read(), null)
+  assert.deepEqual(await existing.read(), session())
 })
 
 test('invariant logout never sends a session to a different provider', async () => {
@@ -372,18 +405,22 @@ test('invariant logout never sends a session to a different provider', async () 
   const otherProvider = provider({
     issuer: 'https://dedalus-as.example.com',
     clientId: 'client_v2',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     revoke: async () => {
       revocations += 1
       return true
     },
   })
 
-  assert.deepEqual(await logout(existing, () => otherProvider), {
-    status: 'logged_out',
-    revocationConfirmed: false,
-  })
+  await assert.rejects(
+    logout(existing, () => otherProvider),
+    {
+      code: 'cli_session_provider_mismatch',
+    },
+  )
   assert.equal(revocations, 0)
-  assert.equal(await existing.read(), null)
+  assert.deepEqual(await existing.read(), session())
 })
 
 test('invariant logout is idempotent without a local OAuth session', async () => {
@@ -393,7 +430,7 @@ test('invariant logout is idempotent without a local OAuth session', async () =>
   })
 })
 
-test('invariant logout can remove an obsolete local credential format', async () => {
+test('invariant logout cannot claim revocation of an unreadable credential', async () => {
   let removed = false
   const obsolete = {
     ...store(),
@@ -406,24 +443,55 @@ test('invariant logout can remove an obsolete local credential format', async ()
     },
   }
 
-  assert.deepEqual(await logout(obsolete, () => provider()), {
-    status: 'logged_out',
-    revocationConfirmed: false,
-  })
-  assert.equal(removed, true)
+  await assert.rejects(
+    logout(obsolete, () => provider()),
+    { code: 'invalid_credential' },
+  )
+  assert.equal(removed, false)
 })
 
-test('invariant logout removes an exposed filesystem credential', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-logout-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const credentialPath = join(root, 'config', 'credentials')
-  const credentialStore = fileCredentialStore(credentialPath)
-  await credentialStore.write(session())
-  await chmod(credentialPath, 0o644)
-
-  assert.deepEqual(await logout(credentialStore, () => provider()), {
-    status: 'logged_out',
-    revocationConfirmed: false,
-  })
-  assert.equal(await credentialStore.read(), null)
+test('invariant logout verifies local absence after acknowledged deletion', async () => {
+  for (const removed of [false, true]) {
+    await assert.rejects(
+      logout({ ...store(session()), remove: async () => removed }, () => provider()),
+      { code: 'cli_credential_store_failed' },
+    )
+  }
 })
+
+test('invariant logout preserves cleanup and verification failures', async () => {
+  const failure = new Error('keyring locked')
+  await assert.rejects(
+    logout(
+      {
+        ...store(session()),
+        remove: async () => {
+          throw failure
+        },
+      },
+      () => provider(),
+    ),
+    (error) => error === failure,
+  )
+
+  let removed = false
+  await assert.rejects(
+    logout(
+      {
+        ...store(session()),
+        read: async () => {
+          if (removed) throw failure
+          return session()
+        },
+        remove: async () => {
+          removed = true
+          return true
+        },
+      },
+      () => provider(),
+    ),
+    (error) => error === failure,
+  )
+})
+
+// @custom end

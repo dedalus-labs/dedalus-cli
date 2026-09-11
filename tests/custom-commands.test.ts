@@ -1,3 +1,5 @@
+// @custom start
+// Exercise authenticated CLI commands.
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import assert from 'node:assert/strict'
@@ -12,6 +14,7 @@ import {
   formatDedalusError as formatError,
 } from '../src/auth/commands.js'
 import { AuthProviderError } from '../src/auth/types.js'
+import { CredentialStorageError } from '../src/auth/credentials.js'
 import { getProgram } from '../src/index.js'
 
 const formatDedalusError = (...args: Parameters<typeof formatError>) => {
@@ -24,13 +27,15 @@ const session = (overrides: Partial<OAuthSession> = {}): OAuthSession => ({
   version: 1,
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.api.dedaluslabs.ai/dcs',
   accessToken: 'oauth-access-token',
   accessTokenExpiresAt: 2_000_000_000_000,
   refreshToken: 'oauth-refresh-token',
   userId: 'user_cli',
   organizationId: 'org_cli',
   organizationName: 'Dedalus Labs',
-  grantedScopes: ['offline_access', 'user:org:read'],
+  grantedScopes: ['offline_access', 'dedalus:cli'],
   ...overrides,
 })
 
@@ -43,15 +48,17 @@ const bearerToken = (value: unknown): unknown => {
 const metadata = {
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.api.dedaluslabs.ai/dcs',
   accessTokenExpiresAt: 2_000_000_000_000,
   userId: 'user_cli',
   organizationId: 'org_cli',
   organizationName: 'Dedalus Labs',
-  grantedScopes: ['offline_access', 'user:org:read'],
+  grantedScopes: ['offline_access', 'dedalus:cli'],
 }
 
 const store = (value: OAuthSession | null = session()): CredentialStore => ({
-  backend: 'file',
+  backend: 'keyring',
   read: async () => value,
   write: async () => {},
   remove: async () => true,
@@ -61,6 +68,8 @@ const store = (value: OAuthSession | null = session()): CredentialStore => ({
 const provider = (overrides: Partial<AuthProvider> = {}): AuthProvider => ({
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.api.dedaluslabs.ai/dcs',
   login: async () => session(),
   refresh: async (value) => value,
   revoke: async () => true,
@@ -84,6 +93,22 @@ const resourceProgram = (onAction: (command: Command) => void) =>
         .option('--format-error <value>')
         .action((...args) => onAction(args.at(-1))),
     )
+
+test('aggregate auth failures preserve safe causes without rendering secrets', () => {
+  const secret = 'private-access-token-must-not-print'
+  const error = new AggregateError(
+    [
+      new AuthProviderError('revocation_failed', { cause: new Error(secret), stage: 'network' }),
+      new CredentialStorageError('storage_unavailable', { cause: new Error(secret) }),
+    ],
+    secret,
+  )
+  const output = formatDedalusError(error, new Command())
+  assert.equal(output.error.causes?.length, 2)
+  assert.equal(JSON.stringify(output).includes(secret), false)
+  assert.match(output.error.message, /revocation was not confirmed/u)
+  assert.match(output.error.message, /storage is unavailable/u)
+})
 
 test('invariant Dedalus custom commands share the generated program', () => {
   const program = getProgram()
@@ -120,32 +145,31 @@ test('invariant nested generated resource names cannot bypass credential injecti
         ),
       )
     addDedalusCommands(program, {
-      environment: { DEDALUS_BASE_URL: 'https://dev.admin.api.dedaluslabs.ai/dcs' },
+      environment: { DEDALUS_BASE_URL: 'https://admin.api.dedaluslabs.ai/dcs' },
       credentialStore: () => store(),
       authProvider: () => provider(),
     })
 
     await program.parseAsync(['node', 'dedalus', 'resources', nestedName, 'get'])
     assert.equal(bearerToken(options.bearerAuth), 'oauth-access-token')
-    assert.equal(options.baseUrl, 'https://dev.admin.api.dedaluslabs.ai/dcs')
+    assert.equal(options.baseUrl, 'https://admin.api.dedaluslabs.ai/dcs')
   }
 })
 
-test('invariant V1 configuration contains only the Clerk public-client bundle', () => {
+test('invariant public configuration contains only the production AS bundle', () => {
   assert.deepEqual(cliAuthConfiguration({}), {
-    issuer: 'https://neat-gator-21.clerk.accounts.dev',
-    clientId: 'W27FJtdP5VDfKMTv',
-    signInURL: 'https://dev.dedaluslabs.ai/cli/sign-in',
+    issuer: 'https://as.dedaluslabs.ai',
+    clientId: 'dedalus-cli',
+    resource: 'https://dcs.dedaluslabs.ai',
+    gatewayURL: 'https://admin.api.dedaluslabs.ai/dcs',
+    signInURL: 'https://www.dedaluslabs.ai/cli/sign-in',
   })
-  assert.deepEqual(
-    cliAuthConfiguration({
-      DEDALUS_SIGN_IN_URL: 'http://127.0.0.1:3000/cli/sign-in',
-    }),
-    {
-      issuer: 'https://neat-gator-21.clerk.accounts.dev',
-      clientId: 'W27FJtdP5VDfKMTv',
-      signInURL: 'http://127.0.0.1:3000/cli/sign-in',
-    },
+  assert.throws(
+    () =>
+      cliAuthConfiguration({
+        DEDALUS_SIGN_IN_URL: 'http://127.0.0.1:3000/cli/sign-in',
+      }),
+    (error) => error instanceof AuthProviderError && error.code === 'invalid_configuration',
   )
   assert.throws(
     () => cliAuthConfiguration({ DEDALUS_SIGN_IN_URL: 'https://website.example.test/cli/sign-in' }),
@@ -161,19 +185,19 @@ test('invariant V1 configuration contains only the Clerk public-client bundle', 
   )
 })
 
-test('invariant a development Clerk token uses only the Admin gateway route', () => {
-  assert.equal(cliOAuthGatewayURL({}), 'https://dev.admin.api.dedaluslabs.ai/dcs')
+test('invariant a production AS token uses only the Admin gateway route', () => {
+  assert.equal(cliOAuthGatewayURL({}), 'https://admin.api.dedaluslabs.ai/dcs')
   assert.throws(
     () => cliOAuthGatewayURL({ DEDALUS_BASE_URL: 'https://api.dedaluslabs.ai' }),
     (error) => error instanceof Error && 'code' in error && error.code === 'environment_mismatch',
   )
   assert.throws(
-    () => cliOAuthGatewayURL({ DEDALUS_BASE_URL: 'https://dev.dcs.dedaluslabs.ai' }),
+    () => cliOAuthGatewayURL({ DEDALUS_BASE_URL: 'https://dcs.example.com' }),
     (error) => error instanceof Error && 'code' in error && error.code === 'environment_mismatch',
   )
   assert.equal(
-    cliOAuthGatewayURL({ DEDALUS_BASE_URL: 'https://dev.admin.api.dedaluslabs.ai/dcs/' }),
-    'https://dev.admin.api.dedaluslabs.ai/dcs',
+    cliOAuthGatewayURL({ DEDALUS_BASE_URL: 'https://admin.api.dedaluslabs.ai/dcs/' }),
+    'https://admin.api.dedaluslabs.ai/dcs',
   )
   assert.throws(
     () =>
@@ -215,7 +239,7 @@ test('invariant generated commands receive stored OAuth only as bearerAuth', asy
     options = command.optsWithGlobals()
   })
   addDedalusCommands(program, {
-    environment: { DEDALUS_BASE_URL: 'https://dev.admin.api.dedaluslabs.ai/dcs' },
+    environment: { DEDALUS_BASE_URL: 'https://admin.api.dedaluslabs.ai/dcs' },
     credentialStore: () => store(),
     authProvider: () => provider(),
   })
@@ -224,7 +248,7 @@ test('invariant generated commands receive stored OAuth only as bearerAuth', asy
   assert.equal(options.apiKey, null)
   assert.equal(options.xApiKey, null)
   assert.equal(bearerToken(options.bearerAuth), 'oauth-access-token')
-  assert.equal(options.baseUrl, 'https://dev.admin.api.dedaluslabs.ai/dcs')
+  assert.equal(options.baseUrl, 'https://admin.api.dedaluslabs.ai/dcs')
 })
 
 test('invariant workload API keys use the generated API-key transport', async () => {
@@ -603,14 +627,14 @@ test('invariant repeat login reports provider-neutral session metadata', async (
   assert.equal(output.includes('oauth-access-token'), false)
 })
 
-test('invariant logout reports partial provider revocation accurately', async () => {
+test('invariant logout reports confirmed revocation and cleanup', async () => {
   let output = ''
   const program = new Command()
   addDedalusCommands(program, {
     auth: () => ({
       login: async () => ({ status: 'logged_in', session: metadata }),
       status: async () => ({ source: 'none' }),
-      logout: async () => ({ status: 'logged_out', revocationConfirmed: false }),
+      logout: async () => ({ status: 'logged_out', revocationConfirmed: true }),
     }),
     writeOutput: (value) => {
       output += value
@@ -622,12 +646,13 @@ test('invariant logout reports partial provider revocation accurately', async ()
   assert.deepEqual(JSON.parse(output), {
     status: 'logged_out',
     local_tokens_removed: true,
-    revocation_confirmed: false,
+    revocation_confirmed: true,
   })
 })
 
-test('invariant logout removes local tokens when provider configuration is invalid', async () => {
+test('invariant logout reports configuration failure without deleting credentials', async () => {
   let output = ''
+  let errors = ''
   let stored: OAuthSession | null = session()
   const credentialStore = {
     ...store(),
@@ -644,16 +669,21 @@ test('invariant logout removes local tokens when provider configuration is inval
     writeOutput: (value) => {
       output += value
     },
+    writeError: (value) => {
+      errors += value
+    },
   })
 
-  await program.parseAsync(['node', 'dedalus', 'auth', 'logout', '--json'])
-
-  assert.deepEqual(JSON.parse(output), {
-    status: 'logged_out',
-    local_tokens_removed: true,
-    revocation_confirmed: false,
-  })
-  assert.equal(stored, null)
+  const previousExitCode = process.exitCode
+  try {
+    await program.parseAsync(['node', 'dedalus', 'auth', 'logout', '--json'])
+    assert.equal(process.exitCode, 1)
+    assert.equal(output, '')
+    assert.equal(JSON.parse(errors).error.code, 'cli_invalid_configuration')
+    assert.deepEqual(stored, session())
+  } finally {
+    process.exitCode = previousExitCode
+  }
 })
 
 test('invariant unexpected auth failures never expose internal detail', async () => {
@@ -1027,47 +1057,16 @@ test('invariant a missing credential is reported as source none without a fake H
   assert.equal(networkCalls, 0)
 })
 
-test('invariant staging auth requires an explicit client and stays within staging', () => {
-  const environment = {
-    DEDALUS_CLERK_ISSUER: 'https://clerk.staging.dedaluslabs.ai',
-    DEDALUS_CLERK_CLIENT_ID: 'fixture_staging_client',
-  }
-  assert.deepEqual(cliAuthConfiguration(environment), {
-    issuer: environment.DEDALUS_CLERK_ISSUER,
-    clientId: environment.DEDALUS_CLERK_CLIENT_ID,
-    signInURL: 'https://staging.dedaluslabs.ai/cli/sign-in',
-  })
-  assert.equal(cliOAuthGatewayURL(environment), 'https://staging.admin.api.dedaluslabs.ai/dcs')
+test('invariant unconfigured gateways never receive stored credentials', () => {
   for (const DEDALUS_BASE_URL of [
-    'https://dev.admin.api.dedaluslabs.ai/dcs',
-    'https://admin.api.dedaluslabs.ai/dcs',
-    'https://staging.dcs.dedaluslabs.ai',
+    'https://other.example.com/dcs',
+    'https://dcs.dedaluslabs.ai',
+    'https://admin.api.dedaluslabs.ai/dcs/v1',
   ]) {
     assert.throws(
-      () => cliOAuthGatewayURL({ ...environment, DEDALUS_BASE_URL }),
+      () => cliOAuthGatewayURL({ DEDALUS_BASE_URL }),
       (error) => error instanceof Error && 'code' in error && error.code === 'environment_mismatch',
     )
   }
-  assert.throws(
-    () =>
-      cliAuthConfiguration({
-        ...environment,
-        DEDALUS_SIGN_IN_URL: 'https://dev.dedaluslabs.ai/cli/sign-in',
-      }),
-    (error) => error instanceof Error && 'code' in error && error.code === 'invalid_configuration',
-  )
-  for (const clientId of [undefined, '', 'W27FJtdP5VDfKMTv', ' invalid ']) {
-    assert.throws(
-      () => cliAuthConfiguration({ ...environment, DEDALUS_CLERK_CLIENT_ID: clientId }),
-      (error) =>
-        error instanceof Error && 'code' in error && error.code === 'invalid_configuration',
-    )
-  }
-  assert.throws(
-    () =>
-      cliOAuthGatewayURL({
-        DEDALUS_BASE_URL: 'https://staging.admin.api.dedaluslabs.ai/dcs',
-      }),
-    (error) => error instanceof Error && 'code' in error && error.code === 'environment_mismatch',
-  )
 })
+// @custom end

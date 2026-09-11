@@ -1,3 +1,5 @@
+// @custom start
+// Verify the executable reports the package release version.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
@@ -42,3 +44,4 @@ test('invariant released ESM, CommonJS and executable versions follow the packag
     await rm(directory, { recursive: true, force: true })
   }
 })
+// @custom end

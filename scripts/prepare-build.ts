@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Removes generated output so a build cannot publish files from an older source tree. */
 
 import { readFile, rm, writeFile } from 'node:fs/promises'
@@ -23,3 +23,4 @@ await writeFile(
   resolve(root, 'src/cli/version.generated.ts'),
   `// Generated from package.json by scripts/prepare-build.ts.\nexport const version = ${JSON.stringify(version)}\n`,
 )
+// @custom end

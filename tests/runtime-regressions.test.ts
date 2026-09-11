@@ -1,3 +1,5 @@
+// @custom start
+// Exercise authentication and output through the generated runtime.
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import test from 'node:test'
@@ -103,3 +105,4 @@ test('invariant delayed piped JSON reaches generated commands', async () => {
   const { stdout } = await runProgram(source, '{"slow":true}', 100)
   assert.deepEqual(JSON.parse(stdout), { slow: true })
 })
+// @custom end

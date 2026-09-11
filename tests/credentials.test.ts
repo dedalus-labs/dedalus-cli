@@ -1,34 +1,32 @@
-import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
-import type { CredentialStore } from '../src/auth/credentials.js'
+// @custom start
+// Check local credential storage and serialization.
+import type { OAuthSession } from '../src/auth/types.js'
 import assert from 'node:assert/strict'
-import { execFile } from 'node:child_process'
-import { chmod, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { promisify } from 'node:util'
 
 import {
   CredentialStorageError,
-  defaultCredentialStore,
-  fileCredentialStore,
+  withLifecycleLock,
   keyringCredentialStore,
   resolveCredential,
 } from '../src/auth/credentials.js'
-
-const run = promisify(execFile)
 
 const session = (overrides: Partial<OAuthSession> = {}): OAuthSession => ({
   version: 1,
   issuer: 'https://clerk.example.com',
   clientId: 'client_cli',
+  resource: 'https://dcs.example.com',
+  gatewayURL: 'https://admin.example.com/dcs',
   accessToken: 'oauth-access-token',
   accessTokenExpiresAt: 2_000_000_000_000,
   refreshToken: 'oauth-refresh-token',
   userId: 'user_cli',
   organizationId: 'org_cli',
   organizationName: 'Dedalus Labs',
-  grantedScopes: ['offline_access', 'user:org:read'],
+  grantedScopes: ['offline_access', 'dedalus:cli'],
   ...overrides,
 })
 
@@ -128,30 +126,18 @@ test('invariant a stored OAuth token is selected only without a workload overrid
   )
 })
 
-test('invariant filesystem storage persists the provider-neutral token set privately', async (context) => {
+test('invariant credential lifecycle mutations are serialized across callers', async (context) => {
   const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
   context.after(() => rm(root, { recursive: true, force: true }))
-  const credentialPath = join(root, 'config', 'credentials')
-  const store = fileCredentialStore(credentialPath)
-
-  await store.write(session())
-
-  assert.deepEqual(await store.read(), session())
-  assert.equal((await stat(join(root, 'config'))).mode & 0o777, 0o700)
-  assert.equal((await stat(credentialPath)).mode & 0o777, 0o600)
-  const persisted = JSON.parse(await readFile(credentialPath, 'utf8'))
-  assert.equal(persisted.access_token, 'oauth-access-token')
-  assert.equal(persisted.refresh_token, 'oauth-refresh-token')
-  assert.equal(persisted.org_id, 'org_cli')
-  assert.equal('api_key' in persisted, false)
-})
-
-test('invariant filesystem lifecycle mutations are serialized across stores', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const credentialPath = join(root, 'config', 'credentials')
-  const firstStore = fileCredentialStore(credentialPath)
-  const secondStore = fileCredentialStore(credentialPath)
+  const credentialPath = join(root, 'credentials')
+  const firstStore = {
+    withLifecycleLock: <T>(operation: () => Promise<T>) =>
+      withLifecycleLock(credentialPath, operation),
+  }
+  const secondStore = {
+    withLifecycleLock: <T>(operation: () => Promise<T>) =>
+      withLifecycleLock(credentialPath, operation),
+  }
   const events: string[] = []
   let enterFirst!: () => void
   let releaseFirst!: () => void
@@ -178,97 +164,6 @@ test('invariant filesystem lifecycle mutations are serialized across stores', as
   releaseFirst()
   await Promise.all([first, second])
   assert.deepEqual(events, ['first:start', 'first:end', 'second'])
-})
-
-test('invariant filesystem storage rejects token files readable by other users', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const credentialPath = join(root, 'config', 'credentials')
-  const store = fileCredentialStore(credentialPath)
-  await store.write(session())
-  await chmod(credentialPath, 0o644)
-
-  await assert.rejects(
-    store.read(),
-    (error) => error instanceof CredentialStorageError && error.code === 'insecure_permissions',
-  )
-})
-
-test('invariant filesystem storage rejects oversized credential files', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const credentialPath = join(root, 'config', 'credentials')
-  const credentialStore = fileCredentialStore(credentialPath)
-  await credentialStore.write(session())
-  await writeFile(credentialPath, ' '.repeat(513 * 1024), { mode: 0o600 })
-
-  await assert.rejects(
-    credentialStore.read(),
-    (error) => error instanceof CredentialStorageError && error.code === 'invalid_credential',
-  )
-})
-
-test('invariant filesystem storage never follows a credential symlink', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const targetPath = join(root, 'target', 'credentials')
-  await fileCredentialStore(targetPath).write(session())
-  const linkDirectory = join(root, 'link')
-  await mkdir(linkDirectory, { mode: 0o700 })
-  const linkPath = join(linkDirectory, 'credentials')
-  await symlink(targetPath, linkPath)
-  const linkedStore = fileCredentialStore(linkPath)
-
-  await assert.rejects(
-    linkedStore.read(),
-    (error) => error instanceof CredentialStorageError && error.code === 'insecure_permissions',
-  )
-  await assert.rejects(
-    linkedStore.remove(),
-    (error) => error instanceof CredentialStorageError && error.code === 'insecure_permissions',
-  )
-  assert.deepEqual(await fileCredentialStore(targetPath).read(), session())
-})
-
-test('invariant a non-regular credential path cannot block reads', async (context) => {
-  if (process.platform === 'win32') return context.skip('FIFOs are POSIX-only')
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const directory = join(root, 'config')
-  const credentialPath = join(directory, 'credentials')
-  await mkdir(directory, { mode: 0o700 })
-  await run('mkfifo', [credentialPath])
-  await chmod(credentialPath, 0o600)
-
-  await assert.rejects(
-    fileCredentialStore(credentialPath).read(),
-    (error) => error instanceof CredentialStorageError && error.code === 'insecure_permissions',
-  )
-})
-
-test('invariant filesystem removal rejects an unsafe parent directory', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const directory = join(root, 'config')
-  const credentialPath = join(directory, 'credentials')
-  const credentialStore = fileCredentialStore(credentialPath)
-  await credentialStore.write(session())
-  await chmod(directory, 0o755)
-
-  await assert.rejects(
-    credentialStore.remove(),
-    (error) => error instanceof CredentialStorageError && error.code === 'insecure_permissions',
-  )
-  assert.equal((await stat(credentialPath)).isFile(), true)
-})
-
-test('invariant filesystem removal is idempotent for a missing credential', async (context) => {
-  const root = await mkdtemp(join(tmpdir(), 'dedalus-credentials-'))
-  context.after(() => rm(root, { recursive: true, force: true }))
-  const directory = join(root, 'config')
-  await mkdir(directory, { mode: 0o700 })
-
-  assert.equal(await fileCredentialStore(join(directory, 'credentials')).remove(), false)
 })
 
 test('invariant legacy raw-key storage cannot be interpreted as an OAuth session', async () => {
@@ -318,17 +213,18 @@ test('invariant a missing native keyring entry is not a corrupt credential', asy
   assert.equal(await store.read(), null)
 })
 
-test('invariant an empty keyring record fails closed', async () => {
-  const store = keyringCredentialStore(async () => ({
-    getPassword: async () => '',
-    setPassword: async () => {},
-    deleteCredential: async () => false,
-  }))
-
-  await assert.rejects(
-    store.read(),
-    (error) => error instanceof CredentialStorageError && error.code === 'invalid_credential',
-  )
+test('invariant malformed or oversized keyring records fail closed', async () => {
+  for (const raw of ['', ' '.repeat(513 * 1024)]) {
+    const store = keyringCredentialStore(async () => ({
+      getPassword: async () => raw,
+      setPassword: async () => {},
+      deleteCredential: async () => false,
+    }))
+    await assert.rejects(
+      store.read(),
+      (error) => error instanceof CredentialStorageError && error.code === 'invalid_credential',
+    )
+  }
 })
 
 test('invariant stored expiry must be printable as an ISO timestamp', async () => {
@@ -344,15 +240,4 @@ test('invariant stored expiry must be printable as an ISO timestamp', async () =
   )
 })
 
-test('invariant credential backend selection follows the host platform', () => {
-  assert.equal(defaultCredentialStore({ platform: 'darwin', environment: {} }).backend, 'keyring')
-  assert.equal(defaultCredentialStore({ platform: 'win32', environment: {} }).backend, 'keyring')
-  assert.equal(
-    defaultCredentialStore({
-      platform: 'linux',
-      environment: {},
-      credentialPath: '/tmp/dedalus-test-credentials',
-    }).backend,
-    'file',
-  )
-})
+// @custom end

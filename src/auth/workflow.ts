@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Stored OAuth 2.0 session lifecycle for command-line authentication.
  *
@@ -24,7 +24,10 @@ const refreshSkewMs = 60 * 1000
 
 export class CLIAuthWorkflowError extends Error {
   readonly code:
-    'cli_credential_store_failed' | 'cli_session_identity_changed' | 'cli_session_provider_mismatch'
+    | 'cli_credential_store_failed'
+    | 'cli_revocation_unconfirmed'
+    | 'cli_session_identity_changed'
+    | 'cli_session_provider_mismatch'
 
   constructor(code: CLIAuthWorkflowError['code'], options?: ErrorOptions) {
     super(code, options)
@@ -56,26 +59,26 @@ export type AuthStatus =
 
 export type LogoutResult =
   | { readonly status: 'not_logged_in'; readonly revocationConfirmed: false }
-  | { readonly status: 'logged_out'; readonly revocationConfirmed: boolean }
+  | { readonly status: 'logged_out'; readonly revocationConfirmed: true }
 
 export const login = async (dependencies: LoginDependencies): Promise<LoginResult> =>
   dependencies.store.withLifecycleLock(async () => {
     const existing = await dependencies.store.read()
+    if (existing) requireProviderBinding(existing, dependencies.provider)
     if (
       existing &&
       existing.accessTokenExpiresAt > (dependencies.now ?? Date.now)() + refreshSkewMs
     ) {
-      requireProviderBinding(existing, dependencies.provider)
       return { status: 'already_signed_in', session: oauthSessionMetadata(existing) }
+    }
+    if (existing) {
+      const refreshed = await refreshSession(dependencies.store, dependencies.provider, existing)
+      return { status: 'logged_in', session: oauthSessionMetadata(refreshed) }
     }
 
     const session = await dependencies.provider.login()
     requireProviderBinding(session, dependencies.provider)
-    try {
-      await dependencies.store.write(session)
-    } catch (error) {
-      throw new CLIAuthWorkflowError('cli_credential_store_failed', { cause: error })
-    }
+    await persistSession(dependencies.store, dependencies.provider, session)
     return { status: 'logged_in', session: oauthSessionMetadata(session) }
   })
 
@@ -112,34 +115,21 @@ export const logout = async (
   provider: AuthProviderFactory,
 ): Promise<LogoutResult> =>
   store.withLifecycleLock(async () => {
-    let session: OAuthSession | null
-    try {
-      session = await store.read()
-    } catch (error) {
-      if (
-        !(error instanceof CredentialStorageError) ||
-        (error.code !== 'invalid_credential' && error.code !== 'insecure_permissions')
-      ) {
-        throw error
-      }
-      const removed = await store.remove()
-      if (!removed) throw new CLIAuthWorkflowError('cli_credential_store_failed')
-      return { status: 'logged_out', revocationConfirmed: false }
-    }
+    const session = await store.read()
     if (!session) return { status: 'not_logged_in', revocationConfirmed: false }
 
-    let revocationConfirmed = false
-    try {
-      const configuredProvider = provider()
-      requireProviderBinding(session, configuredProvider)
-      revocationConfirmed = await configuredProvider.revoke(session)
-    } catch {
-      revocationConfirmed = false
+    const configuredProvider = provider()
+    requireProviderBinding(session, configuredProvider)
+    if (!(await configuredProvider.revoke(session))) {
+      throw new CLIAuthWorkflowError('cli_revocation_unconfirmed')
     }
 
     const removed = await store.remove()
-    if (!removed) throw new CLIAuthWorkflowError('cli_credential_store_failed')
-    return { status: 'logged_out', revocationConfirmed }
+    if (!removed || (await store.read()) !== null) {
+      throw new CLIAuthWorkflowError('cli_credential_store_failed')
+    }
+    permanentFailures.delete(store)
+    return { status: 'logged_out', revocationConfirmed: true }
   })
 
 /** Recover a rejected token under the same lock used by proactive refresh. */
@@ -211,13 +201,28 @@ const refreshSession = async (
   if (refreshed.userId !== session.userId || refreshed.organizationId !== session.organizationId) {
     throw new CLIAuthWorkflowError('cli_session_identity_changed')
   }
-  try {
-    await store.write(refreshed)
-  } catch (error) {
-    throw new CLIAuthWorkflowError('cli_credential_store_failed', { cause: error })
-  }
+  await persistSession(store, provider, refreshed)
   permanentFailures.delete(store)
   return refreshed
+}
+
+const persistSession = async (
+  store: CredentialStore,
+  provider: AuthProvider,
+  session: OAuthSession,
+): Promise<void> => {
+  try {
+    await store.write(session)
+  } catch (cause) {
+    const failure = new CLIAuthWorkflowError('cli_credential_store_failed', { cause })
+    try {
+      if (!(await provider.revoke(session)))
+        throw new CLIAuthWorkflowError('cli_revocation_unconfirmed')
+    } catch (cleanup) {
+      throw new AggregateError([failure, cleanup], 'Credential storage and token cleanup failed')
+    }
+    throw failure
+  }
 }
 
 const requireStoredSession = async (store: CredentialStore): Promise<OAuthSession> => {
@@ -227,7 +232,12 @@ const requireStoredSession = async (store: CredentialStore): Promise<OAuthSessio
 }
 
 const requireProviderBinding = (session: OAuthSession, provider: AuthProvider): void => {
-  if (session.issuer !== provider.issuer || session.clientId !== provider.clientId) {
+  if (
+    session.issuer !== provider.issuer ||
+    session.clientId !== provider.clientId ||
+    session.resource !== provider.resource ||
+    session.gatewayURL !== provider.gatewayURL
+  ) {
     throw new CLIAuthWorkflowError('cli_session_provider_mismatch')
   }
 }
@@ -240,3 +250,4 @@ export const selectedCredential = async (
     ...resolution,
     storedAccessToken: async () => (await store().read())?.accessToken ?? null,
   })
+// @custom end

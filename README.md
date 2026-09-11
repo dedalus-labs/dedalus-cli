@@ -54,8 +54,8 @@ the DCS OpenAPI input. Handwritten code lives with its feature: `src/auth` owns
 login and credentials, `src/ssh/connect.ts` owns the interactive connection, and
 `src/cli/program.ts` assembles the executable.
 
-Mark handwritten modules and modifications with `// @custom`, followed by a normal
-comment explaining the intent. Preserve Scalar's generated provenance headers.
+Wrap handwritten modules and modifications in `// @custom start` and
+`// @custom end`, with a normal comment explaining each range. Preserve Scalar's generated provenance headers.
 These markers document ownership; they do not exempt code from review or tests.
 Scalar carries edits on `scalar-next` through its three-way merge.
 
@@ -111,8 +111,8 @@ WebSocket commands stay connected and stream messages. Use `--send <json>` to se
 
 ## Authentication
 
-Sign in through the browser with Clerk Authorization Code and S256 Proof Key
-for Code Exchange (PKCE). The command-line interface (CLI) stores Clerk's OAuth
+Sign in through Dedalus with Authorization Code and S256 Proof Key
+for Code Exchange (PKCE). The command-line interface (CLI) stores Dedalus OAuth
 2.0 token set in protected local storage and uses the access token for
 authenticated requests:
 
@@ -130,11 +130,11 @@ falls back to another source. `--offline` reads only stored status metadata.
 Add `--json` to auth or generated resource commands for structured output that
 excludes secret values.
 
-Browser login defaults to the development environment and also supports the
-configured staging environment. Each OAuth session is restricted to the gateway
-for its configured issuer. Production browser login is not configured in this
-version. See [authentication configuration](./src/auth/README.md#configuration)
-for supported overrides.
+Browser login uses production. The browser asks you to select an organization
+and authorize the CLI. Tokens remain opaque to the CLI and are bound to the
+configured issuer, resource, and gateway. Credentials require the native OS
+keyring. Logout succeeds only after both token revocations and local removal
+are confirmed. A network or cleanup failure makes the command fail.
 
 Workload credentials may also be supplied explicitly:
 

@@ -898,7 +898,10 @@ const resolveBinPath = (): string => {
     if (parent === dir) break;
     dir = parent;
   }
+  // @custom start
+  // Direct the user to build the package before running the smoke test.
   throw new Error('Could not locate the built CLI binary; run the package build first.');
+  // @custom end
 };
 
 /**
@@ -955,13 +958,15 @@ const main = async (): Promise<void> => {
       try {
         // Pass the current environment through so the embedded SDK picks up the base URL and
         // credentials; node runs the built bin exactly as the published executable would.
-        // @custom: mirror the public space-separated resource path in the smoke harness.
+        // @custom start
+        // Mirror the public space-separated resource path in the smoke harness.
         const [resource, ...args] = testCase.args;
         await execFileAsync('node', [binPath, ...(resource?.split(':') ?? []), ...args], {
           env: process.env,
           timeout: COMMAND_TIMEOUT_MS,
           maxBuffer: 1024 * 1024 * 20,
         });
+        // @custom end
         results[index] = { ...identity, status: 'passed', durationMs: Date.now() - startedAt };
       } catch (error) {
         // Surface stderr (commander/runtime error output) when present; fall back to the message.

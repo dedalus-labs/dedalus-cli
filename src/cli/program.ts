@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /** Assemble authentication around Scalar's generated command tree. */
 import type { Command } from 'commander'
 import { getProgram as getGeneratedProgram } from '../commands/index.js'
@@ -20,3 +20,4 @@ export const getProgram = (): Command => {
   installCompletion(program)
   return program
 }
+// @custom end

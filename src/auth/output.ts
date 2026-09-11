@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Secret-safe output for command-line authentication and generated API errors.
  *
@@ -30,6 +30,7 @@ type SafeAuthError = {
   readonly retryable: boolean
   readonly http_status?: number
   readonly credential_source?: CredentialSource
+  readonly causes?: readonly SafeAuthError[]
 }
 
 type AuthErrorResponse = { readonly error: SafeAuthError }
@@ -48,7 +49,8 @@ export const formatDedalusError = (
   if (
     error instanceof AuthProviderError ||
     error instanceof CredentialStorageError ||
-    error instanceof CLIAuthWorkflowError
+    error instanceof CLIAuthWorkflowError ||
+    error instanceof AggregateError
   ) {
     const safe = safeAuthError(error, selected?.source ?? 'none')
     return { error: safe }
@@ -236,9 +238,7 @@ const sessionOutput = (session: LoginResult['session']): Record<string, unknown>
 export const logoutOutput = (result: LogoutResult): AuthOutput =>
   result.status === 'logged_out'
     ? {
-        message: result.revocationConfirmed
-          ? 'Logged out and provider revocation was confirmed.'
-          : 'Logged out locally; provider revocation could not be confirmed.',
+        message: 'Logged out. Provider revocation and local credential removal were confirmed.',
         value: {
           status: 'logged_out',
           local_tokens_removed: true,
@@ -282,6 +282,16 @@ export const runAuthAction = async ({
 }
 
 const safeAuthError = (error: unknown, source: CredentialSource = 'none'): SafeAuthError => {
+  if (error instanceof AggregateError) {
+    const causes = error.errors.map((cause: unknown) => safeAuthError(cause, source))
+    return {
+      code: 'cli_authentication_failed',
+      message: `Authentication failed: ${causes.map((cause) => cause.message).join(' ')}`,
+      retryable: causes.every((cause) => cause.retryable),
+      credential_source: source,
+      causes,
+    }
+  }
   if (error instanceof AuthProviderError) {
     const providerCode = safeExternalErrorCode(error.code) ?? 'oauth_error'
     const status = validHTTPStatus(error.status)
@@ -362,6 +372,19 @@ const providerMessage = (code: AuthProviderError['code']): string => {
     case 'invalid_client':
     case 'invalid_configuration':
       return 'CLI authentication configuration is invalid.'
+    case 'configuration_unavailable':
+    case 'configuration_cleanup_failed':
+      return 'The private authentication configuration could not be read or closed.'
+    case 'revocation_failed':
+      return 'Logout revocation was not confirmed. Credentials were retained. Retry logout.'
+    case 'response_cleanup_failed':
+    case 'callback_cleanup_failed':
+      return 'Authentication cleanup failed. The operation did not complete.'
+    case 'response_read_failed':
+    case 'invalid_json_response':
+    case 'invalid_response_encoding':
+    case 'response_too_large':
+      return 'The authentication service returned an unreadable or invalid response.'
     case 'invalid_grant':
       return "Login expired or could not be verified. Run 'dedalus auth logout', then 'dedalus auth login'."
     case 'invalid_scope':
@@ -442,10 +465,13 @@ const credentialStorageMessage = (code: CredentialStorageError['code']): string 
 const workflowMessage = (code: CLIAuthWorkflowError['code']): string => {
   switch (code) {
     case 'cli_credential_store_failed':
-      return 'Authentication succeeded, but the CLI could not update local token storage.'
+      return 'The CLI could not complete the local credential update.'
+    case 'cli_revocation_unconfirmed':
+      return 'Logout failed because revocation was not confirmed. Credentials were retained. Retry logout.'
     case 'cli_session_identity_changed':
       return "The refreshed login changed identity or organization. Run 'dedalus auth logout', then sign in again."
     case 'cli_session_provider_mismatch':
-      return "The stored login belongs to a different authentication provider. Run 'dedalus auth logout', then sign in again."
+      return 'The stored login belongs to another issuer, resource, or gateway. Restore its configuration before logging out.'
   }
 }
+// @custom end

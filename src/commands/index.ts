@@ -4,6 +4,7 @@ import type { Command } from 'commander';
 import SDK from '../sdk/index';
 import { createProgram, type CreateProgramOptions, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
 import { completions } from '../cli/completions';
+import { addMachineAliases } from '../custom/machines.js';
 
 const clientOptions = [
   {
@@ -1475,10 +1476,10 @@ const commands = [
   },
 ] as const satisfies readonly CliCommandDefinition[];
 
-// @custom
+// @custom start
 // Supply authentication through the generated entry point.
 export const getProgram = (overrides: Partial<CreateProgramOptions<SDK>> = {}): Command =>
-  createProgram({
+  addMachineAliases(createProgram({
     SDK,
     binaryName: 'dedalus',
     version: '0.5.0', // x-release-please-version
@@ -1489,4 +1490,5 @@ export const getProgram = (overrides: Partial<CreateProgramOptions<SDK>> = {}): 
     commands,
     completions,
     ...overrides,
-  });
+  }), clientOptions);
+// @custom end

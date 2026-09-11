@@ -1,3 +1,5 @@
+// @custom start
+// Exercise credential renewal after rejected requests.
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { AuthenticatedCommandClient } from '../src/auth/client.js'
@@ -7,6 +9,7 @@ import { AuthProviderError } from '../src/auth/types.js'
 import type { OAuthSession, AuthProvider } from '../src/auth/types.js'
 import type { CredentialStore } from '../src/auth/credentials.js'
 import { APIError } from '../src/sdk/core/error.js'
+import { getProgram } from '../src/commands/index.js'
 
 const fixture = async (
   respond: (request: number, headers: Headers) => number,
@@ -17,17 +20,19 @@ const fixture = async (
     version: 1,
     issuer: 'https://clerk.test',
     clientId: 'client',
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     accessToken: 'old',
     refreshToken: 'refresh-old',
     accessTokenExpiresAt: Date.now() + 3600000,
     userId: 'user',
     organizationId: 'org',
-    grantedScopes: ['offline_access', 'user:org:read'],
+    grantedScopes: ['offline_access', 'dedalus:cli'],
   }
   let lock = Promise.resolve()
   let refreshes = 0
   const store: CredentialStore = {
-    backend: 'file',
+    backend: 'keyring',
     read: async () => saved,
     write: async (value) => {
       saved = value
@@ -45,6 +50,8 @@ const fixture = async (
   const provider: AuthProvider = {
     issuer: saved.issuer,
     clientId: saved.clientId,
+    resource: 'https://dcs.example.com',
+    gatewayURL: 'https://admin.example.com/dcs',
     refresh: async (s) => {
       refreshes++
       if (refreshError?.()) throw refreshError()
@@ -56,23 +63,41 @@ const fixture = async (
     revoke: async () => false,
   }
   const requests: { headers: Headers; body: BodyInit | null | undefined }[] = []
+  const fetch: typeof globalThis.fetch = async (url, init) => {
+    requests.push({ headers: new Headers(init?.headers), body: init?.body })
+    const status = respond(requests.length, new Headers(init?.headers))
+    return new Response(
+      JSON.stringify(status === 200 ? responseBody(url) : { error_code: 'invalid_token' }),
+      { status, headers: { 'content-type': 'application/json' } },
+    )
+  }
   const client = new AuthenticatedCommandClient({
     apiKey: null,
     xAPIKey: null,
     bearerAuth: await recoverableBearer('old', store, provider),
     baseURL: 'https://gateway.test',
     maxRetries: 0,
-    fetch: async (url, init) => {
-      requests.push({ headers: new Headers(init?.headers), body: init?.body })
-      const status = respond(requests.length, new Headers(init?.headers))
-      return new Response(
-        JSON.stringify(status === 200 ? responseBody(url) : { error_code: 'invalid_token' }),
-        { status, headers: { 'content-type': 'application/json' } },
-      )
-    },
+    fetch,
   })
-  return { client, requests, refreshes: () => refreshes, store, session: () => saved }
+  return { client, fetch, requests, refreshes: () => refreshes, store, session: () => saved }
 }
+
+test('invariant_machine_aliases_recover_oauth_without_repeating_mutations', async (t) => {
+  const machineID = 'dm-12345678-1234-4234-8234-123456789abc'
+  const f = await fixture((n) => (n === 1 ? 401 : 200), undefined,
+    () => ({ machine_id: machineID, name: 'build-box' }))
+  t.mock.method(globalThis, 'fetch', f.fetch)
+  t.mock.method(process.stdout, 'write', () => true)
+  const program = getProgram()
+  program.setOptionValue('bearerAuth', f.client.bearerAuth)
+  program.setOptionValue('baseUrl', 'https://gateway.test')
+  await program.parseAsync(['rename', machineID, 'build-box'], { from: 'user' })
+  assert.equal(f.refreshes(), 1)
+  assert.equal(f.requests.length, 2)
+  assert.equal(f.requests[0]?.body, f.requests[1]?.body)
+  assert.equal(f.requests[0]?.headers.get('idempotency-key'),
+    f.requests[1]?.headers.get('idempotency-key'))
+})
 
 test('401 refresh retries once with identical mutation body and idempotency key', async () => {
   const f = await fixture((n) => (n === 1 ? 401 : 200))
@@ -230,3 +255,4 @@ test('transient retries cannot start a second OAuth recovery for one request', a
   assert.equal(f.refreshes(), 1)
   assert.equal(f.requests.length, 3)
 })
+// @custom end

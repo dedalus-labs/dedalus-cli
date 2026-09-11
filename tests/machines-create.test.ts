@@ -171,20 +171,22 @@ test('SSH fails closed when create omits machine_id', async () => {
 test('create and SSH share stored OAuth gateway authentication', async () => {
   const session: OAuthSession = {
     version: 1,
-    issuer: 'https://clerk.example.com',
-    clientId: 'client_cli',
+    issuer: 'https://as.dedaluslabs.ai',
+    clientId: 'dedalus-cli',
+    resource: 'https://dcs.dedaluslabs.ai',
+    gatewayURL: 'https://admin.api.dedaluslabs.ai/dcs',
     accessToken: 'fixture-access',
     accessTokenExpiresAt: 2_000_000_000_000,
     refreshToken: 'fixture-refresh',
     userId: 'user_cli',
     organizationId: 'org_cli',
     organizationName: 'Test',
-    grantedScopes: ['offline_access', 'user:org:read'],
+    grantedScopes: ['offline_access', 'dedalus:cli'],
   }
   const f = fixture({
-    environment: { DEDALUS_BASE_URL: 'https://dev.admin.api.dedaluslabs.ai/dcs' },
+    environment: {},
     credentialStore: () => ({
-      backend: 'file',
+      backend: 'keyring',
       read: async () => session,
       write: async () => {},
       remove: async () => true,
@@ -193,6 +195,8 @@ test('create and SSH share stored OAuth gateway authentication', async () => {
     authProvider: () => ({
       issuer: session.issuer,
       clientId: session.clientId,
+      resource: session.resource,
+      gatewayURL: session.gatewayURL,
       login: async () => session,
       revoke: async () => true,
       refresh: async (value) => value,
@@ -202,7 +206,7 @@ test('create and SSH share stored OAuth gateway authentication', async () => {
   assert.deepEqual(f.connections, ['dm-created'])
   assert.equal(f.calls.length, 3)
   for (const request of f.calls) {
-    assert.ok(request.url.startsWith('https://dev.admin.api.dedaluslabs.ai/dcs/v1/machines'))
+    assert.ok(request.url.startsWith(`${session.gatewayURL}/v1/machines`))
     assert.equal(request.headers.get('authorization'), 'Bearer fixture-access')
     assert.equal(request.headers.get('x-api-key'), null)
   }

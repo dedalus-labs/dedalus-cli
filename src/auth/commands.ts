@@ -1,4 +1,4 @@
-// @custom
+// @custom start
 /**
  * Dedalus-owned commands and authentication for the generated command-line interface.
  *
@@ -14,7 +14,9 @@ import {
   hasCredentialCustomHeader,
   type CredentialStore,
 } from './credentials.js'
-import { createClerkAuthProvider } from './oauth.js'
+import { createDedalusAuthProvider } from './oauth.js'
+import { cliAuthConfiguration } from './configuration.js'
+export { cliAuthConfiguration } from './configuration.js'
 import {
   formatDedalusError,
   loginOutput,
@@ -24,7 +26,7 @@ import {
   type SelectedCredential,
   statusOutput,
 } from './output.js'
-import { AuthProviderError, type AuthProvider } from './types.js'
+import type { AuthProvider } from './types.js'
 import {
   accessTokenForCommand,
   type AuthStatus,
@@ -40,13 +42,6 @@ import { recoverableBearer } from './recovery.js'
 
 const authCommandName = 'auth'
 const completionCommandName = 'completion'
-const defaultClerkIssuer = 'https://neat-gator-21.clerk.accounts.dev'
-const defaultClerkClientID = 'W27FJtdP5VDfKMTv'
-const defaultSignInURL = 'https://dev.dedaluslabs.ai/cli/sign-in'
-const developmentGatewayURL = 'https://dev.admin.api.dedaluslabs.ai/dcs'
-const stagingClerkIssuer = 'https://clerk.staging.dedaluslabs.ai'
-const stagingSignInURL = 'https://staging.dedaluslabs.ai/cli/sign-in'
-const stagingGatewayURL = 'https://staging.admin.api.dedaluslabs.ai/dcs'
 
 export { formatDedalusError }
 
@@ -90,7 +85,7 @@ export const addDedalusCommands = (
   const credentialStore =
     options.credentialStore ??
     (() => {
-      stored ??= defaultCredentialStore({ environment })
+      stored ??= defaultCredentialStore()
       return stored
     })
   let configuredProvider: AuthProvider | undefined
@@ -130,7 +125,7 @@ const createAuthCommand = ({
 
   auth
     .command('login')
-    .description('Sign in through Clerk and store the OAuth session')
+    .description('Sign in to Dedalus and store the OAuth session')
     .option('--json', 'Print structured JSON output')
     .action(async (_commandOptions: unknown, command: Command) =>
       runAuthAction({
@@ -147,7 +142,7 @@ const createAuthCommand = ({
     .description('Show the active credential source without revealing secrets')
     .option('--api-key <value>', 'Inspect an explicit Bearer API-key override')
     .option('--x-api-key <value>', 'Inspect an explicit X-API-Key override')
-    .option('--offline', 'Read stored session metadata without contacting Clerk')
+    .option('--offline', 'Read stored session metadata without contacting Dedalus')
     .option('--json', 'Print structured JSON output')
     .action(
       async (
@@ -172,7 +167,7 @@ const createAuthCommand = ({
 
   auth
     .command('logout')
-    .description('Revoke the provider token when possible and remove local tokens')
+    .description('Revoke the OAuth session and verify local credential removal')
     .option('--json', 'Print structured JSON output')
     .action(async (_commandOptions: unknown, command: Command) =>
       runAuthAction({
@@ -216,7 +211,7 @@ const jsonRequested = (command: Command): boolean =>
 
 const defaultAuthProvider = (
   environment: Readonly<Record<string, string | undefined>>,
-): AuthProvider => createClerkAuthProvider(cliAuthConfiguration(environment))
+): AuthProvider => createDedalusAuthProvider(cliAuthConfiguration(environment))
 
 const defaultAuthOperations = (
   environment: Readonly<Record<string, string | undefined>>,
@@ -227,68 +222,6 @@ const defaultAuthOperations = (
   status: (flags, offline) => status({ flags, environment }, store, provider, offline),
   logout: () => logout(store(), provider),
 })
-
-export const cliAuthConfiguration = (
-  environment: Readonly<Record<string, string | undefined>>,
-): {
-  readonly issuer: string
-  readonly clientId: string
-  readonly signInURL: string
-} => {
-  const issuerOverride = environment.DEDALUS_CLERK_ISSUER
-  const clientIDOverride = environment.DEDALUS_CLERK_CLIENT_ID
-  if (issuerOverride === stagingClerkIssuer) {
-    if (
-      !clientIDOverride ||
-      !/^[A-Za-z0-9_-]+$/u.test(clientIDOverride) ||
-      clientIDOverride === defaultClerkClientID
-    ) {
-      throw new AuthProviderError('invalid_configuration')
-    }
-    return {
-      issuer: stagingClerkIssuer,
-      clientId: clientIDOverride,
-      signInURL: cliSignInURL(
-        environment.DEDALUS_SIGN_IN_URL ?? stagingSignInURL,
-        stagingSignInURL,
-      ),
-    }
-  }
-  if (
-    (issuerOverride !== undefined && issuerOverride !== defaultClerkIssuer) ||
-    (clientIDOverride !== undefined && clientIDOverride !== defaultClerkClientID)
-  ) {
-    throw new AuthProviderError('invalid_configuration')
-  }
-  const signInURL = cliSignInURL(environment.DEDALUS_SIGN_IN_URL ?? defaultSignInURL)
-  return {
-    issuer: defaultClerkIssuer,
-    clientId: defaultClerkClientID,
-    signInURL,
-  }
-}
-
-const cliSignInURL = (raw: string, expected = defaultSignInURL): string => {
-  if (raw === expected) return raw
-  try {
-    const value = new URL(raw)
-    if (
-      value.protocol !== 'http:' ||
-      (value.hostname !== '127.0.0.1' && value.hostname !== 'localhost') ||
-      value.username ||
-      value.password ||
-      value.search ||
-      value.hash ||
-      value.pathname !== '/cli/sign-in'
-    ) {
-      throw new AuthProviderError('invalid_configuration')
-    }
-    return value.toString()
-  } catch (error) {
-    if (error instanceof AuthProviderError) throw error
-    throw new AuthProviderError('invalid_configuration', { cause: error })
-  }
-}
 
 type CredentialInjectionDependencies = {
   readonly program: Command
@@ -336,7 +269,10 @@ const installCredentialInjection = ({
       })
       if (selected.source === 'oauth_session') {
         const gatewayURL = cliOAuthGatewayURL(environment, flags.baseUrl)
-        const accessToken = await accessTokenForCommand(credentialStore(), authProvider())
+        const provider = authProvider()
+        if (provider.gatewayURL !== gatewayURL)
+          throw new CredentialStorageError('environment_mismatch')
+        const accessToken = await accessTokenForCommand(credentialStore(), provider)
         setCommandOption(action, 'baseUrl', gatewayURL)
         setCredentialOptions(action, {
           apiKey: null,
@@ -362,9 +298,7 @@ export const cliOAuthGatewayURL = (
   environment: Readonly<Record<string, string | undefined>>,
   flagValue?: string,
 ): string => {
-  const issuer = new URL(createClerkAuthProvider(cliAuthConfiguration(environment)).issuer)
-  const expectedGateway =
-    issuer.origin === stagingClerkIssuer ? stagingGatewayURL : developmentGatewayURL
+  const expectedGateway = cliAuthConfiguration(environment).gatewayURL
   const raw = flagValue ?? environment.DEDALUS_BASE_URL ?? expectedGateway
   const gatewayURL = validHTTPSBaseURL(raw)
   if (new URL(gatewayURL).pathname !== '/dcs') {
@@ -454,3 +388,4 @@ const belongsTo = (command: Command, ancestor: Command): boolean => {
   }
   return false
 }
+// @custom end

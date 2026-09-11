@@ -1,3 +1,5 @@
+// @custom start
+// Validate the CLI authentication state model.
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
@@ -9,3 +11,4 @@ test('credential errors retain stable machine-readable codes', () => {
   assert.equal(error.name, 'CredentialStorageError')
   assert.equal(error.code, 'invalid_credential')
 })
+// @custom end

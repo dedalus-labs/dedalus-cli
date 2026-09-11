@@ -149,9 +149,9 @@ func (u *updater) update(ctx context.Context, opts updateOptions) error {
 	case installMethodHomebrewCask:
 		return u.updateWithHomebrew(ctx)
 	case installMethodWindows:
-		return u.printWindowsUpdateCommand(install.exe)
+		return u.updateWithWindowsInstaller(ctx, install.exe, latest)
 	case installMethodCurl:
-		return u.updateWithInstallScript(ctx, install.exe)
+		return u.updateWithInstallScript(ctx, install.exe, latest)
 	case installMethodUnknown:
 		return u.printManualUpdate()
 	default:
@@ -260,25 +260,43 @@ func (u *updater) updateWithHomebrew(ctx context.Context) error {
 }
 
 // updateWithInstallScript pins the published installer to the executable's
-// current directory so a custom direct install is updated in place.
-func (u *updater) updateWithInstallScript(ctx context.Context, exe string) error {
-	installDir := filepath.Dir(exe)
-	fmt.Fprintf(u.stdout, "Running installer with DEDALUS_INSTALL_DIR=%s\n", installDir)
-	return u.runCommand(ctx, []string{"DEDALUS_INSTALL_DIR=" + installDir}, "bash", "-c", "curl -fsSL "+installScriptURL+" | bash")
+// current directory and to the release the version check reported, so a custom
+// direct install is updated in place.
+func (u *updater) updateWithInstallScript(ctx context.Context, exe, version string) error {
+	env := []string{"DEDALUS_INSTALL_DIR=" + filepath.Dir(exe), "DEDALUS_VERSION=" + version}
+	fmt.Fprintf(u.stdout, "Running installer with %s\n", strings.Join(env, " "))
+	return u.runCommand(ctx, env, "bash", "-c", "curl -fsSL "+installScriptURL+" | bash")
 }
 
-func (u *updater) printWindowsUpdateCommand(exe string) error {
-	installDir := ""
-	if exe != "" {
-		installDir = filepath.Dir(exe)
-	}
-	fmt.Fprintln(u.stdout, "Windows does not allow replacing the running dedalus.exe process.")
-	fmt.Fprintln(u.stdout, "Run this from a new PowerShell session:")
-	if installDir != "" {
-		fmt.Fprintf(u.stdout, "  $env:DEDALUS_INSTALL_DIR = '%s'; irm %s | iex\n", powerShellSingleQuoted(installDir), installPS1URL)
+// updateWithWindowsInstaller runs the published PowerShell installer pinned to
+// the executable's directory and to the release the version check reported.
+// Windows locks a running exe against overwrite but allows renaming it, so
+// install.ps1 moves the running dedalus.exe aside before installing; the new
+// binary applies from the next invocation. PATH edits are disabled because an
+// update must not mutate the user's PATH registry. Without a resolved
+// executable path there is no directory to pin, so print the manual command
+// instead.
+func (u *updater) updateWithWindowsInstaller(ctx context.Context, exe, version string) error {
+	if exe == "" {
+		fmt.Fprintln(u.stdout, "Could not locate the running dedalus.exe.")
+		fmt.Fprintln(u.stdout, "Run this from PowerShell:")
+		fmt.Fprintf(u.stdout, "  irm %s | iex\n", installPS1URL)
 		return nil
 	}
-	fmt.Fprintf(u.stdout, "  irm %s | iex\n", installPS1URL)
+
+	env := []string{
+		"DEDALUS_INSTALL_DIR=" + filepath.Dir(exe),
+		"DEDALUS_NO_MODIFY_PATH=1",
+		"DEDALUS_VERSION=" + version,
+	}
+	fmt.Fprintf(u.stdout, "Running installer with %s\n", strings.Join(env, " "))
+	err := u.runCommand(ctx, env, "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "irm "+installPS1URL+" | iex")
+	if err != nil {
+		fmt.Fprintln(u.stderr, "The installer failed. Run it from a new PowerShell session:")
+		fmt.Fprintf(u.stderr, "  %sirm %s | iex\n", powerShellEnvPrefix(env), installPS1URL)
+		return fmt.Errorf("run windows installer: %w", err)
+	}
+	fmt.Fprintln(u.stdout, "The new version takes effect from your next command.")
 	return nil
 }
 
@@ -374,4 +392,15 @@ func hasInstallScriptMarker(exe string) bool {
 
 func powerShellSingleQuoted(value string) string {
 	return strings.ReplaceAll(value, "'", "''")
+}
+
+// powerShellEnvPrefix renders KEY=VALUE pairs as `$env:KEY = 'VALUE'; ` so a
+// printed manual command reproduces the exact environment of the failed run.
+func powerShellEnvPrefix(env []string) string {
+	var b strings.Builder
+	for _, kv := range env {
+		k, v, _ := strings.Cut(kv, "=")
+		fmt.Fprintf(&b, "$env:%s = '%s'; ", k, powerShellSingleQuoted(v))
+	}
+	return b.String()
 }

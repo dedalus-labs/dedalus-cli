@@ -1,75 +1,84 @@
-import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { spawn } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
-import { test } from 'node:test';
-const root = resolve(process.env.FEEDBACK_PACKAGE_ROOT ?? '.');
-const { feedbackIdempotencyKey } = await import(pathToFileURL(join(root, 'dist/esm/feedback/command.js')));
-const { diagnosticScope } = await import(pathToFileURL(join(root, 'dist/esm/feedback/diagnostics.js')));
-const receipt = '01973f7b7cf6726a9a9f4f37d4b47a21';
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:http";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { spawn } from "node:child_process";
+import { pathToFileURL } from "node:url";
+import { test } from "node:test";
+const root = resolve(process.env.FEEDBACK_PACKAGE_ROOT ?? ".");
+const { feedbackIdempotencyKey } = await import(
+	pathToFileURL(join(root, "dist/esm/feedback/command.js"))
+);
+const { diagnosticScope } = await import(
+	pathToFileURL(join(root, "dist/esm/feedback/diagnostics.js"))
+);
+const receipt = "01973f7b7cf6726a9a9f4f37d4b47a21";
 
-test('invariant idempotency keys match the server UUIDv7 contract', () => {
-  const keys = new Set(Array.from({ length: 100 }, feedbackIdempotencyKey));
-  assert.equal(keys.size, 100);
-  for (const key of keys) assert.match(key, /^[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$/);
+test("invariant idempotency keys match the server UUIDv7 contract", () => {
+	const keys = new Set(Array.from({ length: 100 }, feedbackIdempotencyKey));
+	assert.equal(keys.size, 100);
+	for (const key of keys) assert.match(key, /^[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$/);
 });
 
 const runCLI = async (args, env = {}) => {
-  const child = spawn(process.execPath, [join(root, 'dist/esm/bin.js'), ...args], {
-    env: { PATH: process.env.PATH, HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE, ...env },
-  });
-  let stdout = '',
-    stderr = '';
-  child.stdout.on('data', (chunk) => {
-    stdout += chunk;
-  });
-  child.stderr.on('data', (chunk) => {
-    stderr += chunk;
-  });
-  const code = await new Promise((resolve, reject) => {
-    child.on('error', reject);
-    child.on('close', resolve);
-  });
-  return { code, stdout, stderr };
+	const child = spawn(process.execPath, [join(root, "dist/esm/bin.js"), ...args], {
+		env: {
+			PATH: process.env.PATH,
+			HOME: process.env.HOME,
+			USERPROFILE: process.env.USERPROFILE,
+			...env,
+		},
+	});
+	let stdout = "",
+		stderr = "";
+	child.stdout.on("data", (chunk) => {
+		stdout += chunk;
+	});
+	child.stderr.on("data", (chunk) => {
+		stderr += chunk;
+	});
+	const code = await new Promise((resolve, reject) => {
+		child.on("error", reject);
+		child.on("close", resolve);
+	});
+	return { code, stdout, stderr };
 };
 
-test('invariant organization selection never turns a request receipt into an outbound request ID', async (t) => {
-  let headers;
-  const server = createServer((req, res) => {
-    headers = req.headers;
-    req.resume();
-    res.writeHead(201, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ id: 'fb_' + receipt, source: 'cli', debug: { included: false } }));
-  });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  t.after(() => server.close());
-  const result = await runCLI(
-    [
-      'feedback',
-      'organization check',
-      '--include-logs=false',
-      '--api-key',
-      'test-key',
-      '--x-dedalus-org-id',
-      'org-current',
-      '--base-url',
-      'http://127.0.0.1:' + server.address().port,
-    ],
-    {
-      DEDALUS_CUSTOM_HEADERS: 'x-request-id: ' + receipt,
-    },
-  );
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(headers['x-dedalus-org-id'], 'org-current');
-  assert.equal(headers['x-request-id'], undefined);
-  assert.notEqual(
-    diagnosticScope({ apiKey: 'key', dedalusOrgID: 'org-current' }),
-    diagnosticScope({ apiKey: 'key', dedalusOrgID: 'org-other' }),
-  );
+test("invariant organization selection never turns a request receipt into an outbound request ID", async (t) => {
+	let headers;
+	const server = createServer((req, res) => {
+		headers = req.headers;
+		req.resume();
+		res.writeHead(201, { "content-type": "application/json" });
+		res.end(JSON.stringify({ id: "fb_" + receipt, source: "cli", debug: { included: false } }));
+	});
+	await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+	t.after(() => server.close());
+	const result = await runCLI(
+		[
+			"feedback",
+			"organization check",
+			"--include-logs=false",
+			"--api-key",
+			"test-key",
+			"--x-dedalus-org-id",
+			"org-current",
+			"--base-url",
+			"http://127.0.0.1:" + server.address().port,
+		],
+		{
+			DEDALUS_CUSTOM_HEADERS: "x-request-id: " + receipt,
+		},
+	);
+	assert.equal(result.code, 0, result.stderr);
+	assert.equal(headers["x-dedalus-org-id"], "org-current");
+	assert.equal(headers["x-request-id"], undefined);
+	assert.notEqual(
+		diagnosticScope({ apiKey: "key", dedalusOrgID: "org-current" }),
+		diagnosticScope({ apiKey: "key", dedalusOrgID: "org-other" }),
+	);
 });
 
 test('invariant installed CLI sends a server-compatible multipart manifest', async (t) => {

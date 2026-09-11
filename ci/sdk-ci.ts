@@ -1,7 +1,8 @@
 // @custom start
 import { command, workflow } from '@dedalus-labs/hollywood';
+import type { GitHubWorkflow } from '@dedalus-labs/hollywood';
 
-export const sdkCI = workflow({
+export const sdkCI: GitHubWorkflow = workflow({
   name: 'CLI SDK CI',
   on: { push: {}, pull_request: {} },
   permissions: { contents: 'read' },

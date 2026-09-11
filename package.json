@@ -72,8 +72,8 @@
     "public:check": "node --import tsx scripts/check-public.ts",
     "test:public": "node --import tsx --test tests/public-surface.test.ts",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit",
-    "test": "node --test tests/feedback-*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit && tsc -p tsconfig.tests.json && tsc -p tsconfig.tools.json",
+    "test": "pnpm run build && node --import tsx scripts/run-tests.ts",
     "ci:generate": "hollywood generate 'ci/**/*.ts' --source-root ci --output .",
     "test:package": "node scripts/verify-preview-package.mjs"
   },

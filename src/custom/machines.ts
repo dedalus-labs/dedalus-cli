@@ -1,3 +1,4 @@
+// @custom start
 /** Machine name shortcuts that share the CLI's authentication and output settings. */
 
 import { Command, Option } from 'commander'
@@ -135,3 +136,4 @@ const isRenameConfirmation = (value: unknown, current: string, name: string): bo
   const requestedID = current.trim().replace(/^dm-/u, '').toLowerCase()
   return !canonicalUUID.test(requestedID) || response.machine_id === `dm-${requestedID}`
 }
+// @custom end

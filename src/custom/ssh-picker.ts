@@ -1,3 +1,4 @@
+// @custom start
 /** Search machine names while retaining stable IDs for the SSH request. */
 
 import { emitKeypressEvents, type Key } from 'node:readline'
@@ -151,3 +152,4 @@ const record = (value: unknown, label: string): Record<string, unknown> => {
 }
 
 const terminalText = (text: string): string => text.replace(/[\x00-\x1f\x7f-\x9f]/gu, '')
+// @custom end

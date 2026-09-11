@@ -27,3 +27,5 @@ operation failure and any lock-release failure.
 
 Run `pnpm run build`, `pnpm run typecheck`, and
 `node --import tsx --test tests/auth/*.test.ts`.
+Run `CLI_NATIVE_KEYRING_TEST=1 pnpm run test:native` with an available native
+credential store. It creates and removes a separate disposable entry.

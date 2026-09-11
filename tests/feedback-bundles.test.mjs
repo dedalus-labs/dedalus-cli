@@ -28,6 +28,7 @@ test('invariant opt-out sends no files and preserves the failure receipt', (t) =
     duration_ms: 42,
     request_id: receipt,
   });
+  log.record({ kind: 'command_failure' });
   const result = buildFeedbackBundle('false', scope, 'https://staging.invalid', '1.0.0', dir);
   assert.equal(result.selection.receipt, receipt);
   assert.deepEqual(result.attachments, []);
@@ -42,6 +43,7 @@ test('invariant auto selects only recent failures for the same credential and ho
     0,
   );
   log.record({ kind: 'transport_failure', route: '/v1/machines', duration_ms: 3 });
+  log.record({ kind: 'command_failure' });
   assert.ok(
     buildFeedbackBundle('auto', scope, 'https://staging.invalid', '1.0.0', dir).attachments.length >
       0,
@@ -64,6 +66,7 @@ test('invariant attachments contain only allowlisted fields and exact byte hashe
     body: { password: 'secret-password' },
     error: 'private workspace content',
   });
+  log.record({ kind: 'command_failure' });
   const raw = readFileSync(join(dir, readdirSync(dir)[0]), 'utf8');
   assert.doesNotMatch(raw, /super-secret|secret-password|private workspace/);
   const bundle = buildFeedbackBundle(
@@ -86,4 +89,3 @@ test('invariant attachments contain only allowlisted fields and exact byte hashe
   }
   assert.ok(bundle.attachments.reduce((sum, file) => sum + file.bytes.length, 0) <= 1024 * 1024);
 });
-

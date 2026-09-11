@@ -97,97 +97,97 @@ export const diagnosticScope = (options: Record<string, unknown>): string =>
 		.digest("hex");
 
 const files = (directory: string): { path: string; name: string; size: number; time: number }[] => {
-  if (!existsSync(directory)) return [];
-  if (!lstatSync(directory).isDirectory() || lstatSync(directory).isSymbolicLink()) {
-    throw new Error('diagnostic directory must be a real directory');
-  }
-  return readdirSync(directory)
-    .filter((name) => logName.test(name))
-    .flatMap((name) => {
-      const path = join(directory, name);
-      const info = lstatSync(path);
-      return info.isFile() && !info.isSymbolicLink()
-        ? [{ path, name, size: info.size, time: info.mtimeMs }]
-        : [];
-    });
+	if (!existsSync(directory)) return [];
+	if (!lstatSync(directory).isDirectory() || lstatSync(directory).isSymbolicLink()) {
+		throw new Error("diagnostic directory must be a real directory");
+	}
+	return readdirSync(directory)
+		.filter((name) => logName.test(name))
+		.flatMap((name) => {
+			const path = join(directory, name);
+			const info = lstatSync(path);
+			return info.isFile() && !info.isSymbolicLink()
+				? [{ path, name, size: info.size, time: info.mtimeMs }]
+				: [];
+		});
 };
 
 export const pruneDiagnostics = (directory = debugDirectory(), now = Date.now()): void => {
-  const entries = files(directory).sort((a, b) => a.time - b.time);
-  let total = entries.reduce((sum, entry) => sum + entry.size, 0);
-  for (const entry of entries) {
-    if (entry.time >= now - retentionMS && total <= directoryLimit) continue;
-    unlinkSync(entry.path);
-    total -= entry.size;
-  }
+	const entries = files(directory).sort((a, b) => a.time - b.time);
+	let total = entries.reduce((sum, entry) => sum + entry.size, 0);
+	for (const entry of entries) {
+		if (entry.time >= now - retentionMS && total <= directoryLimit) continue;
+		unlinkSync(entry.path);
+		total -= entry.size;
+	}
 };
 
 // Reconstruct only the allowlisted event fields, including when reading local files.
 // No request bodies, command arguments, headers, error messages, or environment values enter logs.
 const parseEvent = (value: unknown): DiagnosticEvent | undefined => {
-  if (!value || typeof value !== 'object') return undefined;
-  const row = value as Record<string, unknown>;
-  if (typeof row['kind'] !== 'string' || !kinds.some((kind) => kind === row['kind']))
-    return undefined;
-  if (typeof row['command'] !== 'string' || !/^dedalus(?: [a-z-]+){1,5}$/.test(row['command']))
-    return undefined;
-  if (row['command'].split(' ').some((word) => !commandWords.has(word))) return undefined;
-  if (typeof row['ts'] !== 'string' || !Number.isFinite(Date.parse(row['ts']))) return undefined;
-  const result: DiagnosticEvent = {
-    ts: new Date(row['ts']).toISOString(),
-    kind: row['kind'] as DiagnosticEvent['kind'],
-    command: row['command'],
-  };
-  if (
-    typeof row['route'] === 'string' &&
-    /^\/v1(?:\/(?:[a-z-]+|\{[a-z_]+\})){1,9}$/.test(row['route'])
-  )
-    result.route = row['route'];
-  if (typeof row['request_id'] === 'string' && receiptPattern.test(row['request_id']))
-    result.request_id = row['request_id'];
-  if (
-    typeof row['status_code'] === 'number' &&
-    Number.isInteger(row['status_code']) &&
-    row['status_code'] >= 100 &&
-    row['status_code'] <= 599
-  )
-    result.status_code = row['status_code'];
-  if (
-    typeof row['duration_ms'] === 'number' &&
-    Number.isSafeInteger(row['duration_ms']) &&
-    row['duration_ms'] >= 0
-  )
-    result.duration_ms = row['duration_ms'];
-  return result;
+	if (!value || typeof value !== "object") return undefined;
+	const row = value as Record<string, unknown>;
+	if (typeof row["kind"] !== "string" || !kinds.some((kind) => kind === row["kind"]))
+		return undefined;
+	if (typeof row["command"] !== "string" || !/^dedalus(?: [a-z-]+){1,5}$/.test(row["command"]))
+		return undefined;
+	if (row["command"].split(" ").some((word) => !commandWords.has(word))) return undefined;
+	if (typeof row["ts"] !== "string" || !Number.isFinite(Date.parse(row["ts"]))) return undefined;
+	const result: DiagnosticEvent = {
+		ts: new Date(row["ts"]).toISOString(),
+		kind: row["kind"] as DiagnosticEvent["kind"],
+		command: row["command"],
+	};
+	if (
+		typeof row["route"] === "string" &&
+		/^\/v1(?:\/(?:[a-z-]+|\{[a-z_]+\})){1,9}$/.test(row["route"])
+	)
+		result.route = row["route"];
+	if (typeof row["request_id"] === "string" && receiptPattern.test(row["request_id"]))
+		result.request_id = row["request_id"];
+	if (
+		typeof row["status_code"] === "number" &&
+		Number.isInteger(row["status_code"]) &&
+		row["status_code"] >= 100 &&
+		row["status_code"] <= 599
+	)
+		result.status_code = row["status_code"];
+	if (
+		typeof row["duration_ms"] === "number" &&
+		Number.isSafeInteger(row["duration_ms"]) &&
+		row["duration_ms"] >= 0
+	)
+		result.duration_ms = row["duration_ms"];
+	return result;
 };
 
 const routeTemplate = (input: RequestInfo | URL): string => {
-  const url = new URL(input instanceof Request ? input.url : String(input));
-  const parts = url.pathname.split('/');
-  if (parts[1] !== 'v1' || parts[2] !== 'machines') return '/v1/{resource}';
-  if (parts.length > 3) parts[3] = '{machine_id}';
-  const resources = new Set([
-    'executions',
-    'ssh',
-    'ports',
-    'artifacts',
-    'terminals',
-    'sleep',
-    'wake',
-    'network',
-    'status',
-  ]);
-  if (parts[4] && !resources.has(parts[4])) return '/v1/machines/{machine_id}/{resource}';
-  if (parts[5] && parts[4] !== 'status') parts[5] = '{resource_id}';
-  if (
-    parts
-      .slice(6)
-      .some(
-        (part) => !['events', 'logs', 'output', 'token', 'reauthorize', 'stream'].includes(part),
-      )
-  )
-    return '/v1/machines/{machine_id}/{resource}';
-  return parts.join('/');
+	const url = new URL(input instanceof Request ? input.url : String(input));
+	const parts = url.pathname.split("/");
+	if (parts[1] !== "v1" || parts[2] !== "machines") return "/v1/{resource}";
+	if (parts.length > 3) parts[3] = "{machine_id}";
+	const resources = new Set([
+		"executions",
+		"ssh",
+		"ports",
+		"artifacts",
+		"terminals",
+		"sleep",
+		"wake",
+		"network",
+		"status",
+	]);
+	if (parts[4] && !resources.has(parts[4])) return "/v1/machines/{machine_id}/{resource}";
+	if (parts[5] && parts[4] !== "status") parts[5] = "{resource_id}";
+	if (
+		parts
+			.slice(6)
+			.some(
+				(part) => !["events", "logs", "output", "token", "reauthorize", "stream"].includes(part),
+			)
+	)
+		return "/v1/machines/{machine_id}/{resource}";
+	return parts.join("/");
 };
 
 export const createDiagnostics = (command: string, scope: string, directory = debugDirectory()) => {

@@ -88,7 +88,7 @@ type OutputOptions = {
   readonly onLimit?: () => void;
 };
 
-type GlobalOptions = {
+export type GlobalOptions = {
   readonly baseUrl?: string;
   readonly timeout?: string;
   readonly maxRetries?: string;
@@ -1027,3 +1027,6 @@ const normalizeMaxItems = (value: string | undefined): number | undefined => {
 
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   !!value && typeof (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function';
+
+// Custom commands share generated credential, output, and error conventions.
+export { sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode };

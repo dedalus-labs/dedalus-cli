@@ -6,9 +6,14 @@ import { Command } from 'commander'
 import SDK from '../dist/esm/sdk/index.js'
 import { getProgram } from '../dist/esm/index.js'
 import { addMachineAliases, createMachineAPI } from '../dist/esm/custom/machines.js'
+import { loadMachineChoices, matchingMachines, renderPicker, updatePicker } from '../dist/esm/custom/ssh-picker.js'
 import { awaitSSHSession } from '../dist/esm/custom/ssh.js'
 
 afterEach(() => { process.exitCode = undefined })
+
+const machine = (id, name, phase = 'running') => ({
+  machine_id: id, name, desired_state: 'running', phase,
+})
 
 const capture = async (action) => {
   let stdout = ''
@@ -49,6 +54,36 @@ test('public program includes custom aliases alongside generated commands', () =
   assert.ok(program.commands.find((command) => command.name() === 'machines').commands.some((command) => command.name() === 'update'))
 })
 
+test('SSH explicit name and ID bypass the picker even without a TTY', async () => {
+  for (const target of ['my-machine', 'dm-abc123']) {
+    const connected = []
+    const program = aliases({ api: () => ({}), interactive: () => false,
+      pick: () => { throw new Error('unexpected picker') },
+      connect: async (_api, id) => { connected.push(id) },
+    })
+    await program.parseAsync(['ssh', target], { from: 'user' })
+    assert.deepEqual(connected, [target])
+  }
+})
+
+test('SSH picker selection transmits stable ID and cancellation creates no session', async () => {
+  for (const selected of ['dm-canonical', undefined]) {
+    const connected = []
+    const program = aliases({ api: () => ({}), interactive: () => true,
+      pick: async () => selected, connect: async (_api, id) => { connected.push(id) },
+    })
+    await program.parseAsync(['ssh'], { from: 'user' })
+    assert.deepEqual(connected, selected === undefined ? [] : [selected])
+  }
+})
+
+test('SSH without a TTY or target exits promptly with actionable usage', () => {
+  const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'ssh'], { encoding: 'utf8', timeout: 3000 })
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /interactive terminal.*dedalus ssh <name\|machine_id>/u)
+  assert.equal(result.stdout, '')
+})
+
 test('aliases retain CLI usage exit codes', () => {
   const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'rename', 'only-current'], { encoding: 'utf8' })
   assert.equal(result.status, 2)
@@ -61,6 +96,64 @@ test('organization flag is exposed only when the generated commands expose it', 
   const generated = getProgram()
   assert.equal(generated.commands.find((command) => command.name() === 'ssh').options.some((option) =>
     option.long === '--x-dedalus-org-id'), true)
+})
+
+test('invariant_picker_reads_list_phases_keeps_unnamed_and_skips_destroyed', async () => {
+  const cursors = []
+  const pages = [
+    { items: [machine('dm-one', 'one'), { ...machine('dm-dying', 'dying'), desired_state: 'destroyed' }], next_cursor: 'page-2' },
+    { items: [], next_cursor: 'page-3' },
+    { items: [machine('dm-two', null, 'sleeping'), machine('dm-gone', 'gone', 'destroyed')], next_cursor: null },
+  ]
+  const choices = await loadMachineChoices({ listMachines: async (cursor) => {
+    cursors.push(cursor)
+    return pages.shift()
+  } }, new AbortController().signal)
+  assert.deepEqual(cursors, [undefined, 'page-2', 'page-3'])
+  assert.deepEqual(choices, [
+    { id: 'dm-one', name: 'one', status: 'running' },
+    { id: 'dm-two', name: null, status: 'sleeping' },
+  ])
+})
+
+test('picker propagates load errors and reports empty fleet', async () => {
+  await assert.rejects(loadMachineChoices({ listMachines: async () => {
+    throw new Error('access denied')
+  } }, new AbortController().signal), /access denied/u)
+  await assert.rejects(loadMachineChoices({ listMachines: async () => ({ items: [], next_cursor: null }) },
+    new AbortController().signal), /No machines available.*dedalus machines create/u)
+})
+
+test('picker refuses malformed names and repeating pagination cursors', async () => {
+  await assert.rejects(loadMachineChoices({ listMachines: async () => ({ items: [machine('dm-a', 123)] }) },
+    new AbortController().signal), /invalid name/u)
+  await assert.rejects(loadMachineChoices({ listMachines: async () => ({ items: [], next_cursor: 'repeat' }) },
+    new AbortController().signal), /repeated cursor/u)
+})
+
+test('picker search covers names, IDs, status; navigation and editing keep a valid selection', () => {
+  let state = { machines: [
+    { id: 'dm-one', name: 'alpha', status: 'running' },
+    { id: 'dm-two', name: 'beta', status: 'sleeping' },
+  ], query: '', cursor: 0 }
+  state = updatePicker(state, '', { name: 'down' })
+  assert.equal(matchingMachines(state)[state.cursor].id, 'dm-two')
+  state = updatePicker(state, 'ALPHA', {})
+  assert.deepEqual(matchingMachines(state).map(({ id }) => id), ['dm-one'])
+  assert.equal(state.cursor, 0)
+  for (const query of ['dm-two', 'SLEEPING', 'beta']) {
+    assert.deepEqual(matchingMachines({ ...state, query }).map(({ id }) => id), ['dm-two'])
+  }
+  state = updatePicker(state, '', { name: 'u', ctrl: true })
+  assert.equal(state.query, '')
+  state = updatePicker(state, 'z', {})
+  assert.deepEqual(matchingMachines(state), [])
+  assert.match(renderPicker(state, 24, 100), /No matching machines/u)
+  state = updatePicker(state, '', { name: 'backspace' })
+  assert.equal(matchingMachines(state).length, 2)
+  const view = renderPicker(state, 24, 100)
+  assert.match(view, /> alpha  \[running\]\n    dm-one/u)
+  assert.match(view, /beta  \[sleeping\]\n    dm-two/u)
 })
 
 test('SSH session creation sends the name; polling stays on canonical ID during rename', async () => {

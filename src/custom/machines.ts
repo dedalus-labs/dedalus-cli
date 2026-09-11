@@ -6,18 +6,25 @@ import {
   type CliClientOptionDefinition, type GlobalOptions,
   sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode,
 } from '../cli/runtime.js'
+import { pickSSHMachine } from './ssh-picker.js'
 import { connectMachine, type SSHAPI } from './ssh.js'
 
 export type MachineAPI = SSHAPI & {
+  readonly listMachines: (cursor: string | undefined, signal: AbortSignal) => Promise<unknown>
   readonly renameMachine: (current: string, name: string) => Promise<unknown>
 }
 
 type AliasOptions = {
   readonly api?: (client: SDK) => MachineAPI
   readonly connect?: (api: SSHAPI, machineID: string) => Promise<void>
+  readonly pick?: (api: MachineAPI) => Promise<string | undefined>
+  readonly interactive?: () => boolean
 }
 
 export const createMachineAPI = (client: SDK): MachineAPI => ({
+  listMachines: (cursor, signal) => client.get('/v1/machines', {
+    query: cursor === undefined ? {} : { cursor }, signal,
+  }),
   renameMachine: (current, name) => client.patch(`/v1/machines/${encodeURIComponent(current)}`, {
     body: { name },
   }),
@@ -36,13 +43,21 @@ export const addMachineAliases = (
 ): Command => {
   const makeAPI = options.api ?? createMachineAPI
   const connect = options.connect ?? connectMachine
+  const pick = options.pick ?? pickSSHMachine
+  const interactive = options.interactive ?? (() => Boolean(
+    process.stdin.isTTY && process.stdout.isTTY && process.stderr.isTTY,
+  ))
   const ssh = aliasCommand(program, 'ssh')
-    .description('Connect to a machine over SSH')
-    .argument('<machine>', 'Machine name or ID')
-    .action(async (target: string, _flags: unknown, command: Command) => {
+    .description('Choose a machine and connect over SSH, or supply its name or ID')
+    .argument('[machine]', 'Machine name or ID; omitted to open the interactive picker')
+    .action(async (target: string | undefined, _flags: unknown, command: Command) => {
+      if (!target && !interactive()) {
+        command.error('machine name or ID is required without an interactive terminal; usage: dedalus ssh <name|machine_id>', { exitCode: 2 })
+      }
       await runAlias(command, clientOptions, async (client) => {
         const api = makeAPI(client)
-        await connect(api, target)
+        const machineID = target ?? await pick(api)
+        if (machineID !== undefined) await connect(api, machineID)
       })
     })
   const rename = aliasCommand(program, 'rename')

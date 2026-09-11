@@ -1,3 +1,4 @@
+// @custom start
 /** Connect with an ephemeral key and the server's SSH certificate and host CA. */
 
 import { spawn } from 'node:child_process'
@@ -192,3 +193,4 @@ const runProcess = (
     resolve(code)
   })
 })
+// @custom end

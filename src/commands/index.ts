@@ -4,7 +4,10 @@ import type { Command } from 'commander';
 import SDK from '../sdk/index';
 import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
 import { completions } from '../cli/completions';
+// @custom start
+// Machine aliases extend the generated command tree.
 import { addMachineAliases } from '../custom/machines.js';
+// @custom end
 
 const clientOptions = [
   {
@@ -1476,6 +1479,8 @@ const commands = [
   },
 ] as const satisfies readonly CliCommandDefinition[];
 
+// @custom start
+// Attach machine aliases with the same client options as generated commands.
 export const getProgram = (): Command =>
   addMachineAliases(createProgram({
     SDK,
@@ -1488,3 +1493,4 @@ export const getProgram = (): Command =>
     commands,
     completions,
   }), clientOptions);
+// @custom end

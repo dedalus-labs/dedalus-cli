@@ -84,6 +84,8 @@ type OutputOptions = {
   readonly onLimit?: () => void;
 };
 
+// @custom start
+// Export the shared options type for custom machine commands.
 export type GlobalOptions = {
   readonly baseUrl?: string;
   readonly timeout?: string;
@@ -96,6 +98,7 @@ export type GlobalOptions = {
   readonly debug?: boolean;
   readonly maxItems?: string;
 };
+// @custom end
 
 export const createProgram = ({
   SDK,
@@ -973,5 +976,7 @@ const normalizeMaxItems = (value: string | undefined): number | undefined => {
 const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   !!value && typeof (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function';
 
+// @custom start
 // Custom commands share generated credential, output, and error conventions.
 export { sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode };
+// @custom end

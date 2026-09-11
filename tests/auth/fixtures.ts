@@ -8,6 +8,8 @@ import {
 	type OAuthSession,
 	type OAuthSessionInput,
 } from "../../src/auth/schema.js";
+import type { AuthProvider } from "../../src/auth/types.js";
+import type { CredentialStore } from "../../src/auth/credentials.js";
 
 export const authMetadata = (overrides: Partial<AuthMetadataInput> = {}): AuthMetadata => {
 	const issuer = overrides.issuer ?? "https://issuer.example.com";
@@ -61,4 +63,46 @@ export const commandMetadata = (overrides: Partial<AuthMetadataInput> = {}): Aut
 		resource: "https://dcs.dedaluslabs.ai",
 		...overrides,
 	});
+
+/** A credential store with observable writes, deletes, and serialized lifecycle operations. */
+export const memoryStore = (initial: OAuthSession | null = null): CredentialStore => {
+	let stored = initial;
+	let previous = Promise.resolve();
+	return {
+		read: async () => stored,
+		write: async (session) => {
+			stored = session;
+		},
+		remove: async () => {
+			const present = stored !== null;
+			stored = null;
+			return present;
+		},
+		withLifecycleLock: (operation) => {
+			const result = previous.then(operation);
+			previous = result.then(
+				() => {},
+				() => {},
+			);
+			return result;
+		},
+	};
+};
+
+type ProviderOverrides = Partial<Omit<AuthProvider, "issuer" | "clientId" | "resource">> &
+	Partial<Pick<AuthMetadataInput, "issuer" | "clientId" | "resource">>;
+
+/** Provider operations can be overridden independently without changing their binding. */
+export const commandProvider = (overrides: ProviderOverrides = {}): AuthProvider => {
+	const { login, refresh, revoke, ...input } = overrides;
+	const metadata = commandMetadata(input);
+	return {
+		issuer: metadata.issuer,
+		clientId: metadata.clientId,
+		resource: metadata.resource,
+		login: login ?? (async () => commandSession()),
+		refresh: refresh ?? (async (session) => session),
+		revoke: revoke ?? (async () => {}),
+	};
+};
 // @custom end

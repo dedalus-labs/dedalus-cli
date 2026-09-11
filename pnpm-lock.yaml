@@ -36,6 +36,9 @@ importers:
       typescript:
         specifier: ^6.0.0
         version: 6.0.3
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
 
 packages:
 
@@ -294,6 +297,9 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
+  zod@4.3.6:
+    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -479,5 +485,7 @@ snapshots:
   yaml@2.8.4: {}
 
   yaml@2.9.0: {}
+
+  zod@4.3.6: {}
 
   zod@4.4.3: {}

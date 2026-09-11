@@ -2,30 +2,30 @@
 // Provide the feedback and doctor commands around the generated SDK transport.
 // Custom CLI feedback workflow; API transport and retries use the embedded SDK.
 
-import { randomBytes } from 'node:crypto';
-import { Command, Option } from 'commander';
+import { randomBytes } from "node:crypto";
+import { Command, Option } from "commander";
 
-import SDK from '../sdk/index.js';
-import { VERSION } from '../sdk/version.js';
+import SDK from "../sdk/index.js";
+import { VERSION } from "../sdk/version.js";
 import {
-  errorExitCode,
-  sdkClientOptions,
-  writeError,
-  writeOutput,
-  type CliClientOptionDefinition,
-  type GlobalOptions,
-} from '../cli/runtime.js';
-import { buildFeedbackBundle, doctorReport, type IncludeLogs } from './bundle.js';
-import { debugDirectory, diagnosticScope } from './diagnostics.js';
+	errorExitCode,
+	sdkClientOptions,
+	writeError,
+	writeOutput,
+	type CliClientOptionDefinition,
+	type GlobalOptions,
+} from "../cli/runtime.js";
+import { buildFeedbackBundle, doctorReport, type IncludeLogs } from "./bundle.js";
+import { debugDirectory, diagnosticScope } from "./diagnostics.js";
 
 export const feedbackIdempotencyKey = (): string => {
-  // UUIDv7: bytes 0..5 hold Unix milliseconds; byte 6 holds version 7;
-  // byte 8 holds the RFC variant. Remaining bits are random.
-  const bytes = randomBytes(16);
-  bytes.writeUIntBE(Date.now(), 0, 6);
-  bytes[6] = (bytes[6]! & 0x0f) | 0x70;
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
-  return bytes.toString('hex');
+	// UUIDv7: bytes 0..5 hold Unix milliseconds; byte 6 holds version 7;
+	// byte 8 holds the RFC variant. Remaining bits are random.
+	const bytes = randomBytes(16);
+	bytes.writeUIntBE(Date.now(), 0, 6);
+	bytes[6] = (bytes[6]! & 0x0f) | 0x70;
+	bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+	return bytes.toString("hex");
 };
 
 export const registerFeedbackCommands = (

@@ -334,7 +334,10 @@ export class Dedalus {
   }
 
   protected defaultIdempotencyKey(): string {
-    return `scalar-node-retry-${uuid4()}`;
+    // @custom start
+    // Use the API's UUIDv7 format. Automatic retries reuse this value.
+    return `${Date.now().toString(16).padStart(12, '0')}7${uuid4().replace(/-/g, '').slice(13)}`;
+    // @custom end
   }
 
   protected makeStatusError(

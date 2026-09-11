@@ -220,3 +220,11 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 - Node.js 20 or newer
 
 Powered by Scalar.
+
+<!-- @custom start -->
+### Automatic retry identity
+
+Client-generated idempotency keys use the API's 32-character UUIDv7 format.
+Automatic retries reuse the original key. Independent submissions receive new
+keys, and callers can still supply an explicit key when retrying a saved request.
+<!-- @custom end -->

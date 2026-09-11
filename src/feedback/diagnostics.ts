@@ -1,24 +1,24 @@
 // @custom start
 // Record and select privacy-filtered local diagnostics for feedback submissions.
 
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from "node:crypto";
 import {
-  appendFileSync,
-  constants,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  openSync,
-  closeSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-  unlinkSync,
-} from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+	appendFileSync,
+	constants,
+	existsSync,
+	lstatSync,
+	mkdirSync,
+	openSync,
+	closeSync,
+	readFileSync,
+	readdirSync,
+	statSync,
+	unlinkSync,
+} from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-export const debugDirectory = (): string => join(homedir(), '.dedalus', 'debug');
+export const debugDirectory = (): string => join(homedir(), ".dedalus", "debug");
 const retentionMS = 10 * 24 * 60 * 60 * 1000;
 const directoryLimit = 50 * 1024 * 1024;
 const partitionLimit = 10 * 1024 * 1024;
@@ -26,75 +26,75 @@ const recentMS = 15 * 60 * 1000;
 const logName = /^[0-9a-f]{64}\.[0-9]+\.[0-9a-f-]{36}\.jsonl$/;
 const receiptPattern = /^[0-9a-f]{12}7[0-9a-f]{3}[89ab][0-9a-f]{15}$/;
 const kinds = [
-  'command_start',
-  'request_start',
-  'response',
-  'transport_failure',
-  'command_failure',
-  'command_complete',
+	"command_start",
+	"request_start",
+	"response",
+	"transport_failure",
+	"command_failure",
+	"command_complete",
 ] as const;
 const commandWords = new Set([
-  'dedalus',
-  'machines',
-  'networks',
-  'usage',
-  'list',
-  'create',
-  'retrieve',
-  'update',
-  'delete',
-  'watch',
-  'sleep',
-  'wake',
-  'network',
-  'artifacts',
-  'ports',
-  'ssh',
-  'executions',
-  'events',
-  'output',
-  'logs',
-  'token',
-  'reauthorize',
-  'terminals',
-  'connect',
-  'machine-compute',
-  'machine-storage',
-  'feedback',
+	"dedalus",
+	"machines",
+	"networks",
+	"usage",
+	"list",
+	"create",
+	"retrieve",
+	"update",
+	"delete",
+	"watch",
+	"sleep",
+	"wake",
+	"network",
+	"artifacts",
+	"ports",
+	"ssh",
+	"executions",
+	"events",
+	"output",
+	"logs",
+	"token",
+	"reauthorize",
+	"terminals",
+	"connect",
+	"machine-compute",
+	"machine-storage",
+	"feedback",
 ]);
 
 export type DiagnosticEvent = {
-  ts: string;
-  kind: (typeof kinds)[number];
-  command: string;
-  route?: string;
-  request_id?: string;
-  status_code?: number;
-  duration_ms?: number;
+	ts: string;
+	kind: (typeof kinds)[number];
+	command: string;
+	route?: string;
+	request_id?: string;
+	status_code?: number;
+	duration_ms?: number;
 };
 
 export type DiagnosticSelection = {
-  events: DiagnosticEvent[];
-  command?: string;
-  receipt?: string;
-  failure?: { status_code: number; duration_ms: number; route: string };
+	events: DiagnosticEvent[];
+	command?: string;
+	receipt?: string;
+	failure?: { status_code: number; duration_ms: number; route: string };
 };
 
 // The credential digest stays in local filenames and is never included in uploads.
 // A receipt from another API host, organization override, or API key cannot become a candidate.
 export const diagnosticScope = (options: Record<string, unknown>): string =>
-  createHash('sha256')
-    .update(
-      JSON.stringify([
-        options.baseURL ?? process.env['DEDALUS_BASE_URL'] ?? 'https://dcs.dedaluslabs.ai',
-        options.bearerAuth ?? process.env['DEDALUS_BEARER_AUTH'] ?? '',
-        options.apiKey ?? process.env['DEDALUS_API_KEY'] ?? '',
-        options.xAPIKey ?? process.env['DEDALUS_X_API_KEY'] ?? '',
-        options.dedalusOrgID ?? process.env['DEDALUS_ORG_ID'] ?? '',
-        process.env['DEDALUS_CUSTOM_HEADERS'] ?? '',
-      ]),
-    )
-    .digest('hex');
+	createHash("sha256")
+		.update(
+			JSON.stringify([
+				options.baseURL ?? process.env["DEDALUS_BASE_URL"] ?? "https://dcs.dedaluslabs.ai",
+				options.bearerAuth ?? process.env["DEDALUS_BEARER_AUTH"] ?? "",
+				options.apiKey ?? process.env["DEDALUS_API_KEY"] ?? "",
+				options.xAPIKey ?? process.env["DEDALUS_X_API_KEY"] ?? "",
+				options.dedalusOrgID ?? process.env["DEDALUS_ORG_ID"] ?? "",
+				process.env["DEDALUS_CUSTOM_HEADERS"] ?? "",
+			]),
+		)
+		.digest("hex");
 
 const files = (directory: string): { path: string; name: string; size: number; time: number }[] => {
   if (!existsSync(directory)) return [];

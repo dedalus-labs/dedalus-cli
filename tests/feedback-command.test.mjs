@@ -170,55 +170,55 @@ for (const [status, exitCode] of [
 	);
 }
 
-test('invariant installed CLI retries one submission with the same idempotency key', async (t) => {
-  const requests = [];
-  const server = createServer(async (req, res) => {
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    requests.push({ headers: req.headers, body, path: req.url });
-    res.setHeader('content-type', 'application/json');
-    if (requests.length === 1) {
-      res.writeHead(503, { 'retry-after-ms': '1' });
-      res.end('{"error":{"message":"retry fixture"}}');
-    } else {
-      res.writeHead(201);
-      res.end(
-        JSON.stringify({
-          id: 'fb_' + receipt,
-          source: 'cli',
-          reported_request_id: null,
-          debug: { included: false },
-        }),
-      );
-    }
-  });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  t.after(() => server.close());
-  const result = await runCLI([
-    'feedback',
-    'package retry check',
-    '--include-logs=false',
-    '--api-key',
-    'test-key',
-    '--base-url',
-    'http://127.0.0.1:' + server.address().port,
-    '--format',
-    'json',
-  ]);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(requests.length, 2);
-  assert.equal(requests[0].headers['idempotency-key'], requests[1].headers['idempotency-key']);
-  assert.equal(requests[0].body, requests[1].body);
-  assert.equal(requests[0].path, '/v1/feedback');
-  assert.equal(requests[0].headers['x-dedalus-cli-command'], 'dedalus feedback');
-  assert.equal(requests[0].headers['x-request-id'], undefined);
-  assert.equal(JSON.parse(requests[0].body).debug.included, false);
-  assert.equal(JSON.parse(result.stdout).id, 'fb_' + receipt);
+test("invariant installed CLI retries one submission with the same idempotency key", async (t) => {
+	const requests = [];
+	const server = createServer(async (req, res) => {
+		let body = "";
+		for await (const chunk of req) body += chunk;
+		requests.push({ headers: req.headers, body, path: req.url });
+		res.setHeader("content-type", "application/json");
+		if (requests.length === 1) {
+			res.writeHead(503, { "retry-after-ms": "1" });
+			res.end('{"error":{"message":"retry fixture"}}');
+		} else {
+			res.writeHead(201);
+			res.end(
+				JSON.stringify({
+					id: "fb_" + receipt,
+					source: "cli",
+					reported_request_id: null,
+					debug: { included: false },
+				}),
+			);
+		}
+	});
+	await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+	t.after(() => server.close());
+	const result = await runCLI([
+		"feedback",
+		"package retry check",
+		"--include-logs=false",
+		"--api-key",
+		"test-key",
+		"--base-url",
+		"http://127.0.0.1:" + server.address().port,
+		"--format",
+		"json",
+	]);
+	assert.equal(result.code, 0, result.stderr);
+	assert.equal(requests.length, 2);
+	assert.equal(requests[0].headers["idempotency-key"], requests[1].headers["idempotency-key"]);
+	assert.equal(requests[0].body, requests[1].body);
+	assert.equal(requests[0].path, "/v1/feedback");
+	assert.equal(requests[0].headers["x-dedalus-cli-command"], "dedalus feedback");
+	assert.equal(requests[0].headers["x-request-id"], undefined);
+	assert.equal(JSON.parse(requests[0].body).debug.included, false);
+	assert.equal(JSON.parse(result.stdout).id, "fb_" + receipt);
 });
 
-test('invariant invalid include-logs values fail before submission', async () => {
-  const result = await runCLI(['feedback', 'invalid mode', '--include-logs=maybe']);
-  assert.equal(result.code, 2);
+test("invariant invalid include-logs values fail before submission", async () => {
+	const result = await runCLI(["feedback", "invalid mode", "--include-logs=maybe"]);
+	assert.equal(result.code, 2);
 });
 
 for (const failsDecoding of [false, true]) {

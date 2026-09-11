@@ -4,6 +4,7 @@ import type { Command } from 'commander';
 import SDK from '../sdk/index';
 import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
 import { completions } from '../cli/completions';
+import { registerFeedbackCommands } from '../feedback/command.js';
 
 const clientOptions = [
   {
@@ -1476,7 +1477,7 @@ const commands = [
 ] as const satisfies readonly CliCommandDefinition[];
 
 export const getProgram = (): Command =>
-  createProgram({
+  registerFeedbackCommands(createProgram({
     SDK,
     binaryName: 'dedalus',
     version: '0.5.0', // x-release-please-version
@@ -1484,6 +1485,7 @@ export const getProgram = (): Command =>
     defaultFormat: 'auto',
     defaultErrorFormat: 'auto',
     clientOptions,
-    commands,
+    // Feedback owns a positional message and attachment selection instead of generated flags.
+    commands: commands.filter((definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback'),
     completions,
-  });
+  }), clientOptions);

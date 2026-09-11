@@ -100,54 +100,84 @@ test("invariant a later response without a receipt does not reuse an older recei
 	assert.equal(selection.failure, undefined);
 });
 
-test('invariant partitions are capped and expired logs are pruned', (t) => {
-  const dir = directory(t);
-  const log = createDiagnostics('dedalus machines list', scope, dir);
-  for (let i = 0; i < 1200; i++) log.record({ kind: 'request_start', route: '/v1/machines' });
-  const path = join(dir, readdirSync(dir)[0]);
-  assert.equal(readFileSync(path, 'utf8').trim().split('\n').length, 1000);
-  const old = new Date(Date.now() - 11 * 24 * 60 * 60 * 1000);
-  utimesSync(path, old, old);
-  pruneDiagnostics(dir);
-  assert.equal(readdirSync(dir).length, 0);
+test("invariant partitions are capped and expired logs are pruned", (t) => {
+	const dir = directory(t);
+	const log = createDiagnostics("dedalus machines list", scope, dir);
+	for (let i = 0; i < 1200; i++) log.record({ kind: "request_start", route: "/v1/machines" });
+	const path = join(dir, readdirSync(dir)[0]);
+	assert.equal(readFileSync(path, "utf8").trim().split("\n").length, 1000);
+	const old = new Date(Date.now() - 11 * 24 * 60 * 60 * 1000);
+	utimesSync(path, old, old);
+	pruneDiagnostics(dir);
+	assert.equal(readdirSync(dir).length, 0);
 });
 
-test('invariant transport capture preserves receipts without request data', async (t) => {
-  const dir = directory(t);
-  t.mock.method(globalThis, 'fetch', async () => new Response('private response body', {
-    status: 500, headers: { 'X-Request-ID': receipt },
-  }));
-  const diagnostics = createDiagnostics('dedalus machines retrieve', scope, dir);
-  await diagnostics.fetch('https://staging.invalid/v1/machines/private-machine?token=secret-query', {
-    headers: { Authorization: 'Bearer secret-key' },
-  });
-  diagnostics.record({ kind: 'command_failure' });
-  const selection = selectDiagnostics(scope, dir);
-  assert.equal(selection.receipt, receipt);
-  assert.equal(selection.failure.route, '/v1/machines/{machine_id}');
-  assert.doesNotMatch(JSON.stringify(selection), /private-machine|secret-query|secret-key|private response/);
+test("invariant transport capture preserves receipts without request data", async (t) => {
+	const dir = directory(t);
+	t.mock.method(
+		globalThis,
+		"fetch",
+		async () =>
+			new Response("private response body", {
+				status: 500,
+				headers: { "X-Request-ID": receipt },
+			}),
+	);
+	const diagnostics = createDiagnostics("dedalus machines retrieve", scope, dir);
+	await diagnostics.fetch(
+		"https://staging.invalid/v1/machines/private-machine?token=secret-query",
+		{
+			headers: { Authorization: "Bearer secret-key" },
+		},
+	);
+	diagnostics.record({ kind: "command_failure" });
+	const selection = selectDiagnostics(scope, dir);
+	assert.equal(selection.receipt, receipt);
+	assert.equal(selection.failure.route, "/v1/machines/{machine_id}");
+	assert.doesNotMatch(
+		JSON.stringify(selection),
+		/private-machine|secret-query|secret-key|private response/,
+	);
 });
 
-test('invariant successful commands exclude recovered attempts from selection', (t) => {
-  for (const kind of ['response', 'transport_failure']) {
-    const dir = directory(t);
-    const log = createDiagnostics('dedalus machines list', scope, dir);
-    log.record({ kind, status_code: 503, route: '/v1/machines', request_id: receipt, duration_ms: 1 });
-    log.record({ kind: 'response', status_code: 200, route: '/v1/machines', duration_ms: 1 });
-    log.record({ kind: 'command_complete' });
-    assert.deepEqual(selectDiagnostics(scope, dir), { events: [] }, kind);
-  }
+test("invariant successful commands exclude recovered attempts from selection", (t) => {
+	for (const kind of ["response", "transport_failure"]) {
+		const dir = directory(t);
+		const log = createDiagnostics("dedalus machines list", scope, dir);
+		log.record({
+			kind,
+			status_code: 503,
+			route: "/v1/machines",
+			request_id: receipt,
+			duration_ms: 1,
+		});
+		log.record({ kind: "response", status_code: 200, route: "/v1/machines", duration_ms: 1 });
+		log.record({ kind: "command_complete" });
+		assert.deepEqual(selectDiagnostics(scope, dir), { events: [] }, kind);
+	}
 });
 
-test('invariant client processing failures retain the latest valid response receipt', (t) => {
-  const dir = directory(t);
-  const latestReceipt = '01973f7b7cf6726a9a9f4f37d4b47a22';
-  const log = createDiagnostics('dedalus machines list', scope, dir);
-  log.record({ kind: 'response', status_code: 503, route: '/v1/machines', request_id: receipt, duration_ms: 1 });
-  log.record({ kind: 'response', status_code: 200, route: '/v1/machines', request_id: latestReceipt, duration_ms: 2 });
-  log.record({ kind: 'command_failure' });
-  const selection = selectDiagnostics(scope, dir);
-  assert.equal(selection.receipt, latestReceipt);
-  assert.equal(selection.command, 'dedalus machines list');
-  assert.equal(selection.failure, undefined);
+test("invariant client processing failures retain the latest valid response receipt", (t) => {
+	const dir = directory(t);
+	const latestReceipt = "01973f7b7cf6726a9a9f4f37d4b47a22";
+	const log = createDiagnostics("dedalus machines list", scope, dir);
+	log.record({
+		kind: "response",
+		status_code: 503,
+		route: "/v1/machines",
+		request_id: receipt,
+		duration_ms: 1,
+	});
+	log.record({
+		kind: "response",
+		status_code: 200,
+		route: "/v1/machines",
+		request_id: latestReceipt,
+		duration_ms: 2,
+	});
+	log.record({ kind: "command_failure" });
+	const selection = selectDiagnostics(scope, dir);
+	assert.equal(selection.receipt, latestReceipt);
+	assert.equal(selection.command, "dedalus machines list");
+	assert.equal(selection.failure, undefined);
 });

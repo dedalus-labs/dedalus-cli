@@ -72,10 +72,8 @@ export type CreateProgramOptions<Client = unknown> = {
   readonly commands: readonly CliCommandDefinition[];
   // Return true when custom orchestration has handled the result and owns its output.
   readonly handleResult?: (result: unknown, client: Client, command: Command) => Promise<boolean>;
-  // @custom start
   // Accept the authentication formatter at the generated output boundary.
   readonly formatError?: (error: unknown, command: Command) => Record<string, unknown> | undefined;
-  // @custom end
   // Completion script per shell, generated alongside the command table. Absent when the SDK
   // config disables shell completions, in which case no `completion` command is registered.
   readonly completions?: Readonly<Record<string, string>>;
@@ -117,11 +115,9 @@ export const createProgram = <Client>({
   defaultErrorFormat,
   clientOptions,
   commands,
-  // @custom start
   // Receive the formatter supplied by the authentication entry point.
   formatError,
   handleResult,
-  // @custom end
   completions,
 }: CreateProgramOptions<Client>): Command => {
 // @custom end
@@ -525,7 +521,6 @@ const callArguments = async (
   return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params, stdin };
   // @custom end
 };
-  // @custom end
 
 const paramsValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {
   if (definition.bodyParamKey === undefined) return params;

@@ -1047,4 +1047,4 @@ const isAsyncIterable = (value: unknown): value is AsyncIterable<unknown> =>
   !!value && typeof (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function';
 
 // Custom commands share generated credential, output, and error conventions.
-export { sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode };
+export { normalizeFormat, usageExitCode };

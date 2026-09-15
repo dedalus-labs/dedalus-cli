@@ -21,6 +21,9 @@ Untrusted metadata/session -> schema validation -> typed auth values
 | `oauth/http.ts` | Bounded token and user-info requests with validated response fields. |
 | `oauth/payload.ts` | Token fields, exact scopes and user identity binding. |
 | `oauth/response.ts` | Bounded UTF-8 JSON reads with preserved stream cleanup failures. |
+| `oauth/callback.ts` | One-use state- and issuer-bound callback on IPv4 loopback. |
+| `oauth/loopback.ts` | Listener lifetime and constant-time state comparison. |
+| `oauth/page.ts` | Local completion page that excludes grant values. |
 
 Workload flags take priority over workload environment variables, then the
 stored session. Credentials at the same priority cannot be combined.
@@ -56,3 +59,30 @@ validated authentication fields. Unrelated source fields are excluded.
 OAuth HTTP requests use only the configured endpoints, reject redirects and
 validate token, scope, expiry and identity fields before returning a value.
 Responses are bounded to 512 KiB. A failed read retains any simultaneous cleanup failure.
+
+## Callback lifetime
+
+A callback returns its code after the browser response finishes and the listener
+closes. Invalid state leaves the attempt available for its matching response.
+Cancellation and timeout close the listener before returning failure.
+The full transition contract is [dfa.ts](./dfa.ts).
+
+```mermaid
+stateDiagram-v2
+    classDef active fill:#1d4ed8,color:#fff
+    classDef success fill:#166534,color:#fff
+    classDef error fill:#b91c1c,color:#fff
+    Idle --> Listening: loopback bound
+    Idle --> Failed: listener unavailable
+    Listening --> Listening: unmatched request or invalid state
+    Listening --> Responding: matching state received
+    Listening --> Closing: cancellation, timeout or listener error
+    Responding --> Closing: response finished or failed
+    Closing --> ReturnedCode: valid code, response finished, listener closed
+    Closing --> Failed: issuer, callback, provider or response error
+    Closing --> Failed: cancellation, timeout or listener error
+    Closing --> Failed: listener cleanup failed
+    class Listening,Responding,Closing active
+    class ReturnedCode success
+    class Failed error
+```

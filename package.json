@@ -77,7 +77,8 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit && tsc -p tsconfig.tests.json && tsc -p tsconfig.tools.json",
 		"test": "pnpm run build && node --import tsx scripts/run-tests.ts",
 		"ci:generate": "hollywood generate 'ci/**/*.ts' --source-root ci --output .",
-		"test:package": "node scripts/verify-preview-package.mjs"
+		"test:package": "node scripts/verify-preview-package.mjs",
+		"test:native": "node --import tsx --test tests/native-keyring.integration.ts"
 	},
 	"dependencies": {
 		"@napi-rs/keyring": "^1.3.0",

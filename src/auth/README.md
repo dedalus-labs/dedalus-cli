@@ -18,6 +18,9 @@ Untrusted metadata/session -> schema validation -> typed auth values
 | `credentials.ts` | Select one credential and provide native storage with a lifecycle lock. |
 | `workflow.ts` | Serialize login, status, refresh and logout against one stored identity. |
 | `oauth/metadata.generated.ts` | Approved public issuer, endpoints, client and requested scopes. |
+| `oauth/http.ts` | Bounded token and user-info requests with validated response fields. |
+| `oauth/payload.ts` | Token fields, exact scopes and user identity binding. |
+| `oauth/response.ts` | Bounded UTF-8 JSON reads with preserved stream cleanup failures. |
 
 Workload flags take priority over workload environment variables, then the
 stored session. Credentials at the same priority cannot be combined.
@@ -49,3 +52,7 @@ node --import tsx scripts/generate-auth.ts openapi.json src/auth/oauth/metadata.
 
 The generator accepts only the approved public API origin and emits only its
 validated authentication fields. Unrelated source fields are excluded.
+
+OAuth HTTP requests use only the configured endpoints, reject redirects and
+validate token, scope, expiry and identity fields before returning a value.
+Responses are bounded to 512 KiB. A failed read retains any simultaneous cleanup failure.

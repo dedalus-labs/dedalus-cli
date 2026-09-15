@@ -81,91 +81,93 @@ test("invariant organization selection never turns a request receipt into an out
 	);
 });
 
-test('invariant installed CLI sends a server-compatible multipart manifest', async (t) => {
-  let received;
-  const server = createServer(async (req, res) => {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const wire = new Request('http://fixture/v1/feedback', {
-      method: 'POST',
-      headers: req.headers,
-      body: Buffer.concat(chunks),
-    });
-    received = await wire.formData();
-    res.writeHead(201, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ id: 'fb_' + receipt, source: 'cli', debug: { included: true } }));
-  });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  t.after(() => server.close());
-  const result = await runCLI([
-    'feedback',
-    'package attachment check',
-    '--include-logs=true',
-    '--api-key',
-    'test-key',
-    '--base-url',
-    'http://127.0.0.1:' + server.address().port,
-    '--format',
-    'json',
-  ]);
-  assert.equal(result.code, 0, result.stderr);
-  const metadata = JSON.parse(received.get('metadata'));
-  const files = received.getAll('debug_files');
-  assert.equal(metadata.debug.included, true);
-  assert.equal(files.length, metadata.debug.files.length);
-  assert.ok(files.length > 0 && files.length <= 4);
-  for (const file of files) {
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const manifest = metadata.debug.files.find((entry) => entry.filename === file.name);
-    assert.equal(manifest.size_bytes, bytes.length);
-    assert.equal(manifest.sha256, createHash('sha256').update(bytes).digest('hex'));
-    assert.equal(manifest.format, file.type);
-    assert.doesNotMatch(bytes.toString(), /test-key|Authorization|Bearer/);
-  }
+test("invariant installed CLI sends a server-compatible multipart manifest", async (t) => {
+	let received;
+	const server = createServer(async (req, res) => {
+		const chunks = [];
+		for await (const chunk of req) chunks.push(chunk);
+		const wire = new Request("http://fixture/v1/feedback", {
+			method: "POST",
+			headers: req.headers,
+			body: Buffer.concat(chunks),
+		});
+		received = await wire.formData();
+		res.writeHead(201, { "content-type": "application/json" });
+		res.end(JSON.stringify({ id: "fb_" + receipt, source: "cli", debug: { included: true } }));
+	});
+	await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+	t.after(() => server.close());
+	const result = await runCLI([
+		"feedback",
+		"package attachment check",
+		"--include-logs=true",
+		"--api-key",
+		"test-key",
+		"--base-url",
+		"http://127.0.0.1:" + server.address().port,
+		"--format",
+		"json",
+	]);
+	assert.equal(result.code, 0, result.stderr);
+	const metadata = JSON.parse(received.get("metadata"));
+	const files = received.getAll("debug_files");
+	assert.equal(metadata.debug.included, true);
+	assert.equal(files.length, metadata.debug.files.length);
+	assert.ok(files.length > 0 && files.length <= 4);
+	for (const file of files) {
+		const bytes = Buffer.from(await file.arrayBuffer());
+		const manifest = metadata.debug.files.find((entry) => entry.filename === file.name);
+		assert.equal(manifest.size_bytes, bytes.length);
+		assert.equal(manifest.sha256, createHash("sha256").update(bytes).digest("hex"));
+		assert.equal(manifest.format, file.type);
+		assert.doesNotMatch(bytes.toString(), /test-key|Authorization|Bearer/);
+	}
 });
 
 for (const [status, exitCode] of [
-  [401, 10],
-  [429, 12],
-  [422, 13],
+	[401, 10],
+	[429, 12],
+	[422, 13],
 ]) {
-  test(
-    'invariant installed CLI reports HTTP ' + status + ' without claiming acceptance',
-    async (t) => {
-      const envelope = {
-        error_code: status === 429 ? 'RATE_LIMITED' : 'INVALID_REQUEST',
-        message: 'fixture rejection',
-        retryable: status === 429,
-        ...(status === 429 ? { retry_after_ms: 1000, details: { rate_limit_scope: 'organization' } } : {}),
-      };
-      const server = createServer((req, res) => {
-        req.resume();
-        res.writeHead(status, { 'content-type': 'application/json' });
-        res.end(JSON.stringify(envelope));
-      });
-      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-      t.after(() => server.close());
-      const result = await runCLI([
-        'feedback',
-        'rejection check',
-        '--include-logs=false',
-        '--api-key',
-        'test-key',
-        '--base-url',
-        'http://127.0.0.1:' + server.address().port,
-        '--max-retries',
-        '0',
-        '--format',
-        'json',
-      ]);
-      assert.equal(result.code, exitCode, result.stderr);
-      assert.equal(result.stdout, '');
-      assert.match(result.stderr, /fixture rejection/);
-      const error = JSON.parse(result.stderr);
-      assert.equal(error.status, status);
-      assert.deepEqual(error.body, envelope);
-    },
-  );
+	test(
+		"invariant installed CLI reports HTTP " + status + " without claiming acceptance",
+		async (t) => {
+			const envelope = {
+				error_code: status === 429 ? "RATE_LIMITED" : "INVALID_REQUEST",
+				message: "fixture rejection",
+				retryable: status === 429,
+				...(status === 429
+					? { retry_after_ms: 1000, details: { rate_limit_scope: "organization" } }
+					: {}),
+			};
+			const server = createServer((req, res) => {
+				req.resume();
+				res.writeHead(status, { "content-type": "application/json" });
+				res.end(JSON.stringify(envelope));
+			});
+			await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+			t.after(() => server.close());
+			const result = await runCLI([
+				"feedback",
+				"rejection check",
+				"--include-logs=false",
+				"--api-key",
+				"test-key",
+				"--base-url",
+				"http://127.0.0.1:" + server.address().port,
+				"--max-retries",
+				"0",
+				"--format",
+				"json",
+			]);
+			assert.equal(result.code, exitCode, result.stderr);
+			assert.equal(result.stdout, "");
+			assert.match(result.stderr, /fixture rejection/);
+			const error = JSON.parse(result.stderr);
+			assert.equal(error.status, status);
+			assert.deepEqual(error.body, envelope);
+		},
+	);
 }
 
 test('invariant installed CLI retries one submission with the same idempotency key', async (t) => {

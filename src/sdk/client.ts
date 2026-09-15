@@ -99,11 +99,6 @@ export interface ClientOptions {
   providerModel?: string | null | undefined;
 
   /**
-   * MCP Authorization Server URL.
-   */
-  asBaseURL?: string | null | undefined;
-
-  /**
    * Organization ID for request scoping.
    */
   dedalusOrgID?: string | null | undefined;
@@ -190,7 +185,6 @@ export class Dedalus {
   provider: string | null;
   providerKey: string | null;
   providerModel: string | null;
-  asBaseURL: string | null;
   dedalusOrgID: string | null;
 
   baseURL: string;
@@ -215,7 +209,6 @@ export class Dedalus {
    * @param {string | null | undefined} [opts.provider=process.env["DEDALUS_PROVIDER"] ?? null]
    * @param {string | null | undefined} [opts.providerKey=process.env["DEDALUS_PROVIDER_KEY"] ?? null]
    * @param {string | null | undefined} [opts.providerModel=process.env["DEDALUS_PROVIDER_MODEL"] ?? null]
-   * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string | null | undefined} [opts.dedalusOrgID=process.env["DEDALUS_ORG_ID"] ?? null]
    * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://dcs.dedaluslabs.ai] - Override the default base URL for the API.
    * @param {number} [opts.timeout=1 minute] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
@@ -233,7 +226,6 @@ export class Dedalus {
     provider = readEnv('DEDALUS_PROVIDER') ?? null,
     providerKey = readEnv('DEDALUS_PROVIDER_KEY') ?? null,
     providerModel = readEnv('DEDALUS_PROVIDER_MODEL') ?? null,
-    asBaseURL = readEnv('DEDALUS_AS_URL') ?? 'https://as.dedaluslabs.ai',
     dedalusOrgID = readEnv('DEDALUS_ORG_ID') ?? null,
     ...opts
   }: ClientOptions = {}) {
@@ -244,7 +236,6 @@ export class Dedalus {
       provider,
       providerKey,
       providerModel,
-      asBaseURL,
       dedalusOrgID,
       ...opts,
       baseURL: baseURL || 'https://dcs.dedaluslabs.ai',
@@ -289,7 +280,6 @@ export class Dedalus {
     this.provider = provider;
     this.providerKey = providerKey;
     this.providerModel = providerModel;
-    this.asBaseURL = asBaseURL;
     this.dedalusOrgID = dedalusOrgID;
   }
 
@@ -309,7 +299,6 @@ export class Dedalus {
       provider: this.provider,
       providerKey: this.providerKey,
       providerModel: this.providerModel,
-      asBaseURL: this.asBaseURL,
       dedalusOrgID: this.dedalusOrgID,
       ...options,
     });

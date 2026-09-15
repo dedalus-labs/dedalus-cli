@@ -222,49 +222,66 @@ test("invariant invalid include-logs values fail before submission", async () =>
 });
 
 for (const failsDecoding of [false, true]) {
-  test('invariant feedback follows the terminal command outcome after HTTP responses: ' + (failsDecoding ? 'decoding failure' : 'recovered retry'), async (t) => {
-    const home = mkdtempSync(join(tmpdir(), 'dedalus-command-outcome-'));
-    t.after(() => rmSync(home, { recursive: true, force: true }));
-    let attempts = 0;
-    let report;
-    const server = createServer(async (req, res) => {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      if (req.url === '/v1/feedback') {
-        const wire = new Request('http://fixture/v1/feedback', {
-          method: 'POST', headers: req.headers, body: Buffer.concat(chunks),
-        });
-        report = req.headers['content-type'].startsWith('multipart/')
-          ? JSON.parse((await wire.formData()).get('metadata'))
-          : await wire.json();
-        res.writeHead(201, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ id: 'fb_' + receipt, source: 'cli', debug: report.debug }));
-        return;
-      }
-      attempts++;
-      res.setHeader('content-type', 'application/json');
-      res.setHeader('x-request-id', receipt);
-      if (!failsDecoding && attempts === 1) {
-        res.writeHead(503, { 'retry-after-ms': '1' });
-        res.end('{"message":"retry fixture"}');
-      } else {
-        res.writeHead(200);
-        res.end(failsDecoding ? '{' : '{"data":[]}');
-      }
-    });
-    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-    t.after(() => server.close());
-    const options = ['--api-key', 'test-key', '--base-url', 'http://127.0.0.1:' + server.address().port];
-    const command = await runCLI(['machines', 'list', ...options], { HOME: home });
-    assert.equal(command.code, failsDecoding ? 1 : 0, command.stderr);
-    assert.equal(attempts, failsDecoding ? 1 : 2);
-    const feedback = await runCLI([
-      'feedback', 'command outcome', '--include-logs=' + (failsDecoding ? 'false' : 'auto'), ...options,
-    ], { HOME: home });
-    assert.equal(feedback.code, 0, feedback.stderr);
-    assert.equal(report.debug.included, false);
-    assert.deepEqual(report.debug.files, []);
-    assert.equal(report.reported_request_id, failsDecoding ? receipt : undefined);
-    assert.equal(report.diagnostics, undefined);
-  });
+	test(
+		"invariant feedback follows the terminal command outcome after HTTP responses: " +
+			(failsDecoding ? "decoding failure" : "recovered retry"),
+		async (t) => {
+			const home = mkdtempSync(join(tmpdir(), "dedalus-command-outcome-"));
+			t.after(() => rmSync(home, { recursive: true, force: true }));
+			let attempts = 0;
+			let report;
+			const server = createServer(async (req, res) => {
+				const chunks = [];
+				for await (const chunk of req) chunks.push(chunk);
+				if (req.url === "/v1/feedback") {
+					const wire = new Request("http://fixture/v1/feedback", {
+						method: "POST",
+						headers: req.headers,
+						body: Buffer.concat(chunks),
+					});
+					report = req.headers["content-type"].startsWith("multipart/")
+						? JSON.parse((await wire.formData()).get("metadata"))
+						: await wire.json();
+					res.writeHead(201, { "content-type": "application/json" });
+					res.end(JSON.stringify({ id: "fb_" + receipt, source: "cli", debug: report.debug }));
+					return;
+				}
+				attempts++;
+				res.setHeader("content-type", "application/json");
+				res.setHeader("x-request-id", receipt);
+				if (!failsDecoding && attempts === 1) {
+					res.writeHead(503, { "retry-after-ms": "1" });
+					res.end('{"message":"retry fixture"}');
+				} else {
+					res.writeHead(200);
+					res.end(failsDecoding ? "{" : '{"data":[]}');
+				}
+			});
+			await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+			t.after(() => server.close());
+			const options = [
+				"--api-key",
+				"test-key",
+				"--base-url",
+				"http://127.0.0.1:" + server.address().port,
+			];
+			const command = await runCLI(["machines", "list", ...options], { HOME: home });
+			assert.equal(command.code, failsDecoding ? 1 : 0, command.stderr);
+			assert.equal(attempts, failsDecoding ? 1 : 2);
+			const feedback = await runCLI(
+				[
+					"feedback",
+					"command outcome",
+					"--include-logs=" + (failsDecoding ? "false" : "auto"),
+					...options,
+				],
+				{ HOME: home },
+			);
+			assert.equal(feedback.code, 0, feedback.stderr);
+			assert.equal(report.debug.included, false);
+			assert.deepEqual(report.debug.files, []);
+			assert.equal(report.reported_request_id, failsDecoding ? receipt : undefined);
+			assert.equal(report.diagnostics, undefined);
+		},
+	);
 }

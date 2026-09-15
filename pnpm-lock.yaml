@@ -20,6 +20,9 @@ importers:
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
     devDependencies:
       '@dedalus-labs/hollywood':
         specifier: 0.0.5
@@ -39,9 +42,6 @@ importers:
       typescript:
         specifier: ^6.0.0
         version: 6.0.3
-      zod:
-        specifier: 4.3.6
-        version: 4.3.6
 
 packages:
 

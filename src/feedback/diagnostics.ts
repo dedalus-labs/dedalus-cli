@@ -191,63 +191,63 @@ const routeTemplate = (input: RequestInfo | URL): string => {
 };
 
 export const createDiagnostics = (command: string, scope: string, directory = debugDirectory()) => {
-  let count = 0;
-  let disabled = false;
-  const path = join(directory, `${scope}.${Date.now()}.${randomUUID()}.jsonl`);
-  const record = (event: Omit<DiagnosticEvent, 'ts' | 'command'>): void => {
-    if (disabled || count >= 1000) return;
-    try {
-      const safe = parseEvent({ ...event, command, ts: new Date().toISOString() });
-      if (!safe) throw new Error('invalid diagnostic event');
-      mkdirSync(directory, { recursive: true, mode: 0o700 });
-      if (lstatSync(directory).isSymbolicLink())
-        throw new Error('diagnostic directory is a symlink');
-      const line = JSON.stringify(safe) + '\n';
-      if (existsSync(path) && statSync(path).size + Buffer.byteLength(line) > partitionLimit)
-        return;
-      const fd = openSync(
-        path,
-        constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW,
-        0o600,
-      );
-      try {
-        appendFileSync(fd, line);
-      } finally {
-        closeSync(fd);
-      }
-      count++;
-      pruneDiagnostics(directory);
-    } catch {
-      disabled = true;
-      process.stderr.write('Local diagnostic recording is unavailable.\n');
-    }
-  };
-  record({ kind: 'command_start' });
-  const fetchWithDiagnostics: typeof fetch = async (input, init) => {
-    const route = routeTemplate(input);
-    const start = performance.now();
-    record({ kind: 'request_start', route });
-    try {
-      const response = await fetch(input, init);
-      const receipt = response.headers.get('x-request-id');
-      record({
-        kind: 'response',
-        route,
-        status_code: response.status,
-        duration_ms: Math.max(0, Math.round(performance.now() - start)),
-        ...(receipt ? { request_id: receipt } : {}),
-      });
-      return response;
-    } catch (error) {
-      record({
-        kind: 'transport_failure',
-        route,
-        duration_ms: Math.max(0, Math.round(performance.now() - start)),
-      });
-      throw error;
-    }
-  };
-  return { fetch: fetchWithDiagnostics, record };
+	let count = 0;
+	let disabled = false;
+	const path = join(directory, `${scope}.${Date.now()}.${randomUUID()}.jsonl`);
+	const record = (event: Omit<DiagnosticEvent, "ts" | "command">): void => {
+		if (disabled || count >= 1000) return;
+		try {
+			const safe = parseEvent({ ...event, command, ts: new Date().toISOString() });
+			if (!safe) throw new Error("invalid diagnostic event");
+			mkdirSync(directory, { recursive: true, mode: 0o700 });
+			if (lstatSync(directory).isSymbolicLink())
+				throw new Error("diagnostic directory is a symlink");
+			const line = JSON.stringify(safe) + "\n";
+			if (existsSync(path) && statSync(path).size + Buffer.byteLength(line) > partitionLimit)
+				return;
+			const fd = openSync(
+				path,
+				constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW,
+				0o600,
+			);
+			try {
+				appendFileSync(fd, line);
+			} finally {
+				closeSync(fd);
+			}
+			count++;
+			pruneDiagnostics(directory);
+		} catch {
+			disabled = true;
+			process.stderr.write("Local diagnostic recording is unavailable.\n");
+		}
+	};
+	record({ kind: "command_start" });
+	const fetchWithDiagnostics: typeof fetch = async (input, init) => {
+		const route = routeTemplate(input);
+		const start = performance.now();
+		record({ kind: "request_start", route });
+		try {
+			const response = await fetch(input, init);
+			const receipt = response.headers.get("x-request-id");
+			record({
+				kind: "response",
+				route,
+				status_code: response.status,
+				duration_ms: Math.max(0, Math.round(performance.now() - start)),
+				...(receipt ? { request_id: receipt } : {}),
+			});
+			return response;
+		} catch (error) {
+			record({
+				kind: "transport_failure",
+				route,
+				duration_ms: Math.max(0, Math.round(performance.now() - start)),
+			});
+			throw error;
+		}
+	};
+	return { fetch: fetchWithDiagnostics, record };
 };
 
 export const selectDiagnostics = (

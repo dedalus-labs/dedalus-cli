@@ -31,6 +31,10 @@ lifecycle lock. A provider result becomes usable after its native write succeeds
 A failed write revokes the new grant. Refresh cannot change the user, organization,
 issuer, client or resource. The caller supplies the provider implementation.
 
+Offline status reads stored identity without provider calls. Logout requires
+provider revocation before removing the native entry, then verifies local absence.
+A failed revocation retains the entry for another attempt.
+
 Run `pnpm run build`, `pnpm run typecheck`, and
 `node --import tsx --test tests/auth/*.test.ts`.
 Run `CLI_NATIVE_KEYRING_TEST=1 pnpm run test:native` with an available native

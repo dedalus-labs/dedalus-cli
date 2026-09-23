@@ -12,7 +12,8 @@
 //   - SCALAR_SMOKE_REPORT: a file path; when set, the run writes a JSON report there instead of
 //     printing a table. The generator uses this to collect per-operation results.
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -903,6 +904,16 @@ const resolveBinPath = (): string => {
   );
 };
 
+// A `file` flag is a path the CLI opens, so its argv token is a placeholder rather than a sampled
+// value — nothing the schema could produce names a real file. One temporary file backs every such
+// flag in the run: the commands only need the path to resolve and the bytes to arrive.
+const createSmokeFile = (): string => {
+  const dir = mkdtempSync(join(tmpdir(), 'scalar-cli-smoke-'));
+  const path = join(dir, 'smoke-upload.txt');
+  writeFileSync(path, 'scalar smoke test upload\n', 'utf8');
+  return path;
+};
+
 /**
  * How many commands run at once, capped at the number of cases there are.
  *
@@ -916,6 +927,9 @@ const smokeConcurrency = (caseCount: number): number => {
 
 const main = async (): Promise<void> => {
   const binPath = resolveBinPath();
+  const smokeFilePath = cases.some((testCase) => testCase.args.includes('__scalar_smoke_file__'))
+    ? createSmokeFile()
+    : undefined;
 
   // SCALAR_SMOKE_FILTER (comma-separated) keeps only cases whose operation name or path matches
   // one of the needles, so a caller can smoke-test a subset. With no filter, every case runs.
@@ -957,7 +971,10 @@ const main = async (): Promise<void> => {
       try {
         // Pass the current environment through so the embedded SDK picks up the base URL and
         // credentials; node runs the built bin exactly as the published executable would.
-        await execFileAsync('node', [binPath, ...testCase.args], {
+        const args = testCase.args.map((arg) =>
+          arg === '__scalar_smoke_file__' && smokeFilePath ? smokeFilePath : arg,
+        );
+        await execFileAsync('node', [binPath, ...args], {
           env: process.env,
           timeout: COMMAND_TIMEOUT_MS,
           maxBuffer: 1024 * 1024 * 20,

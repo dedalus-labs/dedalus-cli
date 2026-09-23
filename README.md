@@ -11,6 +11,8 @@ The full API of this library can be found in [api.md](./api.md).
 - [Installation](#installation)
 - [Usage](#usage)
 - [API Reference](./api.md)
+- [Signing In](#signing-in)
+- [File Arguments](#file-arguments)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
 - [Streaming](#streaming)
@@ -31,6 +33,16 @@ The full API of this library can be found in [api.md](./api.md).
 ```sh
 # npm (requires Node.js)
 npm install -g dedalus-cli
+
+# Homebrew — standalone binary, no Node.js required
+brew install dedalus-labs/tap/dedalus
+
+# Direct download — standalone binary, no Node.js required
+curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz
+sudo mv dedalus /usr/local/bin/
+
+# Windows — download and extract dedalus-windows-x64.zip, then add it to PATH
+# https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-windows-x64.zip
 ```
 
 <br />
@@ -40,12 +52,43 @@ npm install -g dedalus-cli
 ```sh
 dedalus [resource] [command] [flags]
 
-dedalus machines create --api-key "$DEDALUS_API_KEY" --autosleep '300s' --memory-mib '4096' --storage-gib '10' --vcpu '1'
+dedalus machines create \
+  --api-key "$DEDALUS_API_KEY" \
+  --autosleep '300s' \
+  --memory-mib '4096' \
+  --storage-gib '10' \
+  --vcpu '1'
 ```
 
-The examples in the following sections assume a `client` configured as shown above.
+Every command accepts the global flags below, so the examples that follow show only what is specific to them.
 
 See the [API reference](./api.md) for every available operation.
+
+<br />
+
+## Signing In
+
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key, bearer-auth. Pass `--flow <name>` to pick one without being asked.
+
+```sh
+dedalus login
+dedalus login --flow api-key
+dedalus logout
+dedalus logout --all
+```
+
+<br />
+
+## File Arguments
+
+Any command flag or credential reads its value from a file when the value begins with `@`, so a body field holding a whole document does not have to survive shell quoting. `@file://` always sends the file as text and `@data://` always sends it base64-encoded; a bare `@` lets the file decide. A flag that uploads a file takes its path with or without the `@`. Escape a literal value that begins with `@` as `\@`. The global options (`--base-url`, `--timeout`, `--format` and the rest) are read exactly as written.
+
+```sh
+dedalus COMMAND --FLAG @./body.json
+dedalus COMMAND --FLAG @file://./notes.txt
+dedalus COMMAND --FLAG @data://./logo.png
+dedalus COMMAND --FLAG '\@not-a-file'
+```
 
 <br />
 
@@ -160,6 +203,6 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 20 or newer — for the npm install only; the standalone binaries bundle their own runtime.
 
 Powered by Scalar.

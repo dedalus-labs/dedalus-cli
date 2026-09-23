@@ -164,6 +164,23 @@ List machine storage usage breakdown. See dedalus\-usage\-machine\-storage(1).
 .TP
 \fBdedalus completion\fR
 Print a shell completion script. See dedalus\-completion(1).
+.TP
+\fBdedalus login\fR
+Sign in and save credentials for later commands. See dedalus\-login(1).
+.TP
+\fBdedalus logout\fR
+Forget saved credentials. See dedalus\-logout(1).
+.SH "FILE ARGUMENTS"
+Any command flag or credential reads its value from a file when the value begins with @. A flag shown with a <path> value uploads a file and takes its path with or without the @. The global options above are read exactly as written.
+.PP
+.RS 4
+.nf
+dedalus COMMAND \-\-FLAG @./body.json    # contents of the file
+dedalus COMMAND \-\-FLAG @file://./n.txt # always sent as text
+dedalus COMMAND \-\-FLAG @data://./l.png # always base64\-encoded
+dedalus COMMAND \-\-FLAG '\e@literal'    # a value that begins with @
+.fi
+.RE
 .SH "SHELL COMPLETION"
 dedalus completion <shell> prints a completion script for bash, zsh, and fish. Load it from your shell startup file:
 .PP

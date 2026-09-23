@@ -2,8 +2,14 @@
 
 import type { Command } from 'commander';
 import SDK from '../sdk/index';
-import { createProgram, type CliClientOptionDefinition, type CliCommandDefinition } from '../cli/runtime';
+import {
+  createProgram,
+  type CliClientOptionDefinition,
+  type CliCommandDefinition,
+  type CliCommandGroup,
+} from '../cli/runtime';
 import { completions } from '../cli/completions';
+import type { CliAuthDefinition } from '../cli/login';
 
 const clientOptions = [
   {
@@ -71,6 +77,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -107,6 +114,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -164,6 +172,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -192,6 +201,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -257,6 +267,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -288,6 +299,7 @@ const commands = [
     streaming: 'sse',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -327,6 +339,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -355,6 +368,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -383,6 +397,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -411,6 +426,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -455,6 +471,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -491,6 +508,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -527,6 +545,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -571,6 +590,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -615,6 +635,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -651,6 +672,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -687,6 +709,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -731,6 +754,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -767,6 +791,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -803,6 +828,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -839,6 +865,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -883,6 +910,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -951,6 +979,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -987,6 +1016,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1023,6 +1053,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1059,6 +1090,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1111,6 +1143,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1155,6 +1188,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1223,6 +1257,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1259,6 +1294,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1297,6 +1333,7 @@ const commands = [
     transport: 'websocket',
     iterable: true,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1345,6 +1382,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1373,6 +1411,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1394,6 +1433,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1442,6 +1482,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
+    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -1475,15 +1516,59 @@ const commands = [
   },
 ] as const satisfies readonly CliCommandDefinition[];
 
+const groups = [] as const satisfies readonly CliCommandGroup[];
+
+const auth = {
+  loginPath: ['login'],
+  logoutPath: ['logout'],
+  loginCommand: 'dedalus login',
+  storeName: 'dedalus',
+  storeEnv: 'DEDALUS_CREDENTIALS_FILE',
+  baseUrlEnv: 'DEDALUS_BASE_URL',
+  backend: 'auto',
+  defaultBaseUrl: 'https://dcs.dedaluslabs.ai',
+  requirements: [['apiKey'], ['xAPIKey']],
+  envByKey: {
+    apiKey: 'DEDALUS_API_KEY',
+    xAPIKey: 'DEDALUS_X_API_KEY',
+    bearerAuth: 'DEDALUS_BEARER_AUTH',
+  },
+  methods: [
+    {
+      name: 'api-key',
+      label: 'Enter your access token',
+      kind: 'token',
+      clientKey: 'apiKey',
+      prompt: 'Access token: ',
+    },
+    {
+      name: 'x-api-key',
+      label: 'Enter your API key',
+      kind: 'token',
+      clientKey: 'xAPIKey',
+      prompt: 'API key: ',
+    },
+    {
+      name: 'bearer-auth',
+      label: 'Enter your access token',
+      kind: 'token',
+      clientKey: 'bearerAuth',
+      prompt: 'Access token: ',
+    },
+  ],
+} as const satisfies CliAuthDefinition;
+
 export const getProgram = (): Command =>
   createProgram({
     SDK,
     binaryName: 'dedalus',
-    version: '0.5.0', // x-release-please-version
+    version: '0.6.0', // x-release-please-version
     description: 'CLI for Dedalus',
     defaultFormat: 'auto',
     defaultErrorFormat: 'auto',
     clientOptions,
     commands,
+    groups,
     completions,
+    auth,
   });

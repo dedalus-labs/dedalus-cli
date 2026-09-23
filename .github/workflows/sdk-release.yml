@@ -1,96 +1,29 @@
-name: Release Please
+name: CLI SDK Release
 
 on:
-  # A release is cut when a human merges the platform-managed release PR into
-  # main (the PR's base, so its diff shows the full pending release).
-  # Every other push here runs release-please as well — commits written straight to
-  # this branch included — and cuts nothing, there being no release commit at the tip.
-  push:
-    branches:
-      - main
-    # The Scalar platform pushes these workflow files straight to main to keep them
-    # current between releases; that is bookkeeping, never a release. Running anyway is worse
-    # than pointless on a branch that has not been handed a .release-please-manifest.json yet —
-    # release-please fails the run outright when it cannot read one. A release commit always
-    # rewrites the manifest and the changelog, so this filter can never swallow one.
-    paths-ignore:
-      - '.github/workflows/**'
-  # Manual fallback only; nothing in the automated chain depends on dispatch.
+  # Manual re-publish only: the automated publish for each release runs as the `publish` job
+  # inside release-please.yml, in the same run that cuts the tag (dispatching a workflow here
+  # instead would resolve it on the repository's default branch only, which breaks releasing
+  # from any other release line). Dispatch this workflow at an existing release tag to re-run
+  # a failed or skipped publish. A dispatched run is top-level, so OIDC trusted-publisher
+  # claims name this file; register it as an additional trusted publisher only when manual
+  # re-publishes are used. Never add a workflow_call trigger here — registries reject
+  # publishes from called (reusable) workflows.
   workflow_dispatch:
 
 permissions:
   contents: write
-  # Required to update the merged release PR's autorelease labels after tagging.
-  pull-requests: write
+  id-token: write
+  packages: write
 
 jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      # Consumed by the publish job's checkout: without this mapping the checkout ref would be
-      # empty and the publish would build the triggering branch head instead of the released
-      # tag's exact commit.
-      tag_name: ${{ steps.release.outputs.tag_name }}
-    steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        id: release
-        with:
-          target-branch: main
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-          # Release PRs are opened and updated by the Scalar platform with its own
-          # credential (so their CI runs without manual approval); this workflow only
-          # cuts the tag + GitHub Release once a release PR is merged.
-          skip-github-pull-request: true
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        with:
-          fetch-depth: 0
-      # Merging the release PR into main is itself the promotion, but the
-      # version bump and changelog must also land back on scalar-next, or the next
-      # release PR would propose this release again. A real merge (never a plain
-      # commit push) so a squash- or rebase-merged release PR syncs just as well; the
-      # non-conventional message keeps the sync commit out of future changelogs. Plain
-      # (non-force) push on purpose: losing a race against a concurrent regeneration
-      # push fails loudly here, and the platform's next sync re-converges.
-      - name: Sync release back to scalar-next
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin scalar-next
-          git checkout -B scalar-next origin/scalar-next
-          git merge --no-edit -m "Sync release ${{ steps.release.outputs.tag_name }} back to scalar-next" "${{ steps.release.outputs.sha }}"
-          git push origin scalar-next
-  publish:
-    needs: release-please
-    # `!cancelled()` keeps publishing even when the back-sync to the integration branch
-    # failed: a raced integration branch must not block the release from reaching its
-    # registry.
-    if: ${{ !cancelled() && needs.release-please.outputs.release_created == 'true' }}
+  release:
     runs-on: ubuntu-latest
     environment: production
-    # Job-level permissions replace the workflow's release-cutting grants with the publish
-    # floor. OIDC trusted publishing verifies this run's claims, which name this workflow
-    # file — register release-please.yml as the trusted publisher on the registry.
-    permissions:
-      contents: write
-      id-token: write
-      packages: write
     env:
       VERSIONING_POLICY: manual
     steps:
-      # Publishing runs inline — a top-level job of this same run — rather than dispatching
-      # sdk-release.yml: workflow_dispatch resolves the target workflow on the repository's
-      # default branch only, so a dispatch would 404 whenever the release line is any other
-      # branch, while OIDC trusted publishing accepts this job because it stays top-level
-      # (never a reusable-workflow call). The release-please job cut the tag earlier in this
-      # run; checking it out publishes exactly the released commit, not the branch head that
-      # triggered the workflow.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"

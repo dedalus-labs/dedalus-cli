@@ -9,9 +9,6 @@ dedalus\-machines\-create \- Create machine
 Create machine
 .SH "OPTIONS"
 .TP
-\fB\-\-x\-dedalus\-org\-id\fR \fI<value>\fR
-The x\-dedalus\-org\-id header parameter.
-.TP
 \fB\-\-autosleep\fR \fI<value>\fR
 Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
 .TP
@@ -58,7 +55,7 @@ API key authentication using Bearer token. Can also be set with the DEDALUS_API_
 API key authentication using X\-API\-Key header. Can also be set with the DEDALUS_X_API_KEY environment variable.
 .TP
 \fB\-\-bearer\-auth\fR \fI<value>\fR
-Dedalus API key in Authorization: Bearer <key>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
+Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
 .TP
 \fB\-\-provider\fR \fI<value>\fR
 Provider name for BYOK mode. Can also be set with the DEDALUS_PROVIDER environment variable.

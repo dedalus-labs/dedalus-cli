@@ -10,10 +10,7 @@ Wake a sleeping machine
 .SH "OPTIONS"
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
-The machine\-id path parameter. Required.
-.TP
-\fB\-\-x\-dedalus\-org\-id\fR \fI<value>\fR
-The x\-dedalus\-org\-id header parameter.
+Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.
 .TP
 \fB\-\-base\-url\fR \fI<url>\fR
 Override the base URL for API requests.
@@ -49,7 +46,7 @@ API key authentication using Bearer token. Can also be set with the DEDALUS_API_
 API key authentication using X\-API\-Key header. Can also be set with the DEDALUS_X_API_KEY environment variable.
 .TP
 \fB\-\-bearer\-auth\fR \fI<value>\fR
-Dedalus API key in Authorization: Bearer <key>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
+Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
 .TP
 \fB\-\-provider\fR \fI<value>\fR
 Provider name for BYOK mode. Can also be set with the DEDALUS_PROVIDER environment variable.
@@ -63,7 +60,9 @@ Model identifier for BYOK provider. Can also be set with the DEDALUS_PROVIDER_MO
 .PP
 .RS 4
 .nf
-dedalus machines wake \-\-api\-key "$DEDALUS_API_KEY" \-\-machine\-id 'machine_id'
+dedalus machines wake \e
+  \-\-api\-key "$DEDALUS_API_KEY" \e
+  \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f'
 .fi
 .RE
 .SH "ENVIRONMENT"

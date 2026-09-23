@@ -4,7 +4,6 @@ import { APIResource } from '../../resource';
 import { APIPromise } from '../../api-promise';
 import { CursorPage, type CursorPageParams, type PagePromise } from '../../core/pagination';
 import type { RequestOptions } from '../../internal/request-options';
-import { buildHeaders } from '../../internal/headers';
 import { path as __scalarPath } from '../../internal/utils/path';
 
 export class Executions extends APIResource {
@@ -18,23 +17,16 @@ export class Executions extends APIResource {
    * @example
    * ```ts
    * const page = await client.machines.executions.list({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    * });
    * ```
    */
   list(params: ExecutionListParams, options?: RequestOptions): PagePromise<ExecutionsCursorPage, Execution> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID, ...query } = params;
+    const { machine_id, ...query } = params;
     return this._client.getAPIList(
       __scalarPath`/v1/machines/${machine_id}/executions`,
       CursorPage<Execution>,
-      {
-        query,
-        ...options,
-        headers: buildHeaders([
-          { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-          options?.headers,
-        ]),
-      },
+      { query, ...options },
     );
   }
 
@@ -48,21 +40,14 @@ export class Executions extends APIResource {
    * @example
    * ```ts
    * const execution = await client.machines.executions.create({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    *   command: [''],
    * });
    * ```
    */
   create(params: ExecutionCreateParams, options?: RequestOptions): APIPromise<Execution> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID, ...body } = params;
-    return this._client.post(__scalarPath`/v1/machines/${machine_id}/executions`, {
-      body,
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id, ...body } = params;
+    return this._client.post(__scalarPath`/v1/machines/${machine_id}/executions`, { body, ...options });
   }
 
   /**
@@ -75,20 +60,14 @@ export class Executions extends APIResource {
    * @example
    * ```ts
    * const execution = await client.machines.executions.retrieve({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    *   execution_id: 'executionID',
    * });
    * ```
    */
   retrieve(params: ExecutionRetrieveParams, options?: RequestOptions): APIPromise<Execution> {
-    const { machine_id, execution_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.get(__scalarPath`/v1/machines/${machine_id}/executions/${execution_id}`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id, execution_id } = params;
+    return this._client.get(__scalarPath`/v1/machines/${machine_id}/executions/${execution_id}`, options);
   }
 
   /**
@@ -101,20 +80,14 @@ export class Executions extends APIResource {
    * @example
    * ```ts
    * const execution = await client.machines.executions.delete({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    *   execution_id: 'executionID',
    * });
    * ```
    */
   delete(params: ExecutionDeleteParams, options?: RequestOptions): APIPromise<Execution> {
-    const { machine_id, execution_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.delete(__scalarPath`/v1/machines/${machine_id}/executions/${execution_id}`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id, execution_id } = params;
+    return this._client.delete(__scalarPath`/v1/machines/${machine_id}/executions/${execution_id}`, options);
   }
 
   /**
@@ -127,20 +100,17 @@ export class Executions extends APIResource {
    * @example
    * ```ts
    * const execution = await client.machines.executions.output({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    *   execution_id: 'executionID',
    * });
    * ```
    */
   output(params: ExecutionOutputParams, options?: RequestOptions): APIPromise<ExecutionOutput> {
-    const { machine_id, execution_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.get(__scalarPath`/v1/machines/${machine_id}/executions/${execution_id}/output`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id, execution_id } = params;
+    return this._client.get(
+      __scalarPath`/v1/machines/${machine_id}/executions/${execution_id}/output`,
+      options,
+    );
   }
 
   /**
@@ -153,7 +123,7 @@ export class Executions extends APIResource {
    * @example
    * ```ts
    * const page = await client.machines.executions.events({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    *   execution_id: 'executionID',
    * });
    * ```
@@ -162,18 +132,11 @@ export class Executions extends APIResource {
     params: ExecutionEventsParams,
     options?: RequestOptions,
   ): PagePromise<ExecutionEventsCursorPage, ExecutionEvent> {
-    const { machine_id, execution_id, 'X-Dedalus-Org-Id': xDedalusOrgID, ...query } = params;
+    const { machine_id, execution_id, ...query } = params;
     return this._client.getAPIList(
       __scalarPath`/v1/machines/${machine_id}/executions/${execution_id}/events`,
       CursorPage<ExecutionEvent>,
-      {
-        query,
-        ...options,
-        headers: buildHeaders([
-          { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-          options?.headers,
-        ]),
-      },
+      { query, ...options },
     );
   }
 }
@@ -196,6 +159,10 @@ export interface Execution {
    */
   created_at: string;
   execution_id: string;
+  log_capture: Execution.LogCapture;
+  /**
+   * @format uuid
+   */
   machine_id: string;
   status: 'wake_in_progress' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
   artifacts?: Array<ArtifactRef> | null;
@@ -203,6 +170,8 @@ export interface Execution {
    * @format date-time
    */
   completed_at?: string;
+  creation_request_id?: string;
+  creation_trace_id?: string;
   cwd?: string;
   env_keys?: Array<string> | null;
   error_code?: string;
@@ -237,6 +206,23 @@ export interface Execution {
    */
   stdout_bytes?: number;
   stdout_truncated?: boolean;
+}
+
+export namespace Execution {
+  export interface LogCapture {
+    code?: string;
+    /**
+     * @maxLength 20
+     * @pattern ^(0|[1-9][0-9]*)$
+     */
+    lost_bytes?: string;
+    state?: 'pending' | 'incomplete' | 'unavailable';
+    /**
+     * @maxLength 20
+     * @pattern ^(0|[1-9][0-9]*)$
+     */
+    unconfirmed_bytes?: string;
+  }
 }
 
 export interface ExecutionList {
@@ -296,32 +282,24 @@ export interface ArtifactRef {
 
 export interface ExecutionListParams extends CursorPageParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export type ExecutionsCursorPage = CursorPage<Execution>;
 
 export interface ExecutionCreateParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Path param: Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
   /**
    * Body param
    */
@@ -347,86 +325,66 @@ export interface ExecutionCreateParams {
 
 export interface ExecutionRetrieveParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
   /**
-   * Path param
    * @minLength 1
    * @maxLength 253
    * @pattern ^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$
    */
   execution_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export interface ExecutionDeleteParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
   /**
-   * Path param
    * @minLength 1
    * @maxLength 253
    * @pattern ^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$
    */
   execution_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export interface ExecutionOutputParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
   /**
-   * Path param
    * @minLength 1
    * @maxLength 253
    * @pattern ^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$
    */
   execution_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export interface ExecutionEventsParams extends CursorPageParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
   /**
-   * Path param
    * @minLength 1
    * @maxLength 253
    * @pattern ^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$
    */
   execution_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export type ExecutionEventsCursorPage = CursorPage<ExecutionEvent>;

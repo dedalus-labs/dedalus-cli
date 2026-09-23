@@ -1,22 +1,17 @@
 .\" File generated from our OpenAPI spec by Scalar. Do not edit.
 .TH "DEDALUS\-MACHINES\-TERMINALS\-CONNECT" "1" "" "dedalus" "Dedalus Manual"
 .SH "NAME"
-dedalus\-machines\-terminals\-connect \- Connect to terminal WebSocket stream
+dedalus\-machines\-terminals\-connect \- dedalus machines:terminals connect
 .SH "SYNOPSIS"
 .B dedalus machines:terminals connect
 \fB\-\-machine\-id\fR \fI<value>\fR \fB\-\-terminal\-id\fR \fI<value>\fR [\fIoptions\fR]
-.SH "DESCRIPTION"
-Upgrades to a WebSocket connection for interactive terminal I/O. Clients send JSON `TerminalClientEvent` messages and receive JSON `TerminalServerEvent` messages. Terminal byte streams are base64\-encoded inside `input` and `output` events; `resize` events use integer `width` and `height` fields.
 .SH "OPTIONS"
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
-Machine identifier. Required.
+The machine\-id path parameter. Required.
 .TP
 \fB\-\-terminal\-id\fR \fI<value>\fR
-Terminal identifier. Required.
-.TP
-\fB\-\-x\-dedalus\-org\-id\fR \fI<value>\fR
-Organization ID header applied to all DCS requests.
+The terminal\-id path parameter. Required.
 .TP
 \fB\-\-send\fR \fI<value>\fR
 JSON message to send after connecting.
@@ -58,7 +53,7 @@ API key authentication using Bearer token. Can also be set with the DEDALUS_API_
 API key authentication using X\-API\-Key header. Can also be set with the DEDALUS_X_API_KEY environment variable.
 .TP
 \fB\-\-bearer\-auth\fR \fI<value>\fR
-Dedalus API key in Authorization: Bearer <key>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
+Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
 .TP
 \fB\-\-provider\fR \fI<value>\fR
 Provider name for BYOK mode. Can also be set with the DEDALUS_PROVIDER environment variable.
@@ -76,7 +71,7 @@ dedalus machines:terminals connect \e
   \-\-api\-key "$DEDALUS_API_KEY" \e
   \-\-machine\-id 'machine_id' \e
   \-\-terminal\-id 'terminal_id' \e
-  \-\-send '{"data":"","type":"input"}' \e
+  \-\-send '{}' \e
   \-\-max\-items 10
 .fi
 .RE

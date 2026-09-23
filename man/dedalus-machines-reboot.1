@@ -1,19 +1,19 @@
 .\" File generated from our OpenAPI spec by Scalar. Do not edit.
-.TH "DEDALUS\-MACHINES\-EXECUTIONS\-DELETE" "1" "" "dedalus" "Dedalus Manual"
+.TH "DEDALUS\-MACHINES\-REBOOT" "1" "" "dedalus" "Dedalus Manual"
 .SH "NAME"
-dedalus\-machines\-executions\-delete \- Delete execution
+dedalus\-machines\-reboot \- Reboot a machine with fresh memory
 .SH "SYNOPSIS"
-.B dedalus machines:executions delete
-\fB\-\-machine\-id\fR \fI<value>\fR \fB\-\-execution\-id\fR \fI<value>\fR [\fIoptions\fR]
+.B dedalus machines reboot
+\fB\-\-machine\-id\fR \fI<value>\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
-Delete execution
+Checkpoints files and replaces the runtime. The machine ID and filesystem are preserved. RAM, processes, and temporary mounts are cleared. Poll the machine until its phase is running. Retry the same Idempotency\-Key after a lost response.
 .SH "OPTIONS"
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
 Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.
 .TP
-\fB\-\-execution\-id\fR \fI<value>\fR
-The execution\-id path parameter. Required.
+\fB\-\-force\fR
+Recover from the last committed filesystem checkpoint without guest cooperation. Unpublished file writes are lost. The default checkpoints files before rebooting.
 .TP
 \fB\-\-base\-url\fR \fI<url>\fR
 Override the base URL for API requests.
@@ -51,10 +51,9 @@ Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X
 .PP
 .RS 4
 .nf
-dedalus machines:executions delete \e
+dedalus machines reboot \e
   \-\-x\-api\-key "$DEDALUS_X_API_KEY" \e
-  \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f' \e
-  \-\-execution\-id 'execution_id'
+  \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f'
 .fi
 .RE
 .SH "ENVIRONMENT"

@@ -1,19 +1,16 @@
 .\" File generated from our OpenAPI spec by Scalar. Do not edit.
-.TH "DEDALUS\-MACHINES\-EXECUTIONS\-DELETE" "1" "" "dedalus" "Dedalus Manual"
+.TH "DEDALUS\-ORGANIZATION\-AUTORESIZING\-UPDATE" "1" "" "dedalus" "Dedalus Manual"
 .SH "NAME"
-dedalus\-machines\-executions\-delete \- Delete execution
+dedalus\-organization\-autoresizing\-update \- Set organization RAM autoresizing policy
 .SH "SYNOPSIS"
-.B dedalus machines:executions delete
-\fB\-\-machine\-id\fR \fI<value>\fR \fB\-\-execution\-id\fR \fI<value>\fR [\fIoptions\fR]
+.B dedalus organization:autoresizing update
+\fB\-\-enabled\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
-Delete execution
+Set organization RAM autoresizing policy
 .SH "OPTIONS"
 .TP
-\fB\-\-machine\-id\fR \fI<value>\fR
-Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.
-.TP
-\fB\-\-execution\-id\fR \fI<value>\fR
-The execution\-id path parameter. Required.
+\fB\-\-enabled\fR
+Allow automatic RAM increases for all organization machines. Disabling preserves applied RAM and already admitted resizes. Required.
 .TP
 \fB\-\-base\-url\fR \fI<url>\fR
 Override the base URL for API requests.
@@ -51,10 +48,7 @@ Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X
 .PP
 .RS 4
 .nf
-dedalus machines:executions delete \e
-  \-\-x\-api\-key "$DEDALUS_X_API_KEY" \e
-  \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f' \e
-  \-\-execution\-id 'execution_id'
+dedalus organization:autoresizing update \-\-x\-api\-key "$DEDALUS_X_API_KEY" \-\-enabled
 .fi
 .RE
 .SH "ENVIRONMENT"

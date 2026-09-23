@@ -13,7 +13,6 @@
   ],
   "auth": [
     "apiKey",
-    "bearer",
     "bearer"
   ],
   "authDetails": [
@@ -27,10 +26,6 @@
       "kind": "bearer",
       "id": "BearerAuth",
       "bearerFormat": "Dedalus API key or delegated access token"
-    },
-    {
-      "kind": "bearer",
-      "id": "Bearer"
     }
   ],
   "clientHeaderParams": [],
@@ -612,6 +607,68 @@
           {
             "name": "next_cursor",
             "publicName": "next_cursor",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "status",
+      "source": "status",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "capture",
+            "publicName": "capture",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "ref",
+              "name": "machine_execution_log_capture"
+            }
+          },
+          {
+            "name": "code",
+            "publicName": "code",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "execution_id",
+            "publicName": "execution_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "publication",
+            "publicName": "publication",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "ref",
+              "name": "publication"
+            }
+          },
+          {
+            "name": "stream_id",
+            "publicName": "stream_id",
             "required": false,
             "deprecated": false,
             "type": {
@@ -1740,6 +1797,50 @@
       }
     },
     {
+      "name": "policy",
+      "source": "policy",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "enabled",
+            "publicName": "enabled",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "settings",
+      "source": "settings",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "enabled",
+            "publicName": "enabled",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "public_path_segment",
       "source": "public_path_segment",
       "publicAliases": [],
@@ -1752,6 +1853,152 @@
           "minLength": 1,
           "maxLength": 253
         }
+      }
+    },
+    {
+      "name": "publication",
+      "source": "publication",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "code",
+            "publicName": "code",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "complete",
+            "publicName": "complete",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "queued_messages",
+            "publicName": "queued_messages",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64",
+              "validation": {
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "name": "state",
+            "publicName": "state",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "active",
+                "finishing",
+                "failed",
+                "closed"
+              ],
+              "names": [
+                "Active",
+                "Finishing",
+                "Failed",
+                "Closed"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false,
+                false
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "read_token",
+      "source": "read_token",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "access_token",
+            "publicName": "access_token",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "base_url",
+            "publicName": "base_url",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "execution_id",
+            "publicName": "execution_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "expires_at",
+            "publicName": "expires_at",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "stream_id",
+            "publicName": "stream_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "token_type",
+            "publicName": "token_type",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -3388,6 +3635,258 @@
       }
     },
     {
+      "name": "RebootResponseHeaders",
+      "source": "RebootResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "ETag",
+            "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Dedalus-Storage-Operation-Id",
+            "publicName": "X-Dedalus-Storage-Operation-Id",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "primitive",
+                  "type": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootResponseHeaders",
+      "source": "RebootResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "ETag",
+            "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Dedalus-Storage-Operation-Id",
+            "publicName": "X-Dedalus-Storage-Operation-Id",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "primitive",
+                  "type": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootStatus401ResponseHeaders",
+      "source": "RebootStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootStatus403ResponseHeaders",
+      "source": "RebootStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootStatus409ResponseHeaders",
+      "source": "RebootStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootStatus429ResponseHeaders",
+      "source": "RebootStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootStatus503ResponseHeaders",
+      "source": "RebootStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RebootStatusdefaultResponseHeaders",
+      "source": "RebootStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "CreateResponseHeaders",
       "source": "CreateResponseHeaders",
       "publicAliases": [],
@@ -3684,6 +4183,72 @@
           {
             "name": "Idempotency-Key",
             "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "RetrieveResponseHeaders",
+      "source": "RetrieveResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Cache-Control",
+            "publicName": "Cache-Control",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "ReauthorizeResponseHeaders",
+      "source": "ReauthorizeResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Cache-Control",
+            "publicName": "Cache-Control",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateTokenResponseHeaders",
+      "source": "CreateTokenResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Cache-Control",
+            "publicName": "Cache-Control",
             "required": false,
             "deprecated": false,
             "type": {
@@ -3700,13 +4265,19 @@
     "machines",
     "machines.ssh",
     "machines.executions",
-    "machines.terminals"
+    "machines.executions.logs",
+    "machines.autoresizing",
+    "organization",
+    "organization.autoresizing"
   ],
   "publicResources": [
     "machines",
     "machines.ssh",
     "machines.executions",
-    "machines.terminals"
+    "machines.executions.logs",
+    "machines.autoresizing",
+    "organization",
+    "organization.autoresizing"
   ],
   "operations": [
     {
@@ -4890,6 +5461,184 @@
           },
           "headersModel": {
             "name": "WakeStatusdefaultResponseHeaders",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines",
+      "publicResource": "machines",
+      "operation": "reboot",
+      "publicOperation": "reboot",
+      "deprecated": false,
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/reboot",
+      "pathParams": [
+        "machine_id"
+      ],
+      "publicPathParams": [
+        "machine_id"
+      ],
+      "queryParams": [
+        "force"
+      ],
+      "publicQueryParams": [
+        "force"
+      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [
+        {
+          "name": "force",
+          "required": false,
+          "style": "form",
+          "explode": false
+        }
+      ],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "MachineRebootParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "machine",
+        "publicAliases": []
+      },
+      "responseHeadersModel": {
+        "name": "RebootResponseHeaders",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "409",
+          "429",
+          "503",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "RebootStatus401ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "RebootStatus403ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "409",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "RebootStatus409ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "429",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "RebootStatus429ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "503",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "RebootStatus503ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          },
+          "headersModel": {
+            "name": "RebootStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -6475,20 +7224,20 @@
       "transport": "http"
     },
     {
-      "resource": "machines.terminals",
-      "publicResource": "machines.terminals",
-      "operation": "connect",
-      "publicOperation": "connect",
+      "resource": "machines.executions.logs",
+      "publicResource": "machines.executions.logs",
+      "operation": "retrieve",
+      "publicOperation": "retrieve",
       "deprecated": false,
       "method": "GET",
-      "path": "/v1/machines/{machine_id}/terminals/{terminal_id}/stream",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs",
       "pathParams": [
         "machine_id",
-        "terminal_id"
+        "execution_id"
       ],
       "publicPathParams": [
         "machine_id",
-        "terminal_id"
+        "execution_id"
       ],
       "queryParams": [],
       "publicQueryParams": [],
@@ -6501,11 +7250,15 @@
       "pathParamDetails": [
         {
           "name": "machine_id",
-          "required": true
+          "required": true,
+          "style": "simple",
+          "explode": false
         },
         {
-          "name": "terminal_id",
-          "required": true
+          "name": "execution_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
         }
       ],
       "queryParamDetails": [],
@@ -6514,14 +7267,737 @@
       "publicCookieParams": [],
       "cookieParamDetails": [],
       "paramsModel": {
-        "publicName": "TerminalConnectParams"
+        "publicName": "LogRetrieveParams"
       },
-      "errorResponses": [],
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "status",
+        "publicAliases": []
+      },
+      "responseHeadersModel": {
+        "name": "RetrieveResponseHeaders",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
       "responseLinks": [],
-      "transport": "websocket",
-      "websocket": {
-        "eventNameSeparator": "."
-      }
+      "transport": "http"
+    },
+    {
+      "resource": "machines.executions.logs",
+      "publicResource": "machines.executions.logs",
+      "operation": "reauthorize",
+      "publicOperation": "reauthorize",
+      "deprecated": false,
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs/reauthorize",
+      "pathParams": [
+        "machine_id",
+        "execution_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "execution_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "execution_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "LogReauthorizeParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "status",
+        "publicAliases": []
+      },
+      "responseHeadersModel": {
+        "name": "ReauthorizeResponseHeaders",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.executions.logs",
+      "publicResource": "machines.executions.logs",
+      "operation": "createToken",
+      "publicOperation": "createToken",
+      "deprecated": false,
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs/token",
+      "pathParams": [
+        "machine_id",
+        "execution_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "execution_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "execution_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "LogCreateTokenParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "read_token",
+        "publicAliases": []
+      },
+      "responseHeadersModel": {
+        "name": "CreateTokenResponseHeaders",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.autoresizing",
+      "publicResource": "machines.autoresizing",
+      "operation": "retrieve",
+      "publicOperation": "retrieve",
+      "deprecated": false,
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/autoresizing",
+      "pathParams": [
+        "machine_id"
+      ],
+      "publicPathParams": [
+        "machine_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AutoresizingRetrieveParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "settings",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.autoresizing",
+      "publicResource": "machines.autoresizing",
+      "operation": "update",
+      "publicOperation": "update",
+      "deprecated": false,
+      "method": "PUT",
+      "path": "/v1/machines/{machine_id}/autoresizing",
+      "pathParams": [
+        "machine_id"
+      ],
+      "publicPathParams": [
+        "machine_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [
+        "enabled"
+      ],
+      "publicBodyParams": [
+        "enabled"
+      ],
+      "bodyParamDetails": [
+        {
+          "name": "enabled",
+          "required": true
+        }
+      ],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AutoresizingUpdateParams"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ],
+        "required": true,
+        "publicName": "body",
+        "publicIdentifier": "body"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "settings",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "organization.autoresizing",
+      "publicResource": "organization.autoresizing",
+      "operation": "retrieve",
+      "publicOperation": "retrieve",
+      "deprecated": false,
+      "method": "GET",
+      "path": "/v1/organization/autoresizing",
+      "pathParams": [],
+      "publicPathParams": [],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "policy",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "organization.autoresizing",
+      "publicResource": "organization.autoresizing",
+      "operation": "update",
+      "publicOperation": "update",
+      "deprecated": false,
+      "method": "PUT",
+      "path": "/v1/organization/autoresizing",
+      "pathParams": [],
+      "publicPathParams": [],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [
+        "enabled"
+      ],
+      "publicBodyParams": [
+        "enabled"
+      ],
+      "bodyParamDetails": [
+        {
+          "name": "enabled",
+          "required": true
+        }
+      ],
+      "publicPositionalParams": [],
+      "pathParamDetails": [],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AutoresizingUpdateParams"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ],
+        "required": true,
+        "publicName": "body",
+        "publicIdentifier": "body"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "policy",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "model": {
+            "name": "error_model",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
     }
   ],
   "webhooks": []

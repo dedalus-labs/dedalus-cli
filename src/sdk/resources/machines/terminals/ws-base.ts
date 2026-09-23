@@ -27,8 +27,6 @@ export interface TerminalsWSParameters extends Record<string, unknown> {
   machine_id: string;
 
   terminal_id: string;
-
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export interface TerminalsWSReconnectOptions {

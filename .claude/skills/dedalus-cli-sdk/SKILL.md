@@ -30,7 +30,7 @@ Provide credentials using the options below. Environment variables are read auto
 
 - `--api-key` (env: `DEDALUS_API_KEY`) — API key authentication using Bearer token
 - `--x-api-key` (env: `DEDALUS_X_API_KEY`) — API key authentication using X-API-Key header
-- `--bearer-auth` (env: `DEDALUS_BEARER_AUTH`) — Dedalus API key in Authorization: Bearer <key>.
+- `--bearer-auth` (env: `DEDALUS_BEARER_AUTH`) — Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
 
 ## Calling operations
 
@@ -50,10 +50,6 @@ Method names, parameter shapes, and response types are generated from the API de
 ## Pagination
 
 Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to cap the total number of items returned.
-
-## Streaming
-
-Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
 
 ## WebSockets
 

@@ -3,33 +3,8 @@
 import { APIResource } from '../../resource';
 import { APIPromise } from '../../api-promise';
 import { CursorPage, type CursorPageParams, type PagePromise } from '../../core/pagination';
-import { Stream } from '../../core/streaming';
 import type { RequestOptions } from '../../internal/request-options';
-import { buildHeaders } from '../../internal/headers';
 import { path as __scalarPath } from '../../internal/utils/path';
-import * as NetworkAPI from './network';
-import { Network, type MachineNetwork, type NetworkRetrieveParams } from './network';
-import * as ArtifactsAPI from './artifacts';
-import {
-  Artifacts,
-  type Artifact,
-  type ArtifactList,
-  type ArtifactsCursorPage,
-  type ArtifactListParams,
-  type ArtifactRetrieveParams,
-  type ArtifactDeleteParams,
-} from './artifacts';
-import * as PortsAPI from './ports';
-import {
-  Ports,
-  type PortCreateParams,
-  type Port,
-  type PortList,
-  type PortsCursorPage,
-  type PortListParams,
-  type PortRetrieveParams,
-  type PortDeleteParams,
-} from './ports';
 import * as SSHAPI from './ssh';
 import {
   SSH,
@@ -65,29 +40,12 @@ import {
 import * as TerminalsAPI from './terminals/terminals';
 import {
   Terminals,
-  type TerminalCreateParams,
-  type Terminal,
-  type TerminalList,
-  type TerminalClientEvent,
-  type TerminalServerEvent,
-  type TerminalInputEvent,
-  type TerminalResizeEvent,
-  type TerminalOutputEvent,
-  type TerminalErrorEvent,
-  type TerminalClosedEvent,
-  type TerminalsCursorPage,
-  type TerminalListParams,
-  type TerminalRetrieveParams,
-  type TerminalDeleteParams,
   type TerminalConnectParams,
   type ConnectClientEvent,
   type ConnectServerEvent,
 } from './terminals/terminals';
 
 export class Machines extends APIResource {
-  network: NetworkAPI.Network = new NetworkAPI.Network(this._client);
-  artifacts: ArtifactsAPI.Artifacts = new ArtifactsAPI.Artifacts(this._client);
-  ports: PortsAPI.Ports = new PortsAPI.Ports(this._client);
   ssh: SSHAPI.SSH = new SSHAPI.SSH(this._client);
   executions: ExecutionsAPI.Executions = new ExecutionsAPI.Executions(this._client);
   terminals: TerminalsAPI.Terminals = new TerminalsAPI.Terminals(this._client);
@@ -95,7 +53,7 @@ export class Machines extends APIResource {
   /**
    * List machines
    *
-   * @param {MachineListParams} [params] - The parameters to send with the request.
+   * @param {MachineListParams} [query] - The parameters to send with the request.
    * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
    * @returns {PagePromise<MachineListItemsCursorPage, MachineListItem>} OK
    *
@@ -105,24 +63,16 @@ export class Machines extends APIResource {
    * ```
    */
   list(
-    params: MachineListParams | null | undefined = {},
+    query: MachineListParams | null | undefined = {},
     options?: RequestOptions,
   ): PagePromise<MachineListItemsCursorPage, MachineListItem> {
-    const { 'X-Dedalus-Org-Id': xDedalusOrgID, ...query } = params ?? {};
-    return this._client.getAPIList('/v1/machines', CursorPage<MachineListItem>, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    return this._client.getAPIList('/v1/machines', CursorPage<MachineListItem>, { query, ...options });
   }
 
   /**
    * Create machine
    *
-   * @param {MachineCreateParams} params - The parameters to send with the request.
+   * @param {MachineCreateParams} body - The request body to send.
    * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
    * @returns {APIPromise<Machine>} Create converged inline
    *
@@ -136,16 +86,8 @@ export class Machines extends APIResource {
    * });
    * ```
    */
-  create(params: MachineCreateParams, options?: RequestOptions): APIPromise<Machine> {
-    const { 'X-Dedalus-Org-Id': xDedalusOrgID, ...body } = params;
-    return this._client.post('/v1/machines', {
-      body,
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+  create(body: MachineCreateParams, options?: RequestOptions): APIPromise<Machine> {
+    return this._client.post('/v1/machines', { body, ...options });
   }
 
   /**
@@ -158,19 +100,13 @@ export class Machines extends APIResource {
    * @example
    * ```ts
    * const machine = await client.machines.retrieve({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    * });
    * ```
    */
   retrieve(params: MachineRetrieveParams, options?: RequestOptions): APIPromise<MachineRetrieveResponse> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.get(__scalarPath`/v1/machines/${machine_id}`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id } = params;
+    return this._client.get(__scalarPath`/v1/machines/${machine_id}`, options);
   }
 
   /**
@@ -183,20 +119,13 @@ export class Machines extends APIResource {
    * @example
    * ```ts
    * const machine = await client.machines.update({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    * });
    * ```
    */
   update(params: MachineUpdateParams, options?: RequestOptions): APIPromise<Machine> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID, ...body } = params;
-    return this._client.patch(__scalarPath`/v1/machines/${machine_id}`, {
-      body,
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id, ...body } = params;
+    return this._client.patch(__scalarPath`/v1/machines/${machine_id}`, { body, ...options });
   }
 
   /**
@@ -209,53 +138,13 @@ export class Machines extends APIResource {
    * @example
    * ```ts
    * const machine = await client.machines.delete({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    * });
    * ```
    */
   delete(params: MachineDeleteParams, options?: RequestOptions): APIPromise<Machine> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.delete(__scalarPath`/v1/machines/${machine_id}`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
-  }
-
-  /**
-   * Streams machine lifecycle updates over Server-Sent Events. Each `status` event contains a full `LifecycleResponse` payload. The stream closes after the machine reaches its current desired state.
-   *
-   * @param {MachineWatchParams} params - The parameters to send with the request.
-   * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
-   * @returns {APIPromise<Stream<Machine>>} Server-Sent Event stream (`text/event-stream`) of machine lifecycle updates.
-   *
-   * @example
-   * ```ts
-   * const stream = await client.machines.watch({
-   *   machine_id: 'machineID',
-   * });
-   *
-   * for await (const machine of stream) {
-   *   console.log(machine);
-   * }
-   * ```
-   */
-  watch(params: MachineWatchParams, options?: RequestOptions): APIPromise<Stream<Machine>> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID, 'Last-Event-ID': lastEventID } = params;
-    return this._client.get(__scalarPath`/v1/machines/${machine_id}/status/stream`, {
-      ...options,
-      headers: buildHeaders([
-        {
-          Accept: 'text/event-stream',
-          ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}),
-          ...(lastEventID !== undefined ? { 'Last-Event-ID': lastEventID } : {}),
-        },
-        options?.headers,
-      ]),
-      stream: true,
-    });
+    const { machine_id } = params;
+    return this._client.delete(__scalarPath`/v1/machines/${machine_id}`, options);
   }
 
   /**
@@ -268,19 +157,13 @@ export class Machines extends APIResource {
    * @example
    * ```ts
    * const machine = await client.machines.sleep({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    * });
    * ```
    */
   sleep(params: MachineSleepParams, options?: RequestOptions): APIPromise<Machine> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.post(__scalarPath`/v1/machines/${machine_id}/sleep`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id } = params;
+    return this._client.post(__scalarPath`/v1/machines/${machine_id}/sleep`, options);
   }
 
   /**
@@ -293,19 +176,13 @@ export class Machines extends APIResource {
    * @example
    * ```ts
    * const machine = await client.machines.wake({
-   *   machine_id: 'machineID',
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
    * });
    * ```
    */
   wake(params: MachineWakeParams, options?: RequestOptions): APIPromise<Machine> {
-    const { machine_id, 'X-Dedalus-Org-Id': xDedalusOrgID } = params;
-    return this._client.post(__scalarPath`/v1/machines/${machine_id}/wake`, {
-      ...options,
-      headers: buildHeaders([
-        { ...(xDedalusOrgID !== undefined ? { 'X-Dedalus-Org-Id': xDedalusOrgID } : {}) },
-        options?.headers,
-      ]),
-    });
+    const { machine_id } = params;
+    return this._client.post(__scalarPath`/v1/machines/${machine_id}/wake`, options);
   }
 }
 
@@ -318,6 +195,9 @@ export interface Machine {
    */
   autosleep_seconds: number;
   desired_state: 'running' | 'sleeping' | 'destroyed';
+  /**
+   * @format uuid
+   */
   machine_id: string;
   /**
    * Memory in MiB.
@@ -363,6 +243,9 @@ export interface MachineListItem {
    */
   created_at: string;
   desired_state: 'running' | 'sleeping' | 'destroyed';
+  /**
+   * @format uuid
+   */
   machine_id: string;
   /**
    * Memory in MiB.
@@ -450,6 +333,12 @@ export interface LifecycleStatus {
    * @format date-time
    */
   last_transition_at: string;
+  /**
+   * Accepted RAM maximum, including completed automatic increases.
+   * @format int64
+   * @minimum 1
+   */
+  memory_configured_mib: number;
   phase:
     | 'accepted'
     | 'placement_pending'
@@ -464,40 +353,55 @@ export interface LifecycleStatus {
   retryable: boolean;
   revision: string;
   last_error?: string;
+  /**
+   * Last confirmed RAM allocation for the current running generation. Absent when the allocation is unknown or no longer current.
+   * @format int64
+   * @minimum 1
+   */
+  memory_assigned_mib?: number;
+  /**
+   * Time of the latest confirmed automatic RAM increase. Does not include explicit resizing or a complete change history.
+   * @format date-time
+   */
+  memory_last_autoresized_at?: string;
+  /**
+   * Resize progress reported by the current runtime. A pending automatic target may not yet be applied by that runtime.
+   */
+  memory_resize_state?: 'stable' | 'error' | 'pending_capacity';
+  /**
+   * Pending automatic RAM target, or the current runtime target when no automatic target is pending.
+   * @format int64
+   * @minimum 1
+   */
+  memory_target_mib?: number;
 }
 
-export interface MachineListParams extends CursorPageParams {
-  'X-Dedalus-Org-Id'?: string;
-}
+export interface MachineListParams extends CursorPageParams {}
 
 export type MachineListItemsCursorPage = CursorPage<MachineListItem>;
 
 export interface MachineCreateParams {
   /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
-  /**
-   * Body param: Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
+   * Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
    * @default 300s
    */
   autosleep?: string;
   /**
-   * Body param: Memory in MiB.
+   * Memory in MiB.
    * @default 4096
    * @format int64
    * @exclusiveMinimum 0
    */
   memory_mib?: number;
   /**
-   * Body param: Storage in GiB.
+   * Storage in GiB.
    * @default 10
    * @format int64
    * @exclusiveMinimum 0
    */
   storage_gib?: number;
   /**
-   * Body param: CPU in vCPUs.
+   * CPU in vCPUs.
    * @default 1
    * @format double
    * @exclusiveMinimum 0
@@ -507,16 +411,12 @@ export interface MachineCreateParams {
 
 export interface MachineRetrieveParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export interface MachineRetrieveResponse {
@@ -528,6 +428,9 @@ export interface MachineRetrieveResponse {
    */
   autosleep_seconds: number;
   desired_state: 'running' | 'sleeping' | 'destroyed';
+  /**
+   * @format uuid
+   */
   machine_id: string;
   /**
    * Memory in MiB.
@@ -548,16 +451,12 @@ export interface MachineRetrieveResponse {
 
 export interface MachineUpdateParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Path param: Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
   /**
    * Body param: Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
    */
@@ -581,67 +480,33 @@ export interface MachineUpdateParams {
 
 export interface MachineDeleteParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
-}
-
-export interface MachineWatchParams {
-  /**
-   * Path param: Machine identifier.
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
-   */
-  machine_id: string;
-  /**
-   * Header param: Organization ID header applied to all DCS requests.
-   * @format uuid
-   */
-  'X-Dedalus-Org-Id'?: string;
-  /**
-   * Header param: Optional resourceVersion bookmark used to resume a previous stream.
-   */
-  'Last-Event-ID'?: string;
 }
 
 export interface MachineSleepParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
 
 export interface MachineWakeParams {
   /**
-   * Path param
-   * @minLength 4
-   * @maxLength 253
-   * @pattern ^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
    */
   machine_id: string;
-  /**
-   * Header param
-   */
-  'X-Dedalus-Org-Id'?: string;
 }
-Machines.Network = Network;
-Machines.Artifacts = Artifacts;
-Machines.Ports = Ports;
 Machines.SSH = SSH;
 Machines.Executions = Executions;
 Machines.Terminals = Terminals;
@@ -661,36 +526,8 @@ export declare namespace Machines {
     type MachineRetrieveParams as MachineRetrieveParams,
     type MachineUpdateParams as MachineUpdateParams,
     type MachineDeleteParams as MachineDeleteParams,
-    type MachineWatchParams as MachineWatchParams,
     type MachineSleepParams as MachineSleepParams,
     type MachineWakeParams as MachineWakeParams,
-  };
-
-  export {
-    Network as Network,
-    type MachineNetwork as MachineNetwork,
-    type NetworkRetrieveParams as NetworkRetrieveParams,
-  };
-
-  export {
-    Artifacts as Artifacts,
-    type Artifact as Artifact,
-    type ArtifactList as ArtifactList,
-    type ArtifactsCursorPage as ArtifactsCursorPage,
-    type ArtifactListParams as ArtifactListParams,
-    type ArtifactRetrieveParams as ArtifactRetrieveParams,
-    type ArtifactDeleteParams as ArtifactDeleteParams,
-  };
-
-  export {
-    Ports as Ports,
-    type PortCreateParams as PortCreateParams,
-    type Port as Port,
-    type PortList as PortList,
-    type PortsCursorPage as PortsCursorPage,
-    type PortListParams as PortListParams,
-    type PortRetrieveParams as PortRetrieveParams,
-    type PortDeleteParams as PortDeleteParams,
   };
 
   export {
@@ -727,20 +564,6 @@ export declare namespace Machines {
 
   export {
     Terminals as Terminals,
-    type TerminalCreateParams as TerminalCreateParams,
-    type Terminal as Terminal,
-    type TerminalList as TerminalList,
-    type TerminalClientEvent as TerminalClientEvent,
-    type TerminalServerEvent as TerminalServerEvent,
-    type TerminalInputEvent as TerminalInputEvent,
-    type TerminalResizeEvent as TerminalResizeEvent,
-    type TerminalOutputEvent as TerminalOutputEvent,
-    type TerminalErrorEvent as TerminalErrorEvent,
-    type TerminalClosedEvent as TerminalClosedEvent,
-    type TerminalsCursorPage as TerminalsCursorPage,
-    type TerminalListParams as TerminalListParams,
-    type TerminalRetrieveParams as TerminalRetrieveParams,
-    type TerminalDeleteParams as TerminalDeleteParams,
     type TerminalConnectParams as TerminalConnectParams,
     type ConnectClientEvent as ConnectClientEvent,
     type ConnectServerEvent as ConnectServerEvent,

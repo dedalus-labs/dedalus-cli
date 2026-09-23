@@ -92,7 +92,7 @@ export abstract class TerminalsEmitter extends EventEmitter<WebSocketEvents> {
 }
 
 export function buildURL(client: Dedalus, parameters: Record<string, unknown>): URL {
-  const { machine_id, terminal_id, 'X-Dedalus-Org-Id': xDedalusOrgID, ...query } = parameters;
+  const { machine_id, terminal_id, ...query } = parameters;
   const endpoint = __scalarPath`/v1/machines/${machine_id}/terminals/${terminal_id}/stream`;
   const url = new URL(client.buildURL(endpoint, query, undefined));
   url.protocol = url.protocol === 'http:' || url.protocol === 'ws:' ? 'ws:' : 'wss:';
@@ -101,8 +101,6 @@ export function buildURL(client: Dedalus, parameters: Record<string, unknown>): 
 
 export function parameterHeaders(parameters: Record<string, unknown>): Record<string, string> {
   const headers: Record<string, string> = {};
-  if (parameters['X-Dedalus-Org-Id'] !== undefined)
-    headers['X-Dedalus-Org-Id'] = String(parameters['X-Dedalus-Org-Id']);
   return headers;
 }
 

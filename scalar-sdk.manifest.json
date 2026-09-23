@@ -26,7 +26,7 @@
     {
       "kind": "bearer",
       "id": "BearerAuth",
-      "bearerFormat": "Dedalus API key"
+      "bearerFormat": "Dedalus API key or delegated access token"
     },
     {
       "kind": "bearer",
@@ -35,49 +35,6 @@
   ],
   "clientHeaderParams": [],
   "schemas": [
-    {
-      "name": "artifact_list",
-      "source": "artifact_list",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "items",
-            "publicName": "items",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "artifact"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          },
-          {
-            "name": "next_cursor",
-            "publicName": "next_cursor",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
     {
       "name": "artifact_ref",
       "source": "artifact_ref",
@@ -104,121 +61,6 @@
             "type": {
               "kind": "primitive",
               "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "artifact",
-      "source": "artifact",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "artifact_id",
-            "publicName": "artifact_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "created_at",
-            "publicName": "created_at",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "download_url",
-            "publicName": "download_url",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "execution_id",
-            "publicName": "execution_id",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "expires_at",
-            "publicName": "expires_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "machine_id",
-            "publicName": "machine_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "mime_type",
-            "publicName": "mime_type",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "name",
-            "publicName": "name",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "sha256",
-            "publicName": "sha256",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "size_bytes",
-            "publicName": "size_bytes",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
             }
           }
         ],
@@ -371,50 +213,6 @@
       }
     },
     {
-      "name": "port_create_params",
-      "source": "port_create_params",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "port",
-            "publicName": "port",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "protocol",
-            "publicName": "protocol",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "http",
-                "https"
-              ],
-              "names": [
-                "HTTP",
-                "Https"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
       "name": "ssh_session_create_params",
       "source": "ssh_session_create_params",
       "publicAliases": [],
@@ -430,77 +228,6 @@
             "type": {
               "kind": "primitive",
               "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_create_params",
-      "source": "terminal_create_params",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "cwd",
-            "publicName": "cwd",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "env",
-            "publicName": "env",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "record",
-              "value": {
-                "kind": "primitive",
-                "type": "string"
-              },
-              "propertyNames": {
-                "kind": "primitive",
-                "type": "string"
-              }
-            }
-          },
-          {
-            "name": "height",
-            "publicName": "height",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "shell",
-            "publicName": "shell",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "width",
-            "publicName": "width",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
             }
           }
         ],
@@ -1053,6 +780,26 @@
             }
           },
           {
+            "name": "creation_request_id",
+            "publicName": "creation_request_id",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "creation_trace_id",
+            "publicName": "creation_trace_id",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
             "name": "cwd",
             "publicName": "cwd",
             "required": false,
@@ -1136,13 +883,24 @@
             }
           },
           {
+            "name": "log_capture",
+            "publicName": "log_capture",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "ref",
+              "name": "machine_execution_log_capture"
+            }
+          },
+          {
             "name": "machine_id",
             "publicName": "machine_id",
             "required": true,
             "deprecated": false,
             "type": {
               "kind": "primitive",
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1314,7 +1072,8 @@
             "deprecated": false,
             "type": {
               "kind": "primitive",
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1437,6 +1196,83 @@
             }
           },
           {
+            "name": "memory_assigned_mib",
+            "publicName": "memory_assigned_mib",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64",
+              "validation": {
+                "minimum": 1
+              }
+            }
+          },
+          {
+            "name": "memory_configured_mib",
+            "publicName": "memory_configured_mib",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64",
+              "validation": {
+                "minimum": 1
+              }
+            }
+          },
+          {
+            "name": "memory_last_autoresized_at",
+            "publicName": "memory_last_autoresized_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "memory_resize_state",
+            "publicName": "memory_resize_state",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "stable",
+                "error",
+                "pending_capacity"
+              ],
+              "names": [
+                "Stable",
+                "Error",
+                "PendingCapacity"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false
+              ]
+            }
+          },
+          {
+            "name": "memory_target_mib",
+            "publicName": "memory_target_mib",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64",
+              "validation": {
+                "minimum": 1
+              }
+            }
+          },
+          {
             "name": "phase",
             "publicName": "phase",
             "required": true,
@@ -1513,245 +1349,6 @@
       }
     },
     {
-      "name": "machine_compute_usage",
-      "source": "machine_compute_usage",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "granularity",
-            "publicName": "granularity",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "period_end",
-            "publicName": "period_end",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "period_start",
-            "publicName": "period_start",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "rows",
-            "publicName": "rows",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "machine_compute_usage_row"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "machine_compute_usage_row",
-      "source": "machine_compute_usage_row",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "awake_seconds",
-            "publicName": "awake_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "bucket_end",
-            "publicName": "bucket_end",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "bucket_start",
-            "publicName": "bucket_start",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "cpu_millicore_seconds",
-            "publicName": "cpu_millicore_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "last_window_end",
-            "publicName": "last_window_end",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "latest_meter_emitted_at",
-            "publicName": "latest_meter_emitted_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "machine_id",
-            "publicName": "machine_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "memory_mib_seconds",
-            "publicName": "memory_mib_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "org_metering_bucket_ids",
-            "publicName": "org_metering_bucket_ids",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "primitive",
-                    "type": "string"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          },
-          {
-            "name": "requested_memory_mib",
-            "publicName": "requested_memory_mib",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "requested_storage_gib",
-            "publicName": "requested_storage_gib",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "requested_vcpu",
-            "publicName": "requested_vcpu",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "number",
-              "format": "double"
-            }
-          },
-          {
-            "name": "spec_fingerprint",
-            "publicName": "spec_fingerprint",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "window_count",
-            "publicName": "window_count",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
       "name": "machine_detail_response",
       "source": "machine_detail_response",
       "publicAliases": [],
@@ -1805,7 +1402,8 @@
             "deprecated": false,
             "type": {
               "kind": "primitive",
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -1856,17 +1454,97 @@
       }
     },
     {
+      "name": "machine_execution_log_capture",
+      "source": "machine_execution_log_capture",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "code",
+            "publicName": "code",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lost_bytes",
+            "publicName": "lost_bytes",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "validation": {
+                "pattern": "^(0|[1-9][0-9]*)$",
+                "maxLength": 20
+              }
+            }
+          },
+          {
+            "name": "state",
+            "publicName": "state",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "pending",
+                "incomplete",
+                "unavailable"
+              ],
+              "names": [
+                "Pending",
+                "Incomplete",
+                "Unavailable"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false
+              ]
+            }
+          },
+          {
+            "name": "unconfirmed_bytes",
+            "publicName": "unconfirmed_bytes",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "validation": {
+                "pattern": "^(0|[1-9][0-9]*)$",
+                "maxLength": 20
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "machine_id_path_segment",
       "source": "machine_id_path_segment",
       "publicAliases": [],
       "deprecated": false,
+      "extensions": {
+        "source": [
+          "examples"
+        ],
+        "examples": "017f22e2-79b0-7cc3-98c4-dc0c0c07398f"
+      },
       "type": {
         "kind": "primitive",
         "type": "string",
         "validation": {
-          "pattern": "^dm-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-          "minLength": 4,
-          "maxLength": 253
+          "pattern": "^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "minLength": 36,
+          "maxLength": 39
         }
       }
     },
@@ -1935,7 +1613,8 @@
             "deprecated": false,
             "type": {
               "kind": "primitive",
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2049,563 +1728,6 @@
           {
             "name": "next_cursor",
             "publicName": "next_cursor",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "machine_network",
-      "source": "machine_network",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "hostname",
-            "publicName": "hostname",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "machine_id",
-            "publicName": "machine_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "network_id",
-            "publicName": "network_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "network_name",
-            "publicName": "network_name",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "private_ipv4",
-            "publicName": "private_ipv4",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "private_ipv6",
-            "publicName": "private_ipv6",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "machine_storage_usage",
-      "source": "machine_storage_usage",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "period_end",
-            "publicName": "period_end",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "period_start",
-            "publicName": "period_start",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "rows",
-            "publicName": "rows",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "machine_storage_usage_row"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "machine_storage_usage_row",
-      "source": "machine_storage_usage_row",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "bucket_end",
-            "publicName": "bucket_end",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "bucket_start",
-            "publicName": "bucket_start",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "latest_meter_emitted_at",
-            "publicName": "latest_meter_emitted_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "logical_storage_bytes",
-            "publicName": "logical_storage_bytes",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "machine_id",
-            "publicName": "machine_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "org_metering_bucket_id",
-            "publicName": "org_metering_bucket_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "storage_mib_seconds",
-            "publicName": "storage_mib_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "network_gateway",
-      "source": "network_gateway",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "hostname",
-            "publicName": "hostname",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "kind",
-            "publicName": "kind",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "ssh",
-                "port"
-              ],
-              "names": [
-                "Ssh",
-                "Port"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
-            }
-          },
-          {
-            "name": "port",
-            "publicName": "port",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64",
-              "validation": {
-                "minimum": 1,
-                "maximum": 65535
-              }
-            }
-          },
-          {
-            "name": "protocol",
-            "publicName": "protocol",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "ssh",
-                "https"
-              ],
-              "names": [
-                "Ssh",
-                "Https"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "network",
-      "source": "network",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "gateways",
-            "publicName": "gateways",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "network_gateway"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          },
-          {
-            "name": "name",
-            "publicName": "name",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "network_id",
-            "publicName": "network_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "port_list",
-      "source": "port_list",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "items",
-            "publicName": "items",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "port"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          },
-          {
-            "name": "next_cursor",
-            "publicName": "next_cursor",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "port",
-      "source": "port",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "created_at",
-            "publicName": "created_at",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "error_code",
-            "publicName": "error_code",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "error_message",
-            "publicName": "error_message",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "expires_at",
-            "publicName": "expires_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "machine_id",
-            "publicName": "machine_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "port",
-            "publicName": "port",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "port_id",
-            "publicName": "port_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "protocol",
-            "publicName": "protocol",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "http",
-                "https"
-              ],
-              "names": [
-                "HTTP",
-                "Https"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
-            }
-          },
-          {
-            "name": "ready_at",
-            "publicName": "ready_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "retry_after_ms",
-            "publicName": "retry_after_ms",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "status",
-            "publicName": "status",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "wake_in_progress",
-                "ready",
-                "closed",
-                "expired",
-                "failed"
-              ],
-              "names": [
-                "WakeInProgress",
-                "Ready",
-                "Closed",
-                "Expired",
-                "Failed"
-              ],
-              "deprecations": [
-                false,
-                false,
-                false,
-                false,
-                false
-              ]
-            }
-          },
-          {
-            "name": "url",
-            "publicName": "url",
             "required": false,
             "deprecated": false,
             "type": {
@@ -2855,7 +1977,8 @@
             "deprecated": false,
             "type": {
               "kind": "primitive",
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -2899,6 +2022,7 @@
               "kind": "enum",
               "values": [
                 "wake_in_progress",
+                "ssh_in_progress",
                 "ready",
                 "closed",
                 "expired",
@@ -2906,6 +2030,7 @@
               ],
               "names": [
                 "WakeInProgress",
+                "SshInProgress",
                 "Ready",
                 "Closed",
                 "Expired",
@@ -2916,511 +2041,13 @@
                 false,
                 false,
                 false,
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_client_event",
-      "source": "terminal_client_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "union",
-        "variants": [
-          {
-            "kind": "ref",
-            "name": "terminal_input_event"
-          },
-          {
-            "kind": "ref",
-            "name": "terminal_resize_event"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "input": "terminal_input_event",
-            "resize": "terminal_resize_event"
-          }
-        },
-        "variantNames": [
-          null,
-          null
-        ]
-      }
-    },
-    {
-      "name": "terminal_closed_event",
-      "source": "terminal_closed_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "type",
-            "publicName": "type",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "closed"
-              ],
-              "names": [
-                "Closed"
-              ],
-              "deprecations": [
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_error_event",
-      "source": "terminal_error_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "error_code",
-            "publicName": "error_code",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "error_message",
-            "publicName": "error_message",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "publicName": "type",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "error"
-              ],
-              "names": [
-                "Error"
-              ],
-              "deprecations": [
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_input_event",
-      "source": "terminal_input_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "data",
-            "publicName": "data",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "byte"
-            }
-          },
-          {
-            "name": "type",
-            "publicName": "type",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "input"
-              ],
-              "names": [
-                "Input"
-              ],
-              "deprecations": [
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_list",
-      "source": "terminal_list",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "items",
-            "publicName": "items",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "terminal"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          },
-          {
-            "name": "next_cursor",
-            "publicName": "next_cursor",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_output_event",
-      "source": "terminal_output_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "data",
-            "publicName": "data",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "byte"
-            }
-          },
-          {
-            "name": "type",
-            "publicName": "type",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "output"
-              ],
-              "names": [
-                "Output"
-              ],
-              "deprecations": [
-                false
-              ]
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_resize_event",
-      "source": "terminal_resize_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "height",
-            "publicName": "height",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "type",
-            "publicName": "type",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "resize"
-              ],
-              "names": [
-                "Resize"
-              ],
-              "deprecations": [
-                false
-              ]
-            }
-          },
-          {
-            "name": "width",
-            "publicName": "width",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal",
-      "source": "terminal",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "created_at",
-            "publicName": "created_at",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "error_code",
-            "publicName": "error_code",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "error_message",
-            "publicName": "error_message",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "expires_at",
-            "publicName": "expires_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "height",
-            "publicName": "height",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "machine_id",
-            "publicName": "machine_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "protocol",
-            "publicName": "protocol",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "websocket"
-              ],
-              "names": [
-                "Websocket"
-              ],
-              "deprecations": [
-                false
-              ]
-            }
-          },
-          {
-            "name": "ready_at",
-            "publicName": "ready_at",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "retry_after_ms",
-            "publicName": "retry_after_ms",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "status",
-            "publicName": "status",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "enum",
-              "values": [
-                "wake_in_progress",
-                "ready",
-                "closed",
-                "expired",
-                "failed"
-              ],
-              "names": [
-                "WakeInProgress",
-                "Ready",
-                "Closed",
-                "Expired",
-                "Failed"
-              ],
-              "deprecations": [
-                false,
-                false,
-                false,
                 false,
                 false
               ]
             }
-          },
-          {
-            "name": "stream_url",
-            "publicName": "stream_url",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "terminal_id",
-            "publicName": "terminal_id",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "width",
-            "publicName": "width",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
           }
         ],
         "additionalProperties": false
-      }
-    },
-    {
-      "name": "terminal_server_event",
-      "source": "terminal_server_event",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "union",
-        "variants": [
-          {
-            "kind": "ref",
-            "name": "terminal_output_event"
-          },
-          {
-            "kind": "ref",
-            "name": "terminal_error_event"
-          },
-          {
-            "kind": "ref",
-            "name": "terminal_closed_event"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "closed": "terminal_closed_event",
-            "error": "terminal_error_event",
-            "output": "terminal_output_event"
-          }
-        },
-        "variantNames": [
-          null,
-          null,
-          null
-        ]
       }
     },
     {
@@ -3479,94 +2106,6 @@
       }
     },
     {
-      "name": "org_usage",
-      "source": "org_usage",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "billed_awake_seconds",
-            "publicName": "billed_awake_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "billed_cpu_millicore_seconds",
-            "publicName": "billed_cpu_millicore_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "billed_logical_storage_mib_seconds",
-            "publicName": "billed_logical_storage_mib_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "billed_memory_mib_seconds",
-            "publicName": "billed_memory_mib_seconds",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "included_storage_gib",
-            "publicName": "included_storage_gib",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "plan_slug",
-            "publicName": "plan_slug",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "provisioned_storage_gib",
-            "publicName": "provisioned_storage_gib",
-            "required": true,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
       "name": "CreateResponseHeaders",
       "source": "CreateResponseHeaders",
       "publicAliases": [],
@@ -3577,6 +2116,26 @@
           {
             "name": "ETag",
             "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
             "required": false,
             "deprecated": false,
             "type": {
@@ -3625,6 +2184,26 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
             "name": "X-Dedalus-Storage-Operation-Id",
             "publicName": "X-Dedalus-Storage-Operation-Id",
             "required": false,
@@ -3640,6 +2219,138 @@
                   "kind": "null"
                 }
               ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus401ResponseHeaders",
+      "source": "CreateStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus403ResponseHeaders",
+      "source": "CreateStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus409ResponseHeaders",
+      "source": "CreateStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus429ResponseHeaders",
+      "source": "CreateStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus503ResponseHeaders",
+      "source": "CreateStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatusdefaultResponseHeaders",
+      "source": "CreateStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
             }
           }
         ],
@@ -3687,6 +2398,26 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
             "name": "X-Dedalus-Storage-Operation-Id",
             "publicName": "X-Dedalus-Storage-Operation-Id",
             "required": false,
@@ -3727,6 +2458,26 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
             "name": "X-Dedalus-Storage-Operation-Id",
             "publicName": "X-Dedalus-Storage-Operation-Id",
             "required": false,
@@ -3749,6 +2500,138 @@
       }
     },
     {
+      "name": "UpdateStatus401ResponseHeaders",
+      "source": "UpdateStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "UpdateStatus403ResponseHeaders",
+      "source": "UpdateStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "UpdateStatus409ResponseHeaders",
+      "source": "UpdateStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "UpdateStatus429ResponseHeaders",
+      "source": "UpdateStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "UpdateStatus503ResponseHeaders",
+      "source": "UpdateStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "UpdateStatusdefaultResponseHeaders",
+      "source": "UpdateStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "DeleteResponseHeaders",
       "source": "DeleteResponseHeaders",
       "publicAliases": [],
@@ -3759,6 +2642,26 @@
           {
             "name": "ETag",
             "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
             "required": false,
             "deprecated": false,
             "type": {
@@ -3799,6 +2702,218 @@
           {
             "name": "ETag",
             "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Dedalus-Storage-Operation-Id",
+            "publicName": "X-Dedalus-Storage-Operation-Id",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "primitive",
+                  "type": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeleteStatus401ResponseHeaders",
+      "source": "DeleteStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeleteStatus403ResponseHeaders",
+      "source": "DeleteStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeleteStatus409ResponseHeaders",
+      "source": "DeleteStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeleteStatus429ResponseHeaders",
+      "source": "DeleteStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeleteStatus503ResponseHeaders",
+      "source": "DeleteStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeleteStatusdefaultResponseHeaders",
+      "source": "DeleteStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "SleepResponseHeaders",
+      "source": "SleepResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "ETag",
+            "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
             "required": false,
             "deprecated": false,
             "type": {
@@ -3847,6 +2962,26 @@
             }
           },
           {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
             "name": "X-Dedalus-Storage-Operation-Id",
             "publicName": "X-Dedalus-Storage-Operation-Id",
             "required": false,
@@ -3869,8 +3004,140 @@
       }
     },
     {
-      "name": "SleepResponseHeaders",
-      "source": "SleepResponseHeaders",
+      "name": "SleepStatus401ResponseHeaders",
+      "source": "SleepStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "SleepStatus403ResponseHeaders",
+      "source": "SleepStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "SleepStatus409ResponseHeaders",
+      "source": "SleepStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "SleepStatus429ResponseHeaders",
+      "source": "SleepStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "SleepStatus503ResponseHeaders",
+      "source": "SleepStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "SleepStatusdefaultResponseHeaders",
+      "source": "SleepStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeResponseHeaders",
+      "source": "WakeResponseHeaders",
       "publicAliases": [],
       "deprecated": false,
       "type": {
@@ -3879,6 +3146,26 @@
           {
             "name": "ETag",
             "publicName": "ETag",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "Location",
+            "publicName": "Location",
             "required": false,
             "deprecated": false,
             "type": {
@@ -3927,38 +3214,18 @@
             }
           },
           {
-            "name": "X-Dedalus-Storage-Operation-Id",
-            "publicName": "X-Dedalus-Storage-Operation-Id",
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
             "required": false,
             "deprecated": false,
             "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "primitive",
-                  "type": "string"
-                },
-                {
-                  "kind": "null"
-                }
-              ]
+              "kind": "primitive",
+              "type": "string"
             }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "WakeResponseHeaders",
-      "source": "WakeResponseHeaders",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
+          },
           {
-            "name": "ETag",
-            "publicName": "ETag",
+            "name": "Location",
+            "publicName": "Location",
             "required": false,
             "deprecated": false,
             "type": {
@@ -3982,6 +3249,446 @@
                   "kind": "null"
                 }
               ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeStatus401ResponseHeaders",
+      "source": "WakeStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeStatus403ResponseHeaders",
+      "source": "WakeStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeStatus409ResponseHeaders",
+      "source": "WakeStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeStatus429ResponseHeaders",
+      "source": "WakeStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeStatus503ResponseHeaders",
+      "source": "WakeStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WakeStatusdefaultResponseHeaders",
+      "source": "WakeStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateResponseHeaders",
+      "source": "CreateResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus401ResponseHeaders",
+      "source": "CreateStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus403ResponseHeaders",
+      "source": "CreateStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus409ResponseHeaders",
+      "source": "CreateStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus429ResponseHeaders",
+      "source": "CreateStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus503ResponseHeaders",
+      "source": "CreateStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatusdefaultResponseHeaders",
+      "source": "CreateStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateResponseHeaders",
+      "source": "CreateResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus401ResponseHeaders",
+      "source": "CreateStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus403ResponseHeaders",
+      "source": "CreateStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus409ResponseHeaders",
+      "source": "CreateStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus429ResponseHeaders",
+      "source": "CreateStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus503ResponseHeaders",
+      "source": "CreateStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatusdefaultResponseHeaders",
+      "source": "CreateStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
             }
           }
         ],
@@ -3991,25 +3698,15 @@
   ],
   "resources": [
     "machines",
-    "machines.network",
-    "machines.artifacts",
-    "machines.ports",
     "machines.ssh",
     "machines.executions",
-    "machines.terminals",
-    "networks",
-    "usage"
+    "machines.terminals"
   ],
   "publicResources": [
     "machines",
-    "machines.network",
-    "machines.artifacts",
-    "machines.ports",
     "machines.ssh",
     "machines.executions",
-    "machines.terminals",
-    "networks",
-    "usage"
+    "machines.terminals"
   ],
   "operations": [
     {
@@ -4030,12 +3727,8 @@
         "limit",
         "cursor"
       ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -4055,14 +3748,7 @@
           "explode": false
         }
       ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -4188,12 +3874,8 @@
       "publicPathParams": [],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [
         "autosleep",
         "memory_mib",
@@ -4227,14 +3909,7 @@
       "publicPositionalParams": [],
       "pathParamDetails": [],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -4294,7 +3969,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -4305,7 +3984,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -4316,7 +3999,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -4327,7 +4014,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -4338,7 +4029,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -4352,6 +4047,10 @@
           ],
           "model": {
             "name": "error_model",
+            "publicAliases": []
+          },
+          "headersModel": {
+            "name": "CreateStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -4375,12 +4074,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -4394,14 +4089,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -4517,12 +4205,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [
         "autosleep",
         "memory_mib",
@@ -4563,14 +4247,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -4630,7 +4307,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "UpdateStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -4641,7 +4322,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "UpdateStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -4652,7 +4337,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "UpdateStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -4663,7 +4352,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "UpdateStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -4674,7 +4367,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "UpdateStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -4688,6 +4385,10 @@
           ],
           "model": {
             "name": "error_model",
+            "publicAliases": []
+          },
+          "headersModel": {
+            "name": "UpdateStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -4711,12 +4412,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -4730,14 +4427,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -4784,7 +4474,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "DeleteStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -4795,7 +4489,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "DeleteStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -4806,7 +4504,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "DeleteStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -4817,7 +4519,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "DeleteStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -4828,7 +4534,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "DeleteStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -4843,118 +4553,15 @@
           "model": {
             "name": "error_model",
             "publicAliases": []
+          },
+          "headersModel": {
+            "name": "DeleteStatusdefaultResponseHeaders",
+            "publicAliases": []
           }
         }
       ],
       "responseLinks": [],
       "transport": "http"
-    },
-    {
-      "resource": "machines",
-      "publicResource": "machines",
-      "operation": "watch",
-      "publicOperation": "watch",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/status/stream",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id",
-        "Last-Event-ID"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id",
-        "Last-Event-ID"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        },
-        {
-          "name": "Last-Event-ID",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "MachineWatchParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "text/event-stream",
-        "encoding": "text",
-        "contents": [
-          {
-            "contentType": "text/event-stream",
-            "encoding": "text"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "machine",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http",
-      "streaming": "sse"
     },
     {
       "resource": "machines",
@@ -4972,12 +4579,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -4991,14 +4594,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -5045,7 +4641,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "SleepStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -5056,7 +4656,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "SleepStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -5067,7 +4671,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "SleepStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -5078,7 +4686,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "SleepStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -5089,7 +4701,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "SleepStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -5103,6 +4719,10 @@
           ],
           "model": {
             "name": "error_model",
+            "publicAliases": []
+          },
+          "headersModel": {
+            "name": "SleepStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -5126,12 +4746,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -5145,14 +4761,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -5199,7 +4808,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "WakeStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -5210,7 +4823,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "WakeStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -5221,7 +4838,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "WakeStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -5232,7 +4853,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "WakeStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -5243,7 +4868,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "WakeStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -5258,1231 +4887,9 @@
           "model": {
             "name": "error_model",
             "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.network",
-      "publicResource": "machines.network",
-      "operation": "retrieve",
-      "publicOperation": "retrieve",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/network",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "NetworkRetrieveParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "machine_network",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.artifacts",
-      "publicResource": "machines.artifacts",
-      "operation": "list",
-      "publicOperation": "list",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/artifacts",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [
-        "limit",
-        "cursor"
-      ],
-      "publicQueryParams": [
-        "limit",
-        "cursor"
-      ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [
-        {
-          "name": "limit",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "cursor",
-          "required": false,
-          "style": "form",
-          "explode": false
-        }
-      ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "ArtifactListParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "artifact_list",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "pagination": {
-        "style": "cursor",
-        "itemsField": "items",
-        "cursorField": "next_cursor",
-        "cursorParam": "cursor",
-        "cursorFields": [
-          "next_cursor"
-        ],
-        "cursorParams": [
-          "cursor"
-        ],
-        "requestLocation": "query",
-        "responseLocation": "body",
-        "itemModel": {
-          "name": "artifact",
-          "publicAliases": []
-        }
-      },
-      "transport": "http"
-    },
-    {
-      "resource": "machines.artifacts",
-      "publicResource": "machines.artifacts",
-      "operation": "retrieve",
-      "publicOperation": "retrieve",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/artifacts/{artifact_id}",
-      "pathParams": [
-        "machine_id",
-        "artifact_id"
-      ],
-      "publicPathParams": [
-        "machine_id",
-        "artifact_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        },
-        {
-          "name": "artifact_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "ArtifactRetrieveParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "artifact",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.artifacts",
-      "publicResource": "machines.artifacts",
-      "operation": "delete",
-      "publicOperation": "delete",
-      "deprecated": false,
-      "method": "DELETE",
-      "path": "/v1/machines/{machine_id}/artifacts/{artifact_id}",
-      "pathParams": [
-        "machine_id",
-        "artifact_id"
-      ],
-      "publicPathParams": [
-        "machine_id",
-        "artifact_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        },
-        {
-          "name": "artifact_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "ArtifactDeleteParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "artifact",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.ports",
-      "publicResource": "machines.ports",
-      "operation": "list",
-      "publicOperation": "list",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/ports",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [
-        "limit",
-        "cursor"
-      ],
-      "publicQueryParams": [
-        "limit",
-        "cursor"
-      ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [
-        {
-          "name": "limit",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "cursor",
-          "required": false,
-          "style": "form",
-          "explode": false
-        }
-      ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "PortListParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "port_list",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "pagination": {
-        "style": "cursor",
-        "itemsField": "items",
-        "cursorField": "next_cursor",
-        "cursorParam": "cursor",
-        "cursorFields": [
-          "next_cursor"
-        ],
-        "cursorParams": [
-          "cursor"
-        ],
-        "requestLocation": "query",
-        "responseLocation": "body",
-        "itemModel": {
-          "name": "port",
-          "publicAliases": []
-        }
-      },
-      "transport": "http"
-    },
-    {
-      "resource": "machines.ports",
-      "publicResource": "machines.ports",
-      "operation": "create",
-      "publicOperation": "create",
-      "deprecated": false,
-      "method": "POST",
-      "path": "/v1/machines/{machine_id}/ports",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [
-        "port",
-        "protocol"
-      ],
-      "publicBodyParams": [
-        "port",
-        "protocol"
-      ],
-      "bodyParamDetails": [
-        {
-          "name": "port",
-          "required": true
-        },
-        {
-          "name": "protocol",
-          "required": false
-        }
-      ],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "PortCreateParams"
-      },
-      "requestBody": {
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ],
-        "required": true,
-        "publicName": "body",
-        "publicIdentifier": "body"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "port",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "409",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "409",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.ports",
-      "publicResource": "machines.ports",
-      "operation": "retrieve",
-      "publicOperation": "retrieve",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/ports/{port_id}",
-      "pathParams": [
-        "machine_id",
-        "port_id"
-      ],
-      "publicPathParams": [
-        "machine_id",
-        "port_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        },
-        {
-          "name": "port_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "PortRetrieveParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "port",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.ports",
-      "publicResource": "machines.ports",
-      "operation": "delete",
-      "publicOperation": "delete",
-      "deprecated": false,
-      "method": "DELETE",
-      "path": "/v1/machines/{machine_id}/ports/{port_id}",
-      "pathParams": [
-        "machine_id",
-        "port_id"
-      ],
-      "publicPathParams": [
-        "machine_id",
-        "port_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        },
-        {
-          "name": "port_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "PortDeleteParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "port",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
+          },
+          "headersModel": {
+            "name": "WakeStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -6512,12 +4919,8 @@
         "limit",
         "cursor"
       ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -6544,14 +4947,7 @@
           "explode": false
         }
       ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -6681,12 +5077,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [
         "public_key"
       ],
@@ -6709,14 +5101,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -6751,6 +5136,10 @@
         "name": "ssh_session",
         "publicAliases": []
       },
+      "responseHeadersModel": {
+        "name": "CreateResponseHeaders",
+        "publicAliases": []
+      },
       "result": {
         "successStatus": "200",
         "errorStatuses": [
@@ -6772,7 +5161,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -6783,7 +5176,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -6794,7 +5191,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -6805,7 +5206,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -6816,7 +5221,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -6830,6 +5239,10 @@
           ],
           "model": {
             "name": "error_model",
+            "publicAliases": []
+          },
+          "headersModel": {
+            "name": "CreateStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -6855,12 +5268,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -6880,14 +5289,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7001,12 +5403,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -7026,14 +5424,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7151,12 +5542,8 @@
         "limit",
         "cursor"
       ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -7183,14 +5570,7 @@
           "explode": false
         }
       ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7320,12 +5700,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [
         "command",
         "cwd",
@@ -7372,14 +5748,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7414,6 +5783,10 @@
         "name": "execution",
         "publicAliases": []
       },
+      "responseHeadersModel": {
+        "name": "CreateResponseHeaders",
+        "publicAliases": []
+      },
       "result": {
         "successStatus": "200",
         "errorStatuses": [
@@ -7435,7 +5808,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus401ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "403",
@@ -7446,7 +5823,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus403ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "409",
@@ -7457,7 +5838,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus409ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "429",
@@ -7468,7 +5853,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus429ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "503",
@@ -7479,7 +5868,11 @@
               "contentType": "application/json",
               "encoding": "json"
             }
-          ]
+          ],
+          "headersModel": {
+            "name": "CreateStatus503ResponseHeaders",
+            "publicAliases": []
+          }
         },
         {
           "status": "default",
@@ -7493,6 +5886,10 @@
           ],
           "model": {
             "name": "error_model",
+            "publicAliases": []
+          },
+          "headersModel": {
+            "name": "CreateStatusdefaultResponseHeaders",
             "publicAliases": []
           }
         }
@@ -7518,12 +5915,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -7543,14 +5936,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7664,12 +6050,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -7689,14 +6071,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7810,12 +6185,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -7835,14 +6206,7 @@
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -7962,12 +6326,8 @@
         "limit",
         "cursor"
       ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -8000,14 +6360,7 @@
           "explode": false
         }
       ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
@@ -8124,669 +6477,6 @@
     {
       "resource": "machines.terminals",
       "publicResource": "machines.terminals",
-      "operation": "list",
-      "publicOperation": "list",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/terminals",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [
-        "limit",
-        "cursor"
-      ],
-      "publicQueryParams": [
-        "limit",
-        "cursor"
-      ],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [
-        {
-          "name": "limit",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "cursor",
-          "required": false,
-          "style": "form",
-          "explode": false
-        }
-      ],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "TerminalListParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "terminal_list",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "pagination": {
-        "style": "cursor",
-        "itemsField": "items",
-        "cursorField": "next_cursor",
-        "cursorParam": "cursor",
-        "cursorFields": [
-          "next_cursor"
-        ],
-        "cursorParams": [
-          "cursor"
-        ],
-        "requestLocation": "query",
-        "responseLocation": "body",
-        "itemModel": {
-          "name": "terminal",
-          "publicAliases": []
-        }
-      },
-      "transport": "http"
-    },
-    {
-      "resource": "machines.terminals",
-      "publicResource": "machines.terminals",
-      "operation": "create",
-      "publicOperation": "create",
-      "deprecated": false,
-      "method": "POST",
-      "path": "/v1/machines/{machine_id}/terminals",
-      "pathParams": [
-        "machine_id"
-      ],
-      "publicPathParams": [
-        "machine_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [
-        "cwd",
-        "env",
-        "height",
-        "shell",
-        "width"
-      ],
-      "publicBodyParams": [
-        "cwd",
-        "env",
-        "height",
-        "shell",
-        "width"
-      ],
-      "bodyParamDetails": [
-        {
-          "name": "cwd",
-          "required": false
-        },
-        {
-          "name": "env",
-          "required": false
-        },
-        {
-          "name": "height",
-          "required": true
-        },
-        {
-          "name": "shell",
-          "required": false
-        },
-        {
-          "name": "width",
-          "required": true
-        }
-      ],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "TerminalCreateParams"
-      },
-      "requestBody": {
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ],
-        "required": true,
-        "publicName": "body",
-        "publicIdentifier": "body"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "terminal",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "409",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "409",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.terminals",
-      "publicResource": "machines.terminals",
-      "operation": "retrieve",
-      "publicOperation": "retrieve",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/machines/{machine_id}/terminals/{terminal_id}",
-      "pathParams": [
-        "machine_id",
-        "terminal_id"
-      ],
-      "publicPathParams": [
-        "machine_id",
-        "terminal_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        },
-        {
-          "name": "terminal_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "TerminalRetrieveParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "terminal",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.terminals",
-      "publicResource": "machines.terminals",
-      "operation": "delete",
-      "publicOperation": "delete",
-      "deprecated": false,
-      "method": "DELETE",
-      "path": "/v1/machines/{machine_id}/terminals/{terminal_id}",
-      "pathParams": [
-        "machine_id",
-        "terminal_id"
-      ],
-      "publicPathParams": [
-        "machine_id",
-        "terminal_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        },
-        {
-          "name": "terminal_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "TerminalDeleteParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "terminal",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "429",
-          "503",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "machines.terminals",
-      "publicResource": "machines.terminals",
       "operation": "connect",
       "publicOperation": "connect",
       "deprecated": false,
@@ -8802,12 +6492,8 @@
       ],
       "queryParams": [],
       "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
       "bodyParams": [],
       "publicBodyParams": [],
       "bodyParamDetails": [],
@@ -8815,683 +6501,27 @@
       "pathParamDetails": [
         {
           "name": "machine_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
+          "required": true
         },
         {
           "name": "terminal_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
+          "required": true
         }
       ],
       "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
+      "headerParamDetails": [],
       "cookieParams": [],
       "publicCookieParams": [],
       "cookieParamDetails": [],
       "paramsModel": {
         "publicName": "TerminalConnectParams"
       },
-      "result": {
-        "successStatus": "101",
-        "errorStatuses": [
-          "401",
-          "403",
-          "409",
-          "429",
-          "503"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "409",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "429",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "503",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        }
-      ],
+      "errorResponses": [],
       "responseLinks": [],
       "transport": "websocket",
       "websocket": {
-        "sendModel": {
-          "name": "terminal_client_event",
-          "publicAliases": []
-        },
-        "receiveModel": {
-          "name": "terminal_server_event",
-          "publicAliases": []
-        },
         "eventNameSeparator": "."
       }
-    },
-    {
-      "resource": "networks",
-      "publicResource": "networks",
-      "operation": "retrieve",
-      "publicOperation": "retrieve",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/networks/{network_id}",
-      "pathParams": [
-        "network_id"
-      ],
-      "publicPathParams": [
-        "network_id"
-      ],
-      "queryParams": [],
-      "publicQueryParams": [],
-      "headerParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "publicHeaderParams": [
-        "X-Dedalus-Org-Id"
-      ],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [
-        {
-          "name": "network_id",
-          "required": true,
-          "style": "simple",
-          "explode": false
-        }
-      ],
-      "queryParamDetails": [],
-      "headerParamDetails": [
-        {
-          "name": "X-Dedalus-Org-Id",
-          "required": false,
-          "style": "form",
-          "explode": true
-        }
-      ],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "NetworkRetrieveParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "network",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "401",
-          "403",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "usage",
-      "publicResource": "usage",
-      "operation": "retrieve",
-      "publicOperation": "retrieve",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/usage",
-      "pathParams": [],
-      "publicPathParams": [],
-      "queryParams": [
-        "period_start"
-      ],
-      "publicQueryParams": [
-        "period_start"
-      ],
-      "headerParams": [],
-      "publicHeaderParams": [],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [],
-      "queryParamDetails": [
-        {
-          "name": "period_start",
-          "required": false,
-          "style": "form",
-          "explode": false
-        }
-      ],
-      "headerParamDetails": [],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "UsageRetrieveParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "org_usage",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "400",
-          "401",
-          "403",
-          "500",
-          "502",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "400",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "500",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "502",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "usage",
-      "publicResource": "usage",
-      "operation": "machineCompute",
-      "publicOperation": "machineCompute",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/usage/machines/compute",
-      "pathParams": [],
-      "publicPathParams": [],
-      "queryParams": [
-        "period_start",
-        "period_end",
-        "machine_id",
-        "granularity"
-      ],
-      "publicQueryParams": [
-        "period_start",
-        "period_end",
-        "machine_id",
-        "granularity"
-      ],
-      "headerParams": [],
-      "publicHeaderParams": [],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [],
-      "queryParamDetails": [
-        {
-          "name": "period_start",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "period_end",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "machine_id",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "granularity",
-          "required": false,
-          "style": "form",
-          "explode": false
-        }
-      ],
-      "headerParamDetails": [],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "UsageMachineComputeParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "machine_compute_usage",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "400",
-          "401",
-          "403",
-          "500",
-          "502",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "400",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "500",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "502",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
-    },
-    {
-      "resource": "usage",
-      "publicResource": "usage",
-      "operation": "machineStorage",
-      "publicOperation": "machineStorage",
-      "deprecated": false,
-      "method": "GET",
-      "path": "/v1/usage/machines/storage",
-      "pathParams": [],
-      "publicPathParams": [],
-      "queryParams": [
-        "period_start",
-        "period_end",
-        "machine_id"
-      ],
-      "publicQueryParams": [
-        "period_start",
-        "period_end",
-        "machine_id"
-      ],
-      "headerParams": [],
-      "publicHeaderParams": [],
-      "bodyParams": [],
-      "publicBodyParams": [],
-      "bodyParamDetails": [],
-      "publicPositionalParams": [],
-      "pathParamDetails": [],
-      "queryParamDetails": [
-        {
-          "name": "period_start",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "period_end",
-          "required": false,
-          "style": "form",
-          "explode": false
-        },
-        {
-          "name": "machine_id",
-          "required": false,
-          "style": "form",
-          "explode": false
-        }
-      ],
-      "headerParamDetails": [],
-      "cookieParams": [],
-      "publicCookieParams": [],
-      "cookieParamDetails": [],
-      "paramsModel": {
-        "publicName": "UsageMachineStorageParams"
-      },
-      "response": {
-        "status": "200",
-        "contentType": "application/json",
-        "encoding": "json",
-        "contents": [
-          {
-            "contentType": "application/json",
-            "encoding": "json"
-          }
-        ]
-      },
-      "responseModel": {
-        "name": "machine_storage_usage",
-        "publicAliases": []
-      },
-      "result": {
-        "successStatus": "200",
-        "errorStatuses": [
-          "400",
-          "401",
-          "403",
-          "500",
-          "502",
-          "default"
-        ]
-      },
-      "errorResponses": [
-        {
-          "status": "400",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "401",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "403",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "500",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "502",
-          "contentType": "application/json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/json",
-              "encoding": "json"
-            }
-          ]
-        },
-        {
-          "status": "default",
-          "contentType": "application/problem+json",
-          "encoding": "json",
-          "contents": [
-            {
-              "contentType": "application/problem+json",
-              "encoding": "json"
-            }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
-        }
-      ],
-      "responseLinks": [],
-      "transport": "http"
     }
   ],
   "webhooks": []

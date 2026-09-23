@@ -1,7 +1,6 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-import { APIPromise } from './api-promise';
-import type { APIResponseProps } from './internal/parse';
+import { APIPromise, type APIResponseProps } from './api-promise';
 import { PagePromise, type AbstractPage, type CursorPageParams, CursorPageResponse } from './core/pagination';
 import * as Pagination from './core/pagination';
 import * as Errors from './error';
@@ -44,27 +43,9 @@ import {
   type MachineRetrieveParams,
   type MachineUpdateParams,
   type MachineDeleteParams,
-  type MachineWatchParams,
   type MachineSleepParams,
   type MachineWakeParams,
 } from './resources/machines/machines';
-import {
-  Networks,
-  type Network,
-  type NetworkGateway,
-  type NetworkRetrieveParams,
-} from './resources/networks';
-import {
-  Usage,
-  type OrgUsage,
-  type MachineComputeUsage,
-  type MachineComputeUsageRow,
-  type MachineStorageUsage,
-  type MachineStorageUsageRow,
-  type UsageRetrieveParams,
-  type UsageMachineComputeParams,
-  type UsageMachineStorageParams,
-} from './resources/usage';
 
 export type AuthTokenProvider = () => string | Promise<string>;
 
@@ -80,7 +61,7 @@ export interface ClientOptions {
   xAPIKey?: string | AuthTokenProvider | null | undefined;
 
   /**
-   * Dedalus API key in Authorization: Bearer <key>.
+   * Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
    */
   bearerAuth?: string | AuthTokenProvider | undefined;
 
@@ -991,13 +972,9 @@ export class Dedalus {
   static toFile = toFile;
 
   machines: Machines = new Machines(this);
-  networks: Networks = new Networks(this);
-  usage: Usage = new Usage(this);
 }
 
 Dedalus.Machines = Machines;
-Dedalus.Networks = Networks;
-Dedalus.Usage = Usage;
 
 export declare namespace Dedalus {
   export type RequestOptions = Opts.RequestOptions;
@@ -1020,28 +997,8 @@ export declare namespace Dedalus {
     type MachineRetrieveParams as MachineRetrieveParams,
     type MachineUpdateParams as MachineUpdateParams,
     type MachineDeleteParams as MachineDeleteParams,
-    type MachineWatchParams as MachineWatchParams,
     type MachineSleepParams as MachineSleepParams,
     type MachineWakeParams as MachineWakeParams,
-  };
-
-  export {
-    Networks as Networks,
-    type Network as Network,
-    type NetworkGateway as NetworkGateway,
-    type NetworkRetrieveParams as NetworkRetrieveParams,
-  };
-
-  export {
-    Usage as Usage,
-    type OrgUsage as OrgUsage,
-    type MachineComputeUsage as MachineComputeUsage,
-    type MachineComputeUsageRow as MachineComputeUsageRow,
-    type MachineStorageUsage as MachineStorageUsage,
-    type MachineStorageUsageRow as MachineStorageUsageRow,
-    type UsageRetrieveParams as UsageRetrieveParams,
-    type UsageMachineComputeParams as UsageMachineComputeParams,
-    type UsageMachineStorageParams as UsageMachineStorageParams,
   };
 }
 

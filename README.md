@@ -17,7 +17,6 @@ The full API of this library can be found in [api.md](./api.md).
 - [File Arguments](#file-arguments)
 - [Shell Completion](#shell-completion)
 - [Manual Pages](#manual-pages)
-- [Streaming](#streaming)
 - [WebSockets](#websockets)
 - [Authentication](#authentication)
 - [Errors](#errors)
@@ -176,12 +175,6 @@ man dedalus-<resource>-<command>
 
 <br />
 
-## Streaming
-
-Streaming commands emit one result per line as the server sends it. Use `--max-items <count>` to stop after N items.
-
-<br />
-
 ## WebSockets
 
 WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
@@ -196,7 +189,7 @@ Pass credentials to the generated client constructor. Environment variables are 
 | --- | --- | --- | --- |
 | `--api-key` | `string \| provider` | - | API key authentication using Bearer token Defaults to DEDALUS_API_KEY. |
 | `--x-api-key` | `string \| provider` | - | API key authentication using X-API-Key header Defaults to DEDALUS_X_API_KEY. |
-| `--bearer-auth` | `string \| provider` | - | Dedalus API key in Authorization: Bearer <key>. Defaults to DEDALUS_BEARER_AUTH. |
+| `--bearer-auth` | `string \| provider` | - | Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>. Defaults to DEDALUS_BEARER_AUTH. |
 
 Declared schemes:
 
@@ -210,7 +203,7 @@ Declared schemes:
 
 Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
-Documented error statuses: `400`, `401`, `403`, `409`, `429`, `500`, `502`, `503`, `default`.
+Documented error statuses: `401`, `403`, `409`, `429`, `503`, `default`.
 
 <br />
 

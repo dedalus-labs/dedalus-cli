@@ -45,7 +45,7 @@ API key authentication using Bearer token. Can also be set with the DEDALUS_API_
 API key authentication using X\-API\-Key header. Can also be set with the DEDALUS_X_API_KEY environment variable.
 .TP
 \fB\-\-bearer\-auth\fR \fI<value>\fR
-Dedalus API key in Authorization: Bearer <key>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
+Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
 .TP
 \fB\-\-provider\fR \fI<value>\fR
 Provider name for BYOK mode. Can also be set with the DEDALUS_PROVIDER environment variable.
@@ -72,38 +72,11 @@ Update machine. See dedalus\-machines\-update(1).
 \fBdedalus machines delete\fR
 Destroy machine. See dedalus\-machines\-delete(1).
 .TP
-\fBdedalus machines watch\fR
-Watch machine lifecycle status. See dedalus\-machines\-watch(1).
-.TP
 \fBdedalus machines sleep\fR
 Sleep a running machine. See dedalus\-machines\-sleep(1).
 .TP
 \fBdedalus machines wake\fR
 Wake a sleeping machine. See dedalus\-machines\-wake(1).
-.TP
-\fBdedalus machines:network retrieve\fR
-Get machine network identity. See dedalus\-machines\-network\-retrieve(1).
-.TP
-\fBdedalus machines:artifacts list\fR
-List artifacts. See dedalus\-machines\-artifacts\-list(1).
-.TP
-\fBdedalus machines:artifacts retrieve\fR
-Get artifact. See dedalus\-machines\-artifacts\-retrieve(1).
-.TP
-\fBdedalus machines:artifacts delete\fR
-Delete artifact. See dedalus\-machines\-artifacts\-delete(1).
-.TP
-\fBdedalus machines:ports list\fR
-List ports. See dedalus\-machines\-ports\-list(1).
-.TP
-\fBdedalus machines:ports create\fR
-Create port. See dedalus\-machines\-ports\-create(1).
-.TP
-\fBdedalus machines:ports retrieve\fR
-Get port. See dedalus\-machines\-ports\-retrieve(1).
-.TP
-\fBdedalus machines:ports delete\fR
-Delete port. See dedalus\-machines\-ports\-delete(1).
 .TP
 \fBdedalus machines:ssh list\fR
 List SSH sessions. See dedalus\-machines\-ssh\-list(1).
@@ -135,32 +108,8 @@ Get execution output. See dedalus\-machines\-executions\-output(1).
 \fBdedalus machines:executions events\fR
 List execution events. See dedalus\-machines\-executions\-events(1).
 .TP
-\fBdedalus machines:terminals list\fR
-List terminals. See dedalus\-machines\-terminals\-list(1).
-.TP
-\fBdedalus machines:terminals create\fR
-Create terminal. See dedalus\-machines\-terminals\-create(1).
-.TP
-\fBdedalus machines:terminals retrieve\fR
-Get terminal. See dedalus\-machines\-terminals\-retrieve(1).
-.TP
-\fBdedalus machines:terminals delete\fR
-Delete terminal. See dedalus\-machines\-terminals\-delete(1).
-.TP
 \fBdedalus machines:terminals connect\fR
-Connect to terminal WebSocket stream. See dedalus\-machines\-terminals\-connect(1).
-.TP
-\fBdedalus networks retrieve\fR
-Get network details. See dedalus\-networks\-retrieve(1).
-.TP
-\fBdedalus usage retrieve\fR
-Get usage summary. See dedalus\-usage\-retrieve(1).
-.TP
-\fBdedalus usage machine\-compute\fR
-List machine compute usage breakdown. See dedalus\-usage\-machine\-compute(1).
-.TP
-\fBdedalus usage machine\-storage\fR
-List machine storage usage breakdown. See dedalus\-usage\-machine\-storage(1).
+See dedalus\-machines\-terminals\-connect(1).
 .TP
 \fBdedalus completion\fR
 Print a shell completion script. See dedalus\-completion(1).

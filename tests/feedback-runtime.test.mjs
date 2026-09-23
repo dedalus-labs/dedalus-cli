@@ -24,9 +24,9 @@ test('invariant SDK requests preserve organization scope without forwarding rece
     else process.env.DEDALUS_CUSTOM_HEADERS = previous;
   });
   const command = new Command('dedalus').version('1.0.0').command('machines').command('create');
-  const options = sdkClientOptions({
+  const options = await sdkClientOptions({
     baseUrl: 'https://staging.invalid', apiKey: 'test-key', xDedalusOrgId: 'org-current',
-  }, command, [{ name: 'api-key', optionKey: 'apiKey', sdkKey: 'apiKey' }]);
+  }, command, [{ name: 'api-key', optionKey: 'apiKey', sdkKey: 'apiKey' }], undefined);
   let headers;
   const client = new SDK({
     ...options,

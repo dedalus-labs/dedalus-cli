@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -257,3 +257,46 @@ for (const failsDecoding of [false, true]) {
     assert.equal(report.diagnostics, undefined);
   });
 }
+
+test('invariant generated and custom commands share scoped stored credentials and request headers', async (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'dedalus-stored-auth-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const requests = [];
+  const server = createServer((req, res) => {
+    requests.push({ method: req.method, headers: req.headers });
+    req.resume();
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(req.method === 'PATCH'
+      ? { machine_id: 'dm-01973f7b-7cf6-726a-9a9f-4f37d4b47a21', name: 'new-name' }
+      : { items: [], next_cursor: null }));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const baseURL = 'http://127.0.0.1:' + server.address().port;
+  const store = join(directory, 'credentials.json');
+  writeFileSync(store, JSON.stringify({ version: 1, profiles: {
+    [baseURL]: { backend: 'file', credentials: { apiKey: 'stored-key' } },
+    'https://other.invalid': { backend: 'file', credentials: { apiKey: 'other-host-key' } },
+  } }), { mode: 0o600 });
+  const env = { HOME: directory, DEDALUS_CREDENTIALS_FILE: store,
+    DEDALUS_CUSTOM_HEADERS: 'x-request-id: ' + receipt };
+  for (const args of [
+    ['machines', 'list'],
+    ['feedback', 'stored credential', '--include-logs=false'],
+    ['rename', 'old-name', 'new-name'],
+  ]) {
+    const result = await runCLI([...args, '--base-url', baseURL,
+      '--x-dedalus-org-id', 'org-current', '--format', 'json'], env);
+    assert.equal(result.code, 0, result.stderr);
+    const { headers } = requests.at(-1);
+    assert.equal(headers.authorization, 'Bearer stored-key');
+    assert.equal(headers['x-dedalus-org-id'], 'org-current');
+    assert.equal(headers['x-request-id'], undefined);
+    assert.match(headers['user-agent'], /^Dedalus\/CLI /);
+    assert.ok(headers['x-dedalus-cli-command'].startsWith('dedalus '));
+  }
+  const explicit = await runCLI(['feedback', 'explicit credential', '--include-logs=false',
+    '--base-url', baseURL, '--api-key', 'explicit-key'], env);
+  assert.equal(explicit.code, 0, explicit.stderr);
+  assert.equal(requests.at(-1).headers.authorization, 'Bearer explicit-key');
+});

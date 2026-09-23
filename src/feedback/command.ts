@@ -6,6 +6,7 @@ import { randomBytes } from 'node:crypto';
 import { Command, Option } from 'commander';
 
 import SDK from '../sdk/index.js';
+import type { CliAuthDefinition } from '../cli/login.js';
 import { VERSION } from '../sdk/version.js';
 import {
   errorExitCode,
@@ -31,6 +32,7 @@ export const feedbackIdempotencyKey = (): string => {
 export const registerFeedbackCommands = (
   program: Command,
   clientOptions: readonly CliClientOptionDefinition[],
+  auth: CliAuthDefinition | undefined,
   directory = debugDirectory(),
 ): Command => {
   const feedback = program
@@ -54,7 +56,7 @@ export const registerFeedbackCommands = (
     }
     const options = command.optsWithGlobals<GlobalOptions & { includeLogs: IncludeLogs }>();
     try {
-      const clientOptionsForRequest = sdkClientOptions(options, command, clientOptions);
+      const clientOptionsForRequest = await sdkClientOptions(options, command, clientOptions, auth);
       const client = new SDK({ ...clientOptionsForRequest, logLevel: 'off' });
       const bundle = buildFeedbackBundle(
         options.includeLogs,

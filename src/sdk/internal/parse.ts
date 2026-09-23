@@ -3,7 +3,7 @@
 import type { FinalRequestOptions } from './request-options';
 import { Stream } from '../core/streaming';
 import { type Dedalus } from '../client';
-import { formatRequestDetails, loggerFor } from './utils/log';
+import { formatRequestDetails, loggerFor, redactHeaders, redactUrl } from './utils/log';
 
 export type APIResponseProps = {
   response: Response;
@@ -18,19 +18,22 @@ export async function defaultParseResponse<T>(client: Dedalus, props: APIRespons
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
     if (props.options.stream) {
-      loggerFor(client).debug('response', response.status, response.url, response.headers, response.body);
+      // Redacted like every other logged request: `response.url` keeps the query string, so an
+      // `apiKey` scheme with `in: query` puts the credential here, and the raw header bag would
+      // carry `set-cookie` past the checks `formatRequestDetails` applies on the non-streaming path.
+      loggerFor(client).debug(
+        'response',
+        response.status,
+        redactUrl(response.url),
+        redactHeaders(response.headers),
+        response.body,
+      );
 
       // Note: there is an invariant here that isn't represented in the type system
       // that if you set `stream: true` the response type must also be `Stream<T>`
 
       if (props.options.__streamClass) {
         return props.options.__streamClass.fromSSEResponse(response, props.controller, client) as any;
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('ndjson') || contentType?.includes('jsonl')) {
-        if (!response.body) throw new Error('Attempted to iterate over a response with no body');
-        return Stream.fromReadableStream(response.body, props.controller, client) as any;
       }
 
       return Stream.fromSSEResponse(response, props.controller, client) as any;

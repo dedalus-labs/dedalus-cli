@@ -1,5 +1,6 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
+import { accessSync, constants as fsConstants, createReadStream, readFileSync } from 'node:fs';
 import { stdin as processStdin, stdout as processStdout } from 'node:process';
 
 import as from 'ansis';
@@ -7,7 +8,12 @@ import { Command } from 'commander';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 import { encodeToon } from './toon.js';
+import { takeWarnings } from './credentials';
+import { type CliAuthDefinition, UsageError, runLogin, runLogout, storedCredentials } from './login';
+
 import { createDiagnostics, diagnosticScope } from '../feedback/diagnostics.js';
+
+const LOGIN_COMMAND = 'dedalus login';
 
 type OutputFormat = 'auto' | 'json' | 'jsonl' | 'pretty' | 'raw' | 'toon' | 'yaml';
 
@@ -18,7 +24,8 @@ export type CliValueKind =
   | 'boolean'
   | 'object'
   | 'array'
-  | 'unknown';
+  | 'unknown'
+  | 'file';
 
 export type CliFlagDefinition = {
   readonly name: string;
@@ -47,10 +54,16 @@ export type CliCommandDefinition = {
   readonly streaming?: 'sse' | 'jsonl';
   readonly iterable: boolean;
   readonly callShape: 'options' | 'params' | 'body';
+  readonly authClientKeyRequirements: readonly (readonly string[])[];
   // Param key of a body blob that is forwarded bare or spread into params, depending on callShape.
   readonly bodyParamKey?: string;
   readonly positional: readonly CliFlagDefinition[];
   readonly flags: readonly CliFlagDefinition[];
+};
+
+export type CliCommandGroup = {
+  readonly commandPath: readonly string[];
+  readonly description?: string;
 };
 
 export type CliClientOptionDefinition = {
@@ -76,9 +89,13 @@ export type CreateProgramOptions = {
   readonly defaultErrorFormat: OutputFormat;
   readonly clientOptions: readonly CliClientOptionDefinition[];
   readonly commands: readonly CliCommandDefinition[];
+  // Descriptions for the resource-shaped parents commands hang under. Only described groups are
+  // listed; Commander already creates an undescribed parent implicitly.
+  readonly groups?: readonly CliCommandGroup[];
   // Completion script per shell, generated alongside the command table. Absent when the SDK
   // config disables shell completions, in which case no `completion` command is registered.
   readonly completions?: Readonly<Record<string, string>>;
+  readonly auth?: CliAuthDefinition;
 };
 
 type OutputOptions = {
@@ -114,7 +131,9 @@ export const createProgram = ({
   defaultErrorFormat,
   clientOptions,
   commands,
+  groups,
   completions,
+  auth,
 }: CreateProgramOptions): Command => {
   const program = usageExitCode(new Command());
   program
@@ -147,9 +166,11 @@ export const createProgram = ({
     program.option('--' + option.name + ' <value>', clientOptionDescription(option));
   }
 
-  for (const definition of commands) addGeneratedCommand(program, SDK, clientOptions, definition);
+  for (const definition of commands)
+    addGeneratedCommand(program, SDK, clientOptions, definition, groups, auth);
 
   if (completions) addCompletionCommand(program, binaryName, completions);
+  if (auth) addAuthCommands(program, auth);
 
   return program;
 };
@@ -210,6 +231,62 @@ const completionHelpExamples = (binaryName: string, shells: readonly string[]): 
   return lines.length > 0 ? '\nAdd one of these to your shell startup file:\n' + lines.join('\n') : '';
 };
 
+// `login`/`logout` sit at the top level unless the API already claims one of those names, in
+// which case they fall back under an `auth` parent. That parent is created here rather than
+// from the command table, so it needs its own description or `--help` lists a bare `auth`,
+// which is the very thing the group table exists to prevent. Both paths are described so
+// whichever one creates the group first carries it.
+const authGroups = (auth: CliAuthDefinition): readonly CliCommandGroup[] => [
+  { commandPath: auth.loginPath.slice(0, -1), description: 'Sign in and out' },
+  { commandPath: auth.logoutPath.slice(0, -1), description: 'Sign in and out' },
+];
+
+const addAuthCommands = (program: Command, auth: CliAuthDefinition): void => {
+  const flows = auth.methods.map((method) => method.name).join(', ');
+  const login = usageExitCode(new Command(auth.loginPath.at(-1) ?? 'login'))
+    .description('Sign in and save credentials for later commands')
+    .showHelpAfterError()
+    .option('--base-url <url>', 'Sign in against this base URL instead of the default')
+    .option('--flow <name>', 'Sign-in flow to use: ' + flows)
+    .addHelpText('after', authFlowHelp(auth))
+    .action(async (_options: unknown, command: Command) => {
+      const options = command.optsWithGlobals<{ baseUrl?: string; flow?: string }>();
+      await runAuthCommand(() => runLogin(auth, resolvedBaseUrl(auth, options.baseUrl), options.flow));
+    });
+  ensureCommandPath(program, auth.loginPath.slice(0, -1), authGroups(auth)).addCommand(login);
+
+  const logout = usageExitCode(new Command(auth.logoutPath.at(-1) ?? 'logout'))
+    .description('Forget saved credentials')
+    .showHelpAfterError()
+    .option('--base-url <url>', 'Forget the credentials saved for this base URL')
+    .option('--all', 'Forget every saved credential, for every base URL')
+    .action(async (_options: unknown, command: Command) => {
+      const options = command.optsWithGlobals<{ baseUrl?: string; all?: boolean }>();
+      await runAuthCommand(() =>
+        runLogout(auth, resolvedBaseUrl(auth, options.baseUrl), options.all === true),
+      );
+    });
+  ensureCommandPath(program, auth.logoutPath.slice(0, -1), authGroups(auth)).addCommand(logout);
+};
+
+const runAuthCommand = async (run: () => string | Promise<string>): Promise<void> => {
+  try {
+    processStdout.write((await run()) + '\n');
+  } catch (error) {
+    process.stderr.write((error instanceof Error ? error.message : String(error)) + '\n');
+    process.exitCode = error instanceof UsageError ? 2 : 10;
+  } finally {
+    for (const warning of takeWarnings()) process.stderr.write(warning + '\n');
+  }
+};
+
+const resolvedBaseUrl = (auth: CliAuthDefinition, flag: string | undefined): string =>
+  flag?.trim() || process.env[auth.baseUrlEnv]?.trim() || auth.defaultBaseUrl;
+
+// Lists the flows by name so `--flow` can be used without first running the picker.
+const authFlowHelp = (auth: CliAuthDefinition): string =>
+  '\nSign-in flows:\n' + auth.methods.map((method) => '  ' + method.name + '  ' + method.label).join('\n');
+
 const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   const parts: string[] = [];
   if (option.description) parts.push(option.description);
@@ -219,13 +296,46 @@ const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   return parts.join(' ');
 };
 
+// Constructs the embedded client, restating its credential guard in command-line terms.
+//
+// The SDK's own guard is worded for a library caller — "instantiate the X client with an apiKey
+// option, like new X({ apiKey: ... })" — which names something a CLI user cannot do. That wording
+// is fixed upstream to match the reference SDKs byte for byte, so it is restated here rather than
+// changed there. The environment variable is the anchor for the match: it is the one token of the
+// message this runtime also knows, so an unrelated constructor failure is rethrown untouched
+// instead of being reported as a missing credential.
+const buildClient = (
+  SDK: CreateProgramOptions['SDK'],
+  options: Record<string, unknown>,
+  clientOptions: readonly CliClientOptionDefinition[],
+): Record<string, unknown> => {
+  try {
+    return new SDK(options) as Record<string, unknown>;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const missing = clientOptions.find((option) => option.env !== undefined && message.includes(option.env));
+    if (!missing) throw error;
+    throw new Error(
+      'Missing credential: run `' +
+        LOGIN_COMMAND +
+        '`, pass --' +
+        missing.name +
+        ' <value>' +
+        (missing.env ? ' or set the ' + missing.env + ' environment variable' : '') +
+        '.',
+    );
+  }
+};
+
 const addGeneratedCommand = (
   program: Command,
   SDK: CreateProgramOptions['SDK'],
   clientOptions: readonly CliClientOptionDefinition[],
   definition: CliCommandDefinition,
+  groups: readonly CliCommandGroup[] | undefined,
+  auth: CliAuthDefinition | undefined,
 ): void => {
-  const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1));
+  const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1), groups);
   const commandName = definition.commandPath.at(-1) ?? definition.methodName;
   const command = usageExitCode(new Command(commandName))
     .description(definition.summary ?? definition.description ?? '')
@@ -262,7 +372,10 @@ const addGeneratedCommand = (
   }
 
   for (const flag of definition.flags) {
-    const value = flag.valueKind === 'boolean' ? '' : ' <value>';
+    // A file flag takes a filesystem path, so it says so: the placeholder is the only hint in
+    // `--help` that the value is opened rather than sent verbatim.
+    const isPath = flag.valueKind === 'file' || flag.itemKind === 'file';
+    const value = flag.valueKind === 'boolean' ? '' : isPath ? ' <path>' : ' <value>';
     if (flag.name === 'send') {
       command.option(
         '--' + flag.name + value,
@@ -286,7 +399,13 @@ const addGeneratedCommand = (
 
   // Flag spelling for path params (`--id wkr_1`); skipped when the name is already taken by a
   // client option or generated flag so Commander does not throw on a duplicate registration.
+  //
+  // `help` is skipped on top of that scan rather than through it: Commander keeps its built-in
+  // help option in `_helpOption`, not in `command.options`, so the scan cannot see it and
+  // `--help <value>` would register over it — leaving `<command> --help` to fail with "argument
+  // missing" instead of printing help. The param is still accepted positionally.
   for (const positional of definition.positional) {
+    if (positional.name === 'help') continue;
     if (command.options.some((option) => option.long === '--' + positional.name)) continue;
     command.option('--' + positional.name + ' <value>', positional.description ?? '');
   }
@@ -295,26 +414,48 @@ const addGeneratedCommand = (
     const command = args.at(-1);
     if (!(command instanceof Command)) throw new Error('Expected Commander command context');
     const positionalValues = args.slice(0, -1);
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues);
+    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, auth);
   });
 
   parent.addCommand(command);
 };
 
-const ensureCommandPath = (program: Command, path: readonly string[]): Command => {
+const ensureCommandPath = (
+  program: Command,
+  path: readonly string[],
+  groups: readonly CliCommandGroup[] | undefined,
+): Command => {
   let parent = program;
+  const walked: string[] = [];
   for (const part of path) {
+    walked.push(part);
     const existing = parent.commands.find((command) => command.name() === part);
     if (existing) {
       parent = existing;
       continue;
     }
     const next = usageExitCode(new Command(part)).showHelpAfterError();
+    // A group is created as the parent of its first command, so this is the only moment it can be
+    // described: Commander never revisits it, and an undescribed group is a bare name in --help.
+    const description = groupDescription(groups, walked);
+    if (description) next.description(description);
     parent.addCommand(next);
     parent = next;
   }
   return parent;
 };
+
+// Matched on the full walked path rather than the last segment, so a nested group is described by
+// the resource it was actually built from and two resources sharing a leaf name cannot collide.
+const groupDescription = (
+  groups: readonly CliCommandGroup[] | undefined,
+  path: readonly string[],
+): string | undefined =>
+  groups?.find(
+    (group) =>
+      group.commandPath.length === path.length &&
+      group.commandPath.every((part, index) => part === path[index]),
+  )?.description;
 
 const runGeneratedCommand = async (
   SDK: CreateProgramOptions['SDK'],
@@ -322,6 +463,7 @@ const runGeneratedCommand = async (
   definition: CliCommandDefinition,
   command: Command,
   positionalValues: readonly unknown[],
+  auth: CliAuthDefinition | undefined,
 ): Promise<void> => {
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
@@ -343,9 +485,11 @@ const runGeneratedCommand = async (
     ...(commandOptions.rawOutput || rootOptions.rawOutput ? { rawOutput: true } : {}),
   };
 
-  const clientConfig = sdkClientOptions(rootOptions, command, clientOptions);
   let diagnostics: ReturnType<typeof createDiagnostics> | undefined;
   try {
+    const clientConfig = await sdkClientOptions(
+      rootOptions, command, clientOptions, auth, definition.authClientKeyRequirements,
+    );
     const call = await callArguments(
       definition,
       command.opts<Record<string, unknown>>(),
@@ -358,10 +502,7 @@ const runGeneratedCommand = async (
       'dedalus ' + definition.commandPath.join(' '),
       diagnosticScope(scopeOptions),
     );
-    const client = new SDK({ ...clientConfig, fetch: diagnostics.fetch }) as Record<
-      string,
-      unknown
-    >;
+    const client = buildClient(SDK, { ...clientConfig, fetch: diagnostics.fetch }, clientOptions);
     const method = sdkMethod(client, definition);
 
     // Required positionals are validated here (not by Commander) because each one may also be
@@ -400,24 +541,35 @@ const runGeneratedCommand = async (
   }
 };
 
-export const sdkClientOptions = (
+// Generated commands pass operation-specific requirements. Custom commands use the API-wide requirements.
+export const sdkClientOptions = async (
   options: GlobalOptions,
   command: Command,
   clientOptions: readonly CliClientOptionDefinition[],
-): Record<string, unknown> => {
+  auth: CliAuthDefinition | undefined,
+  requirements: readonly (readonly string[])[] = auth?.requirements ?? [],
+): Promise<Record<string, unknown>> => {
   // Forward configured client-option flags (auth keys, org headers, etc.) to the embedded SDK
   // using the SDK-facing camelCased key. Only forward values that were explicitly set so the
   // SDK's own env-var fallback keeps working when no CLI flag was passed.
-  const raw = options as unknown as Record<string, unknown>;
+  const rootOptions = options as unknown as Record<string, unknown>;
+  const commandOptions = command.opts<Record<string, unknown>>();
   const forwarded: Record<string, unknown> = {};
   for (const option of clientOptions) {
-    const value = raw[option.optionKey];
-    if (value !== undefined) forwarded[option.sdkKey] = value;
+    const commandValue = commandOptions[option.optionKey];
+    const value = commandValue === undefined ? rootOptions[option.optionKey] : commandValue;
+    if (value === undefined) continue;
+    // A credential is exactly the kind of value that belongs in a file rather than in shell
+    // history, so a client option reads `@path` like any other flag. It never reaches the
+    // structured decoding below it: an SDK client option is always a scalar.
+    forwarded[option.sdkKey] = typeof value === 'string' ? clientOptionValue(value, option) : value;
   }
-  const organization = raw['xDedalusOrgId'] ?? forwarded['dedalusOrgID'] ?? process.env['DEDALUS_ORG_ID'];
+  await applyStoredCredentials(forwarded, clientOptions, requirements, auth, options.baseUrl);
+  const organization = commandOptions['xDedalusOrgId'] ?? rootOptions['xDedalusOrgId'] ??
+    forwarded['dedalusOrgID'] ?? process.env['DEDALUS_ORG_ID'];
   if (organization !== undefined) forwarded['dedalusOrgID'] = organization;
   return {
-    ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
+    ...(options.baseUrl?.trim() ? { baseURL: options.baseUrl.trim() } : {}),
     ...(options.timeout ? { timeout: Number(options.timeout) } : {}),
     ...(options.maxRetries ? { maxRetries: Number(options.maxRetries) } : {}),
     ...(options.debug ? { logLevel: 'debug' } : {}),
@@ -432,6 +584,45 @@ export const sdkClientOptions = (
       'User-Agent': 'Dedalus/CLI ' + rootCommand(command).version(),
     },
   };
+};
+
+const applyStoredCredentials = async (
+  forwarded: Record<string, unknown>,
+  clientOptions: readonly CliClientOptionDefinition[],
+  authClientKeyRequirements: readonly (readonly string[])[],
+  auth: CliAuthDefinition | undefined,
+  baseUrl: string | undefined,
+): Promise<void> => {
+  if (!auth) return;
+  if (authClientKeyRequirements.length === 0) return;
+  const hasExplicitValue = (option: CliClientOptionDefinition): boolean =>
+    forwarded[option.sdkKey] !== undefined || Boolean(option.env && (process.env[option.env] ?? '').trim());
+  const explicit = authClientKeyRequirements.find((keys) =>
+    keys.every((key) => {
+      const option = clientOptions.find((candidate) => candidate.clientKey === key);
+      return option !== undefined && hasExplicitValue(option);
+    }),
+  );
+  if (explicit) return;
+  const stored = await storedCredentials(auth, resolvedBaseUrl(auth, baseUrl));
+  const isSatisfiable = (keys: readonly string[]): boolean =>
+    keys.every((key) => {
+      const option = clientOptions.find((candidate) => candidate.clientKey === key);
+      if (!option) return false;
+      return hasExplicitValue(option) || (typeof stored[key] === 'string' && stored[key] !== '');
+    });
+  const selected =
+    authClientKeyRequirements.find((keys) => isSatisfiable(keys)) ?? authClientKeyRequirements[0] ?? [];
+  const pending = clientOptions.filter(
+    (option) => option.auth && selected.includes(option.clientKey) && !hasExplicitValue(option),
+  );
+  for (const option of pending) {
+    // Own-property lookup only: the store is a JSON file, so a key like "constructor"
+    // would otherwise resolve to something off Object.prototype rather than a credential.
+    if (!Object.prototype.hasOwnProperty.call(stored, option.clientKey)) continue;
+    const value = stored[option.clientKey];
+    if (typeof value === 'string' && value) forwarded[option.sdkKey] = value;
+  }
 };
 
 const commandPath = (command: Command): string => {
@@ -473,14 +664,16 @@ const callArguments = async (
   const positionalParams: Record<string, unknown> = {};
   definition.positional.forEach((param, index) => {
     const value = positionalValues[index] ?? options[param.optionKey];
-    if (value !== undefined) positionalParams[param.paramKey] = coerceValue(value, param.valueKind);
+    if (value !== undefined)
+      positionalParams[param.paramKey] = coerceValue(value, param.valueKind, undefined, param.name);
   });
 
   const flagParams: Record<string, unknown> = {};
   for (const flag of definition.flags) {
     if (flag.objectPath) continue;
     const value = options[flag.optionKey];
-    if (value !== undefined) flagParams[flag.paramKey] = coerceValue(value, flag.valueKind, flag.itemKind);
+    if (value !== undefined)
+      flagParams[flag.paramKey] = coerceValue(value, flag.valueKind, flag.itemKind, '--' + flag.name);
   }
 
   // Dotted leaf flags (e.g. `--address.city`) are applied after the JSON-blob flag for the same
@@ -492,14 +685,25 @@ const callArguments = async (
     flagParams[flag.paramKey] = setNestedValue(
       flagParams[flag.paramKey],
       flag.objectPath,
-      coerceValue(value, flag.valueKind),
+      coerceValue(value, flag.valueKind, flag.itemKind, '--' + flag.name),
     );
   }
 
   const stdin = await readStdinValue();
   const params = mergeObjects(stdin, { ...flagParams, ...positionalParams });
   const positionalArgs = definition.positional.map((param) => params[param.paramKey]);
-  const sdkParams = definition.transport === 'websocket' ? omitParams(params, ['send']) : params;
+  // A positional path param is handed to the SDK method as a leading argument, and the method
+  // never destructures it back out of `params` — only the path params it did *not* take
+  // positionally are pulled out there. Leaving it in `params` makes it fall through the
+  // method's `...query` / `...body` rest and reach the wire a second time, as
+  // `/version/1.0.0?semver=1.0.0` or as a `namespace` field in a body that has no such field.
+  //
+  // Dropping it cannot remove a field the call needs: a positional whose name collides with a
+  // params field is already disambiguated when the command table is built (a body `slug` beside
+  // a path one leaves the positional as `slug2`), so the two never share a key.
+  const omitted = definition.positional.map((param) => param.paramKey);
+  if (definition.transport === 'websocket') omitted.push('send');
+  const sdkParams = omitParams(params, omitted);
 
   if (definition.callShape === 'options') return { args: [...positionalArgs, undefined], params };
   if (definition.callShape === 'body')
@@ -637,18 +841,194 @@ const omitParams = (
   return out;
 };
 
+// A file argument is spelled `@path`, the spelling curl and the reference CLIs already use, so a
+// command written against one of those keeps working here. A command line carries a path but never
+// the bytes behind it, and without this the path itself went on the wire as the value.
+const FILE_ARG_PREFIX = '@';
+
+// `@file://x` sends the bytes as text and `@data://x` sends them base64-encoded; a bare `@x` lets the
+// file decide, which is what a caller who has not thought about encoding means.
+const FILE_ARG_TEXT_SCHEME = 'file://';
+const FILE_ARG_DATA_SCHEME = 'data://';
+
+// `\@value` is how a value that genuinely begins with `@` (an npm scope, a handle) is spelled.
+const ESCAPED_FILE_ARG_PREFIX = '\\@';
+
+// Where a scalar value came from, which is what decides how far it is decoded:
+//   - "literal": typed on the command line. A structured kind parses it, and a `@` inside the result
+//     names a file the same way the flag itself would.
+//   - "file": read out of a file the value named. A structured kind still parses it (that is the
+//     point of `--metadata @meta.json`), but a `@` inside the file is data rather than a second file
+//     argument: whoever wrote the file is not necessarily whoever typed the command.
+//   - "escaped": a literal whose leading `@` was escaped as `\@`. Escaping declares the value to
+//     be text, so it is never parsed: `@remote` is a YAML reserved character and throws.
+//   - "encoded": base64 of bytes that are not text. It is the value; nothing parses or expands it.
+type FlagValueOrigin = 'literal' | 'file' | 'encoded' | 'escaped';
+
+type FlagValue = { readonly text: string; readonly origin: FlagValueOrigin };
+
+// The part after `@`, or `undefined` when the value is not a file argument at all.
+const fileArgRest = (value: string): string | undefined =>
+  value.startsWith(FILE_ARG_PREFIX) ? value.slice(FILE_ARG_PREFIX.length) : undefined;
+
+// Drops the escape from `\@literal`, which is the only thing a leading backslash means here.
+const unescapeFileArg = (value: string): string =>
+  value.startsWith(ESCAPED_FILE_ARG_PREFIX) ? value.slice(1) : value;
+
+// Resolves one scalar value: a file argument becomes the file's contents, `\@` becomes a literal `@`,
+// and anything else is passed through untouched.
+const flagValue = (value: string, label: string): FlagValue => {
+  const rest = fileArgRest(value);
+  if (rest === undefined) {
+    const unescaped = unescapeFileArg(value);
+    return { text: unescaped, origin: unescaped === value ? 'literal' : 'escaped' };
+  }
+  if (rest.startsWith(FILE_ARG_TEXT_SCHEME)) {
+    return {
+      text: readFileArg(rest.slice(FILE_ARG_TEXT_SCHEME.length), label, true).toString('utf8'),
+      origin: 'file',
+    };
+  }
+  if (rest.startsWith(FILE_ARG_DATA_SCHEME)) {
+    return {
+      text: readFileArg(rest.slice(FILE_ARG_DATA_SCHEME.length), label, true).toString('base64'),
+      origin: 'encoded',
+    };
+  }
+  const bytes = readFileArg(rest, label, false);
+  // Bytes that are not text cannot travel as a JSON string, so they are base64-encoded. A caller who
+  // wants one encoding regardless of what the file holds spells it with `@file://` or `@data://`.
+  return looksBinary(bytes)
+    ? { text: bytes.toString('base64'), origin: 'encoded' }
+    : { text: bytes.toString('utf8'), origin: 'file' };
+};
+
+// A `file://` or `data://` value is a URL and is percent-decoded as one; a bare `@path` is not a URL
+// and is opened exactly as typed, or a file genuinely named `100%20pct.txt` would be looked up as
+// `100 pct.txt`.
+const readFileArg = (source: string, label: string, url: boolean): Buffer => {
+  const path = url ? fileUrlToPath(source) : source;
+  try {
+    return readFileSync(path);
+  } catch (error) {
+    throw new Error(fileArgFailure(label, path, error));
+  }
+};
+
+// A missing file names the flag, the path, and the escape, because the likeliest reason `@abe` names
+// nothing on disk is that it was meant as a literal value.
+const fileArgFailure = (label: string, path: string, error: unknown): string =>
+  label +
+  ': could not read ' +
+  path +
+  ' (' +
+  (error instanceof Error ? error.message : String(error)) +
+  '). Write \\@ to send a literal value beginning with @.';
+
+// Bytes are text when they round-trip through UTF-8. A NUL byte is checked separately because it is
+// legal UTF-8, so it round-trips, yet no text field is meant to carry one.
+const looksBinary = (bytes: Buffer): boolean =>
+  bytes.includes(0) || !Buffer.from(bytes.toString('utf8'), 'utf8').equals(bytes);
+
+// `file://./x` and `file:///abs/x` are both spelled by hand often enough to accept: the first is not
+// a legal file URL, so `new URL()` is not used and the remainder is treated as a path. The slash
+// before a drive letter (`file:///C:/x`) is the Windows spelling of an absolute path and is dropped,
+// since `/C:/x` names nothing.
+const fileUrlToPath = (rest: string): string => {
+  const decoded = decodeFileUrl(rest);
+  return /^\/[A-Za-z]:/u.test(decoded) ? decoded.slice(1) : decoded;
+};
+
+// Percent-decoding applies only when the value decodes cleanly. A literal `%` in a file name is
+// likelier than a hand-encoded one, and letting `decodeURIComponent` throw would surface a bare
+// "URI error" naming neither the flag nor the path.
+const decodeFileUrl = (rest: string): string => {
+  try {
+    return decodeURIComponent(rest);
+  } catch {
+    return rest;
+  }
+};
+
+// The path a file-kinded flag names, with or without the `@`. An upload value is a path by
+// definition, so the prefix is optional there and both spellings open the same file.
+const uploadPath = (value: string): string => {
+  const rest = fileArgRest(value);
+  if (rest === undefined) return unescapeFileArg(value);
+  if (rest.startsWith(FILE_ARG_TEXT_SCHEME)) return fileUrlToPath(rest.slice(FILE_ARG_TEXT_SCHEME.length));
+  if (rest.startsWith(FILE_ARG_DATA_SCHEME)) return fileUrlToPath(rest.slice(FILE_ARG_DATA_SCHEME.length));
+  return rest;
+};
+
+// `createReadStream` defers a missing file to an asynchronous `error` event, which surfaces as an
+// unhandled rejection rather than a usage error, so the path is checked before the stream is opened.
+const uploadStream = (value: string, label: string): unknown => {
+  const path = uploadPath(value);
+  try {
+    accessSync(path, fsConstants.R_OK);
+  } catch (error) {
+    throw new Error(fileArgFailure(label, path, error));
+  }
+  return createReadStream(path);
+};
+
+// `@` works inside a JSON or YAML blob too (`--metadata '{"notes": "@notes.txt"}'`), so a nested
+// field names a file the same way a flag does. Only a blob typed on the command line is walked; see
+// `FlagValueOrigin` for why a blob read out of a file is not.
+const expandFileArgs = (value: unknown, label: string): unknown => {
+  if (typeof value === 'string') return flagValue(value, label).text;
+  if (Array.isArray(value)) return value.map((item) => expandFileArgs(item, label));
+  if (isPlainObject(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, expandFileArgs(item, label)]));
+  }
+  return value;
+};
+
 // `itemKind` types one occurrence of a repeatable array flag; a definition without one (an injected
-// field with no item schema) falls back to parsing each occurrence as structured text.
-const coerceValue = (value: unknown, kind: CliValueKind, itemKind?: CliValueKind): unknown => {
+// field with no item schema) falls back to parsing each occurrence as structured text. `label` names
+// the flag a file-argument failure came from, since a path names no flag on its own.
+// A failing client option cannot name the path it tried to open when the option carries a
+// credential: the likeliest reason `@sk-live-...` names no file is that it *is* the key, and the
+// message reaches stderr and every CI log capturing it.
+const clientOptionValue = (value: string, option: CliClientOptionDefinition): unknown => {
+  try {
+    return flagValue(value, '--' + option.name).text;
+  } catch (error) {
+    if (!option.auth) throw error;
+    throw new Error(
+      '--' +
+        option.name +
+        ': could not read the file it names. Write \\@ to send a literal value beginning with @.',
+    );
+  }
+};
+
+const coerceValue = (
+  value: unknown,
+  kind: CliValueKind,
+  itemKind?: CliValueKind,
+  label = 'value',
+): unknown => {
   if (Array.isArray(value)) {
     const elementKind = kind === 'array' ? (itemKind ?? 'unknown') : kind;
-    return value.map((item) => coerceValue(item, elementKind));
+    return value.map((item) => coerceValue(item, elementKind, undefined, label));
   }
   if (typeof value !== 'string') return value;
-  if (kind === 'boolean') return value === 'true' || value === '1';
-  if (kind === 'number' || kind === 'integer') return Number(value);
-  if (kind === 'object' || kind === 'array' || kind === 'unknown') return parseStructuredValue(value);
-  return value;
+  // A file field takes bytes, and a path is the only thing a command line can carry. The stream is
+  // what the SDK's multipart encoder detects (it is async iterable) and it names the part from the
+  // stream's `path`, so the upload keeps its file name.
+  if (kind === 'file') return uploadStream(value, label);
+  const source = flagValue(value, label);
+  if (kind === 'boolean') return source.text === 'true' || source.text === '1';
+  if (kind === 'number' || kind === 'integer') return Number(source.text);
+  if (kind === 'object' || kind === 'array' || kind === 'unknown') {
+    // Base64 is the value itself, and an escaped literal was declared to be text: parsing
+    // either would read it as YAML, and `@remote` is not even legal YAML.
+    if (source.origin === 'encoded' || source.origin === 'escaped') return source.text;
+    const parsed = parseStructuredValue(source.text);
+    return source.origin === 'literal' ? expandFileArgs(parsed, label) : parsed;
+  }
+  return source.text;
 };
 
 // Iterator commands print one item at a time so pipes can consume long-running streams immediately.
@@ -993,9 +1373,9 @@ const authHint = (clientOptions: readonly CliClientOptionDefinition[]): string |
     .map((option) => option.env)
     .filter((value): value is string => !!value)
     .join(', ');
-  return env
-    ? 'Authentication failed. Set ' + env + ' and try again.'
-    : 'Authentication failed. Set the required authentication environment variable and try again.';
+  return (
+    'Authentication failed. Run `' + LOGIN_COMMAND + '`' + (env ? ', or set ' + env : '') + ', and try again.'
+  );
 };
 
 // Keep transforms small and dependency-free; the CLI supports the common dot-path extraction case.

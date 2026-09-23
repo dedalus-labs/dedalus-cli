@@ -2,6 +2,7 @@
 
 import { Command, Option } from 'commander'
 import SDK from '../sdk/index.js'
+import type { CliAuthDefinition } from '../cli/login.js'
 import {
   type CliClientOptionDefinition, type GlobalOptions,
   sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode,
@@ -15,6 +16,7 @@ export type MachineAPI = SSHAPI & {
 }
 
 type AliasOptions = {
+  readonly auth?: CliAuthDefinition
   readonly api?: (client: SDK) => MachineAPI
   readonly connect?: (api: SSHAPI, machineID: string) => Promise<void>
   readonly pick?: (api: MachineAPI) => Promise<string | undefined>
@@ -58,7 +60,7 @@ export const addMachineAliases = (
         const api = makeAPI(client)
         const machineID = target ?? await pick(api)
         if (machineID !== undefined) await connect(api, machineID)
-      })
+      }, options.auth)
     })
   const rename = aliasCommand(program, 'rename')
     .description('Rename a machine by its current name or ID')
@@ -76,7 +78,7 @@ export const addMachineAliases = (
           ...(flags.transform ? { transform: flags.transform } : {}),
           ...(flags.rawOutput ? { rawOutput: true } : {}),
         })
-      })
+      }, options.auth)
     })
   program.addCommand(ssh).addCommand(rename)
   return program
@@ -104,16 +106,11 @@ const runAlias = async (
   command: Command,
   clientOptions: readonly CliClientOptionDefinition[],
   action: (client: SDK) => Promise<void>,
+  auth: CliAuthDefinition | undefined,
 ): Promise<void> => {
   const flags = command.optsWithGlobals<GlobalOptions & { xDedalusOrgId?: string }>()
   try {
-    const client = new SDK({
-      ...sdkClientOptions(flags, command, clientOptions),
-      ...(flags.xDedalusOrgId ? { defaultHeaders: {
-        'X-Scalar-Lang': 'cli', 'X-Scalar-Runtime': 'cli',
-        'X-Scalar-CLI-Command': command.name(), 'X-Dedalus-Org-Id': flags.xDedalusOrgId,
-      } } : {}),
-    })
+    const client = new SDK(await sdkClientOptions(flags, command, clientOptions, auth))
     await action(client)
   } catch (error) {
     await writeError(error, {

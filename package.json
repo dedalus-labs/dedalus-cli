@@ -31,6 +31,8 @@
   ],
   "man": [
     "./man/dedalus.1",
+    "./man/dedalus-login.1",
+    "./man/dedalus-logout.1",
     "./man/dedalus-machines-list.1",
     "./man/dedalus-machines-create.1",
     "./man/dedalus-machines-retrieve.1",

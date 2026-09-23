@@ -29,6 +29,8 @@ export class WebSocketError extends DedalusError {
   }
 }
 
+WebSocketError.prototype.name = 'WebSocketError';
+
 type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
 type WebSocketEvents = Simplify<

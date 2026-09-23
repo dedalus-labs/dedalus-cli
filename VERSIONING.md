@@ -73,6 +73,10 @@ different fixes:
   platform and the `github-actions` bot to push (or be left unprotected); the default
   branch only ever advances by merging release PRs, and `scalar-next` receives each
   released state back from the release workflow.
+- **`scalar-next` must not enable "Require linear history."** The Scalar platform merges each
+  regeneration into it, and merges a resolved conflict back the same way; the release sync
+  adds another merge whenever a release PR is squash- or rebase-merged. That setting rejects
+  all of them.
 - No Actions settings changes are required: the generated workflows declare their own
   permissions and never create pull requests.
 - If this package publishes through OIDC trusted publishing (for example PyPI or npm),
@@ -84,3 +88,13 @@ different fixes:
   manual re-publishes at an existing tag; register it as an additional trusted publisher
   only if you use it. If the publish job is configured with a deployment environment,
   include that environment in the registration too.
+
+### Recommended, not required
+
+Releases work without this; it closes a window where one can go out at the wrong version.
+
+- **If this repository uses auto-merge, make the `Release PR version` check a required status
+  check.** Auto-merge merges as soon as the checks that are *required* go green, with no
+  human present — so a check that is not required but still red at that moment stops
+  nothing, which is exactly the window between retitling a release PR and the platform
+  re-rendering it.

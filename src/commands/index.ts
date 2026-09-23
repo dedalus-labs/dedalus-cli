@@ -10,6 +10,8 @@ import {
 } from '../cli/runtime';
 import { completions } from '../cli/completions';
 import type { CliAuthDefinition } from '../cli/login';
+import { addMachineAliases } from '../custom/machines.js';
+import { registerFeedbackCommands } from '../feedback/command.js';
 
 const clientOptions = [
   {
@@ -1559,7 +1561,7 @@ const auth = {
 } as const satisfies CliAuthDefinition;
 
 export const getProgram = (): Command =>
-  createProgram({
+  registerFeedbackCommands(addMachineAliases(createProgram({
     SDK,
     binaryName: 'dedalus',
     version: '0.6.0', // x-release-please-version
@@ -1567,8 +1569,9 @@ export const getProgram = (): Command =>
     defaultFormat: 'auto',
     defaultErrorFormat: 'auto',
     clientOptions,
-    commands,
+    // Feedback owns a positional message and attachment selection instead of generated flags.
+    commands: commands.filter((definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback'),
     groups,
     completions,
     auth,
-  });
+  }), clientOptions, { auth }), clientOptions, auth);

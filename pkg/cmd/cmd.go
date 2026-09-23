@@ -96,16 +96,6 @@ func init() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:     "usage",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&usageRetrieve,
-					&usageMachineCompute,
-					&usageMachineStorage,
-				},
-			},
-			{
 				Name:     "machines",
 				Category: "API RESOURCE",
 				Suggest:  true,
@@ -117,28 +107,6 @@ func init() {
 					&machinesDelete,
 					&machinesSleep,
 					&machinesWake,
-					&machinesWatch,
-				},
-			},
-			{
-				Name:     "machines:artifacts",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&machinesArtifactsRetrieve,
-					&machinesArtifactsList,
-					&machinesArtifactsDelete,
-				},
-			},
-			{
-				Name:     "machines:previews",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&machinesPreviewsCreate,
-					&machinesPreviewsRetrieve,
-					&machinesPreviewsList,
-					&machinesPreviewsDelete,
 				},
 			},
 			{
@@ -163,17 +131,6 @@ func init() {
 					&machinesExecutionsDelete,
 					&machinesExecutionsEvents,
 					&machinesExecutionsOutput,
-				},
-			},
-			{
-				Name:     "machines:terminals",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&machinesTerminalsCreate,
-					&machinesTerminalsRetrieve,
-					&machinesTerminalsList,
-					&machinesTerminalsDelete,
 				},
 			},
 			{

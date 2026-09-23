@@ -19,28 +19,29 @@ var machinesCreate = cli.Command{
 	Usage:   "Create machine",
 	Suggest: true,
 	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:     "autosleep",
+			Usage:    `Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.`,
+			Default:  "300s",
+			BodyPath: "autosleep",
+		},
 		&requestflag.Flag[int64]{
 			Name:     "memory-mib",
 			Usage:    "Memory in MiB.",
-			Required: true,
+			Default:  4096,
 			BodyPath: "memory_mib",
 		},
 		&requestflag.Flag[int64]{
 			Name:     "storage-gib",
 			Usage:    "Storage in GiB.",
-			Required: true,
+			Default:  10,
 			BodyPath: "storage_gib",
 		},
 		&requestflag.Flag[float64]{
 			Name:     "vcpu",
 			Usage:    "CPU in vCPUs.",
-			Required: true,
+			Default:  1,
 			BodyPath: "vcpu",
-		},
-		&requestflag.Flag[string]{
-			Name:     "autosleep",
-			Usage:    `Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.`,
-			BodyPath: "autosleep",
 		},
 	},
 	Action:          handleMachinesCreate,
@@ -161,29 +162,6 @@ var machinesWake = cli.Command{
 		},
 	},
 	Action:          handleMachinesWake,
-	HideHelpCommand: true,
-}
-
-var machinesWatch = cli.Command{
-	Name:    "watch",
-	Usage:   "Streams machine lifecycle updates over Server-Sent Events. Each `status` event\ncontains a full `LifecycleResponse` payload. The stream closes after the machine\nreaches its current desired state.",
-	Suggest: true,
-	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:      "machine-id",
-			Required:  true,
-			PathParam: "machine_id",
-		},
-		&requestflag.Flag[string]{
-			Name:       "last-event-id",
-			HeaderPath: "Last-Event-ID",
-		},
-		&requestflag.Flag[int64]{
-			Name:  "max-items",
-			Usage: "The maximum number of items to return (use -1 for unlimited).",
-		},
-	},
-	Action:          handleMachinesWatch,
 	HideHelpCommand: true,
 }
 
@@ -494,46 +472,6 @@ func handleMachinesWake(ctx context.Context, cmd *cli.Command) error {
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
 		Title:          "machines wake",
-		Transform:      transform,
-	})
-}
-
-func handleMachinesWatch(ctx context.Context, cmd *cli.Command) error {
-	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
-	unusedArgs := cmd.Args().Slice()
-
-	if len(unusedArgs) > 0 {
-		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
-	}
-
-	options, err := flagOptions(
-		cmd,
-		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatRepeat,
-		EmptyBody,
-		false,
-	)
-	if err != nil {
-		return err
-	}
-
-	params := dedalus.MachineWatchParams{
-		MachineID: cmd.Value("machine-id").(string),
-	}
-
-	format := cmd.Root().String("format")
-	explicitFormat := cmd.Root().IsSet("format")
-	transform := cmd.Root().String("transform")
-	stream := client.Machines.WatchStreaming(ctx, params, options...)
-	maxItems := int64(-1)
-	if cmd.IsSet("max-items") {
-		maxItems = cmd.Value("max-items").(int64)
-	}
-	return ShowJSONIterator(stream, maxItems, ShowJSONOpts{
-		ExplicitFormat: explicitFormat,
-		Format:         format,
-		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines watch",
 		Transform:      transform,
 	})
 }

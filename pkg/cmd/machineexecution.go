@@ -4,7 +4,9 @@ package cmd
 
 import (
 	"context"
+	// @custom start
 	"fmt"
+	// @custom end
 
 	"github.com/dedalus-labs/dedalus-cli/internal/apiquery"
 	"github.com/dedalus-labs/dedalus-cli/internal/requestflag"
@@ -171,11 +173,23 @@ var machinesExecutionsOutput = cli.Command{
 
 func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := dedalus.NewClient(getDefaultRequestOptions(cmd)...)
-	unusedArgs := cmd.Args().Slice()
-
-	if len(unusedArgs) > 0 {
-		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	// @custom start
+	// Accepts literal command arguments alongside the generated JSON input path.
+	argv := cmd.Args().Slice()
+	if len(argv) > 0 {
+		if cmd.IsSet("command") {
+			return fmt.Errorf("use either --command or arguments after --, not both")
+		}
+		if argv[0] == "" {
+			return fmt.Errorf("the executable after -- must not be empty")
+		}
+		// Satisfy required-field validation without letting file expansion
+		// interpret argv values such as @file. Insert literal argv afterward.
+		if err := cmd.Set("command", "[]"); err != nil {
+			return err
+		}
 	}
+	// @custom end
 
 	options, err := flagOptions(
 		cmd,
@@ -187,6 +201,12 @@ func handleMachinesExecutionsCreate(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
+	// @custom start
+	// Inserts literal arguments after flag processing to bypass local @file expansion.
+	if len(argv) > 0 {
+		options = append(options, option.WithJSONSet("command", argv))
+	}
+	// @custom end
 
 	params := dedalus.MachineExecutionNewParams{
 		MachineID: cmd.Value("machine-id").(string),

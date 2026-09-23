@@ -80,6 +80,43 @@ dedalus machines create \
 
 For details about specific commands, use the `--help` flag.
 
+Machine API commands cover creation, listing, retrieval, updates, deletion,
+sleep, and wake. Secure Shell (SSH) session and execution operations are nested
+under `machines ssh` and `machines executions`.
+
+The generated contract is defined by the [OpenAPI snapshot](https://storage.googleapis.com/stainless-sdk-openapi-specs/dedalus-labs/dedalus-c0e28b234478af75f61bcf42f5f32818d96ec93b1d8239fa0ff1c801c0e4b64f.yml).
+
+### Running commands on a machine
+
+`exec` is an alias for `executions`. Pass the executable and its arguments after
+`--` to create an asynchronous execution:
+
+```sh
+dedalus machines exec --machine-id "$MACHINE_ID" -- echo "hello world"
+```
+
+`create` is optional in this form. The existing JSON form also works:
+
+```sh
+dedalus machines exec create --machine-id "$MACHINE_ID" --command '["echo", "hello world"]'
+dedalus machines exec retrieve --machine-id "$MACHINE_ID" --execution-id "$EXECUTION_ID"
+```
+
+Put CLI options such as `--cwd`, `--env`, `--stdin`, and `--timeout-ms` before
+`--`. Arguments after it are sent literally, including spaces, leading dashes,
+and `@` prefixes. Use either those arguments or `--command` in one request.
+
+To interpret shell operators remotely, invoke a shell and quote its script:
+
+```sh
+dedalus machines exec --machine-id "$MACHINE_ID" -- sh -c 'echo "hello world" && ls -la'
+```
+
+An unquoted `&&` is interpreted by your local shell before the CLI runs.
+Creating an execution returns an execution ID. Use `retrieve` to check its
+status and `output` to read its output. The `list`, `events`, and `delete`
+subcommands also work under `exec`.
+
 ### Environment variables
 
 | Environment variable | Description                                   | Required | Default value |

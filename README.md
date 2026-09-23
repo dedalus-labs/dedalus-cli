@@ -10,6 +10,8 @@ The full API of this library can be found in [api.md](./api.md).
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Feedback](#feedback)
+- [Staging package testing](#staging-package-testing)
 - [API Reference](./api.md)
 - [Signing In](#signing-in)
 - [File Arguments](#file-arguments)
@@ -89,6 +91,60 @@ dedalus COMMAND --FLAG '\@not-a-file'
 ```
 
 <br />
+## Feedback
+
+```sh
+dedalus feedback "Machine creation failed" --include-logs auto
+dedalus feedback "A suggestion" --include-logs false
+dedalus feedback "Connection problem" --include-logs true
+dedalus doctor --json
+```
+
+`--include-logs auto` is the default. It attaches diagnostics from a failed command
+within the last 15 minutes for the same API host, credentials, and organization.
+`false` sends no files; a recent server request receipt may still be included as
+metadata. `true` includes a local runtime and proxy-configuration report even when
+no failed command is available. Proxy values are omitted.
+
+For a failed command, the receipt comes from its last API response, including a
+successful response followed by a local connection failure. A later response
+without a receipt clears the candidate. Successful responses are not reported as
+HTTP failures.
+
+The CLI records command names, route templates, response status, duration, and
+server-issued request IDs under `~/.dedalus/debug`. It excludes command arguments,
+request and response bodies, credentials, terminal output, and workspace files.
+Files expire after 10 days and the directory is capped at 50 MiB. Cleanup runs
+when recording new diagnostics. Each process partition is capped at 1,000 events
+and 10 MiB. Feedback submissions never become diagnostic candidates themselves.
+
+Selected files are rebuilt from permitted fields and sent with their exact byte
+size and SHA-256 digest. HTTP retries reuse one idempotency key. A successful
+response means the report was accepted for delivery; it does not confirm that
+support has received it yet.
+
+## Staging package testing
+
+The `CLI SDK CI` workflow builds a versioned package, installs it in a temporary
+directory, runs the feedback tests against the installed package, and uploads the
+`dedalus-cli-staging` artifact. The artifact contains a `.tgz` and its checksum
+record. This workflow does not publish to npm or Homebrew.
+
+Staging packages are marked private and default to `https://staging.dcs.dedaluslabs.ai`.
+Pass the staging URL explicitly when testing a downloaded package:
+
+```sh
+mkdir -p /tmp/dedalus-feedback-test
+npm install --prefix /tmp/dedalus-feedback-test /absolute/path/to/dedalus-cli-VERSION.tgz
+/tmp/dedalus-feedback-test/node_modules/.bin/dedalus doctor --json
+/tmp/dedalus-feedback-test/node_modules/.bin/dedalus feedback "Staging smoke test" \
+  --include-logs false --base-url https://staging.dcs.dedaluslabs.ai
+```
+
+Set `DEDALUS_API_KEY` to a staging credential before submitting. To reproduce CI
+locally, run `pnpm install --frozen-lockfile`, `pnpm build`, and `pnpm test:package`.
+Custom feedback code lives under `src/feedback` and is integrated on `scalar-next`.
+Validate Scalar regeneration there before promoting a release.
 
 ## Shell Completion
 
@@ -190,3 +246,11 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 - Node.js 20 or newer — for the npm install only; the standalone binaries bundle their own runtime.
 
 Powered by Scalar.
+
+<!-- @custom start -->
+### Automatic retry identity
+
+Client-generated idempotency keys use the API's 32-character UUIDv7 format.
+Automatic retries reuse the original key. Independent submissions receive new
+keys, and callers can still supply an explicit key when retrying a saved request.
+<!-- @custom end -->

@@ -172,23 +172,54 @@ function Install-Dedalus {
         }
 
         Write-Info "Extracting..."
-        Expand-Archive -Path $archivePath -DestinationPath $tmpdir.FullName -Force
+        Expand-Archive -LiteralPath $archivePath -DestinationPath $tmpdir.FullName -Force
 
         $extracted = Join-Path $tmpdir.FullName "$Binary.exe"
-        if (-not (Test-Path $extracted)) {
+        if (-not (Test-Path -LiteralPath $extracted)) {
             Write-Err "Archive did not contain $Binary.exe"
             exit 1
         }
 
-        if (-not (Test-Path $Destination)) {
+        if (-not (Test-Path -LiteralPath $Destination)) {
             New-Item -ItemType Directory -Path $Destination -Force | Out-Null
         }
 
         $target = Join-Path $Destination "$Binary.exe"
-        Move-Item -Path $extracted -Destination $target -Force
+
+        # Clear backups from earlier in-place updates. Removal fails only while
+        # that old binary is still running; the next install retries.
+        Get-ChildItem -LiteralPath $Destination -Filter "$Binary.exe.old-*" -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+
+        # Windows locks a running exe against deletion and overwrite but allows
+        # renaming it, so move any existing binary aside before installing. This
+        # lets `dedalus update` replace itself while it is running. If installing
+        # the new binary fails, restore the backup: an aborted install must leave
+        # the previous binary in place.
+        $backup = $null
+        if (Test-Path -LiteralPath $target) {
+            $backup = "$target.old-" + [guid]::NewGuid().ToString('N')
+            Move-Item -LiteralPath $target -Destination $backup -Force
+        }
+
+        try {
+            Move-Item -LiteralPath $extracted -Destination $target -Force
+        } catch {
+            if ($backup) {
+                try {
+                    Move-Item -LiteralPath $backup -Destination $target -Force
+                } catch {
+                    Write-Err "Rollback failed; the previous binary is at $backup"
+                }
+            }
+            throw
+        }
+        if ($backup) {
+            Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue
+        }
         Write-Ok "Installed $Binary to $target"
     } finally {
-        Remove-Item -Path $tmpdir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $tmpdir.FullName -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -262,6 +293,7 @@ function Main {
     if (-not $Version) {
         $Version = Get-LatestVersion
     }
+    $Version = 'v' + $Version.TrimStart('v')
     Write-Info "Version: $Version"
 
     Install-Dedalus -Arch $arch -VersionTag $Version -Destination $InstallDir

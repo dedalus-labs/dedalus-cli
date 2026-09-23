@@ -47,24 +47,30 @@ detect_platform() {
     info "Detected ${PLATFORM}/${ARCH}"
 }
 
-get_latest_version() {
+# DEDALUS_VERSION (set by `dedalus update`) pins the release; otherwise fetch latest.
+resolve_version() {
     if ! command -v curl &>/dev/null; then
         error "curl is required"
         exit 1
     fi
 
-    VERSION=$(curl -fsSL \
-        -H 'Accept: application/vnd.github+json' \
-        -H 'User-Agent: dedalus-cli-installer' \
-        "https://api.github.com/repos/${REPO}/releases/latest" \
-        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    VERSION="${DEDALUS_VERSION:-}"
+    if [[ -n "$VERSION" ]]; then
+        VERSION="v${VERSION#v}"
+    else
+        VERSION=$(curl -fsSL \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'User-Agent: dedalus-cli-installer' \
+            "https://api.github.com/repos/${REPO}/releases/latest" \
+            | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 
-    if [[ -z "$VERSION" ]]; then
-        error "Could not determine latest version from GitHub API"
-        exit 1
+        if [[ -z "$VERSION" ]]; then
+            error "Could not determine latest version from GitHub API"
+            exit 1
+        fi
     fi
 
-    info "Latest version: ${VERSION}"
+    info "Version: ${VERSION}"
 }
 
 download_and_install() {
@@ -139,7 +145,7 @@ main() {
 
 ART
     detect_platform
-    get_latest_version
+    resolve_version
     download_and_install
 
     if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then

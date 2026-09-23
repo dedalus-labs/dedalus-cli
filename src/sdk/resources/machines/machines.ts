@@ -19,7 +19,7 @@ import {
   type SSHRetrieveParams,
   type SSHDeleteParams,
 } from './ssh';
-import * as ExecutionsAPI from './executions';
+import * as ExecutionsAPI from './executions/executions';
 import {
   Executions,
   type ExecutionCreateParams,
@@ -36,19 +36,19 @@ import {
   type ExecutionDeleteParams,
   type ExecutionOutputParams,
   type ExecutionEventsParams,
-} from './executions';
-import * as TerminalsAPI from './terminals/terminals';
+} from './executions/executions';
+import * as AutoresizingAPI from './autoresizing';
 import {
-  Terminals,
-  type TerminalConnectParams,
-  type ConnectClientEvent,
-  type ConnectServerEvent,
-} from './terminals/terminals';
+  Autoresizing,
+  type Settings,
+  type AutoresizingRetrieveParams,
+  type AutoresizingUpdateParams,
+} from './autoresizing';
 
 export class Machines extends APIResource {
   ssh: SSHAPI.SSH = new SSHAPI.SSH(this._client);
   executions: ExecutionsAPI.Executions = new ExecutionsAPI.Executions(this._client);
-  terminals: TerminalsAPI.Terminals = new TerminalsAPI.Terminals(this._client);
+  autoresizing: AutoresizingAPI.Autoresizing = new AutoresizingAPI.Autoresizing(this._client);
 
   /**
    * List machines
@@ -183,6 +183,28 @@ export class Machines extends APIResource {
   wake(params: MachineWakeParams, options?: RequestOptions): APIPromise<Machine> {
     const { machine_id } = params;
     return this._client.post(__scalarPath`/v1/machines/${machine_id}/wake`, options);
+  }
+
+  /**
+   * Checkpoints files and replaces the runtime. The machine ID and filesystem are preserved. RAM, processes, and temporary mounts are cleared. Poll the machine until its phase is running. Retry the same Idempotency-Key after a lost response.
+   *
+   * @param {MachineRebootParams} params - The parameters to send with the request.
+   * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
+   * @returns {APIPromise<Machine>} OK
+   *
+   * @example
+   * ```ts
+   * const machine = await client.machines.reboot({
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+   * });
+   * ```
+   */
+  reboot(params: MachineRebootParams, options?: RequestOptions): APIPromise<Machine> {
+    const { machine_id, force } = params;
+    return this._client.post(__scalarPath`/v1/machines/${machine_id}/reboot`, {
+      query: { force },
+      ...options,
+    });
   }
 }
 
@@ -507,9 +529,23 @@ export interface MachineWakeParams {
    */
   machine_id: string;
 }
+
+export interface MachineRebootParams {
+  /**
+   * Path param: Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+   */
+  machine_id: string;
+  /**
+   * Query param: Recover from the last committed filesystem checkpoint without guest cooperation. Unpublished file writes are lost. The default checkpoints files before rebooting.
+   */
+  force?: boolean;
+}
 Machines.SSH = SSH;
 Machines.Executions = Executions;
-Machines.Terminals = Terminals;
+Machines.Autoresizing = Autoresizing;
 
 export declare namespace Machines {
   export {
@@ -528,6 +564,7 @@ export declare namespace Machines {
     type MachineDeleteParams as MachineDeleteParams,
     type MachineSleepParams as MachineSleepParams,
     type MachineWakeParams as MachineWakeParams,
+    type MachineRebootParams as MachineRebootParams,
   };
 
   export {
@@ -563,9 +600,9 @@ export declare namespace Machines {
   };
 
   export {
-    Terminals as Terminals,
-    type TerminalConnectParams as TerminalConnectParams,
-    type ConnectClientEvent as ConnectClientEvent,
-    type ConnectServerEvent as ConnectServerEvent,
+    Autoresizing as Autoresizing,
+    type Settings as Settings,
+    type AutoresizingRetrieveParams as AutoresizingRetrieveParams,
+    type AutoresizingUpdateParams as AutoresizingUpdateParams,
   };
 }

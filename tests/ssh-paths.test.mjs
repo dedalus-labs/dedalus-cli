@@ -28,8 +28,8 @@ test('invariant_ssh_preserves_temporary_file_paths', async (t) => {
   syncBuiltinESMExports()
   try {
     await connectMachine({ createSSHSession: async () => ({
-      machine_id: 'dm-00000000-0000-4000-8000-000000000111',
-      session_id: 'ss-paths', status: 'ready',
+      machine_id: '00000000-0000-4000-8000-000000000111',
+      session_id: '00000000-0000-4000-8000-000000000012', status: 'ready',
       connection: {
         endpoint: 'localhost', port: 22, ssh_username: 'test', user_certificate: 'test-certificate',
         host_trust: { host_pattern: 'localhost', public_key: 'test-host-key' },

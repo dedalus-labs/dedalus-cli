@@ -39,22 +39,10 @@ Print transformed string values without JSON quotes.
 Enable SDK debug logging on standard error.
 .TP
 \fB\-\-api\-key\fR \fI<value>\fR
-API key authentication using Bearer token. Can also be set with the DEDALUS_API_KEY environment variable.
+Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_API_KEY environment variable.
 .TP
 \fB\-\-x\-api\-key\fR \fI<value>\fR
-API key authentication using X\-API\-Key header. Can also be set with the DEDALUS_X_API_KEY environment variable.
-.TP
-\fB\-\-bearer\-auth\fR \fI<value>\fR
-Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_BEARER_AUTH environment variable.
-.TP
-\fB\-\-provider\fR \fI<value>\fR
-Provider name for BYOK mode. Can also be set with the DEDALUS_PROVIDER environment variable.
-.TP
-\fB\-\-provider\-key\fR \fI<value>\fR
-Provider API key for BYOK mode. Can also be set with the DEDALUS_PROVIDER_KEY environment variable.
-.TP
-\fB\-\-provider\-model\fR \fI<value>\fR
-Model identifier for BYOK provider. Can also be set with the DEDALUS_PROVIDER_MODEL environment variable.
+Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X_API_KEY environment variable.
 .SH "COMMANDS"
 .TP
 \fBdedalus machines list\fR
@@ -77,6 +65,9 @@ Sleep a running machine. See dedalus\-machines\-sleep(1).
 .TP
 \fBdedalus machines wake\fR
 Wake a sleeping machine. See dedalus\-machines\-wake(1).
+.TP
+\fBdedalus machines reboot\fR
+Reboot a machine with fresh memory. See dedalus\-machines\-reboot(1).
 .TP
 \fBdedalus machines:ssh list\fR
 List SSH sessions. See dedalus\-machines\-ssh\-list(1).
@@ -108,8 +99,26 @@ Get execution output. See dedalus\-machines\-executions\-output(1).
 \fBdedalus machines:executions events\fR
 List execution events. See dedalus\-machines\-executions\-events(1).
 .TP
-\fBdedalus machines:terminals connect\fR
-See dedalus\-machines\-terminals\-connect(1).
+\fBdedalus machines:executions:logs retrieve\fR
+Get execution log status. See dedalus\-machines\-executions\-logs\-retrieve(1).
+.TP
+\fBdedalus machines:executions:logs reauthorize\fR
+Reauthorize execution log publication. See dedalus\-machines\-executions\-logs\-reauthorize(1).
+.TP
+\fBdedalus machines:executions:logs create\-token\fR
+Create execution log read token. See dedalus\-machines\-executions\-logs\-create\-token(1).
+.TP
+\fBdedalus machines:autoresizing retrieve\fR
+Read this machine's RAM autoresizing settings. See dedalus\-machines\-autoresizing\-retrieve(1).
+.TP
+\fBdedalus machines:autoresizing update\fR
+Set this machine's RAM autoresizing settings. See dedalus\-machines\-autoresizing\-update(1).
+.TP
+\fBdedalus organization:autoresizing retrieve\fR
+Read organization RAM autoresizing policy. See dedalus\-organization\-autoresizing\-retrieve(1).
+.TP
+\fBdedalus organization:autoresizing update\fR
+Set organization RAM autoresizing policy. See dedalus\-organization\-autoresizing\-update(1).
 .TP
 \fBdedalus completion\fR
 Print a shell completion script. See dedalus\-completion(1).
@@ -147,18 +156,6 @@ Fallback for \-\-api\-key when the flag is not passed.
 .TP
 \fBDEDALUS_X_API_KEY\fR
 Fallback for \-\-x\-api\-key when the flag is not passed.
-.TP
-\fBDEDALUS_BEARER_AUTH\fR
-Fallback for \-\-bearer\-auth when the flag is not passed.
-.TP
-\fBDEDALUS_PROVIDER\fR
-Fallback for \-\-provider when the flag is not passed.
-.TP
-\fBDEDALUS_PROVIDER_KEY\fR
-Fallback for \-\-provider\-key when the flag is not passed.
-.TP
-\fBDEDALUS_PROVIDER_MODEL\fR
-Fallback for \-\-provider\-model when the flag is not passed.
 .SH "EXIT STATUS"
 .TP
 \fB0\fR

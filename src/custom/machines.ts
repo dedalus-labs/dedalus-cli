@@ -1,18 +1,17 @@
-/** Machine name shortcuts that share the CLI's authentication and output settings. */
+/** SSH selection that shares the CLI's authentication and error settings. */
 
 import { Command, Option } from 'commander'
 import SDK from '../sdk/index.js'
 import type { CliAuthDefinition } from '../cli/login.js'
 import {
   type CliClientOptionDefinition, type GlobalOptions,
-  sdkClientOptions, writeOutput, writeError, errorExitCode, normalizeFormat, usageExitCode,
+  sdkClientOptions, writeError, errorExitCode, normalizeFormat, usageExitCode,
 } from '../cli/runtime.js'
 import { pickSSHMachine } from './ssh-picker.js'
 import { connectMachine, type SSHAPI } from './ssh.js'
 
 export type MachineAPI = SSHAPI & {
   readonly listMachines: (cursor: string | undefined, signal: AbortSignal) => Promise<unknown>
-  readonly renameMachine: (current: string, name: string) => Promise<unknown>
 }
 
 type AliasOptions = {
@@ -26,9 +25,6 @@ type AliasOptions = {
 export const createMachineAPI = (client: SDK): MachineAPI => ({
   listMachines: (cursor, signal) => client.get('/v1/machines', {
     query: cursor === undefined ? {} : { cursor }, signal,
-  }),
-  renameMachine: (current, name) => client.patch(`/v1/machines/${encodeURIComponent(current)}`, {
-    body: { name },
   }),
   createSSHSession: (machineID, publicKey) => client.machines.ssh.create({
     machine_id: machineID, public_key: publicKey,
@@ -50,11 +46,14 @@ export const addMachineAliases = (
     process.stdin.isTTY && process.stdout.isTTY && process.stderr.isTTY,
   ))
   const ssh = aliasCommand(program, 'ssh')
-    .description('Choose a machine and connect over SSH, or supply its name or ID')
-    .argument('[machine]', 'Machine name or ID; omitted to open the interactive picker')
+    .description('Choose a machine and connect over SSH, or supply its UUID')
+    .argument('[machine-id]', 'Machine UUID; omitted to open the interactive picker')
     .action(async (target: string | undefined, _flags: unknown, command: Command) => {
+      if (target !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(target)) {
+        command.error('machine ID must be a bare UUID', { exitCode: 2 })
+      }
       if (!target && !interactive()) {
-        command.error('machine name or ID is required without an interactive terminal; usage: dedalus ssh <name|machine_id>', { exitCode: 2 })
+        command.error('machine ID is required without an interactive terminal; usage: dedalus ssh <machine-id>', { exitCode: 2 })
       }
       await runAlias(command, clientOptions, async (client) => {
         const api = makeAPI(client)
@@ -62,25 +61,7 @@ export const addMachineAliases = (
         if (machineID !== undefined) await connect(api, machineID)
       }, options.auth)
     })
-  const rename = aliasCommand(program, 'rename')
-    .description('Rename a machine by its current name or ID')
-    .argument('<current>', 'Current machine name or ID')
-    .argument('<new-name>', 'New machine name')
-    .action(async (current: string, name: string, _flags: unknown, command: Command) => {
-      await runAlias(command, clientOptions, async (client) => {
-        const result = await makeAPI(client).renameMachine(current, name)
-        if (!isRenameConfirmation(result, current, name)) {
-          throw new Error('server did not confirm the requested machine name')
-        }
-        const flags = command.optsWithGlobals<GlobalOptions>()
-        await writeOutput(result, {
-          format: normalizeFormat(command.opts<GlobalOptions>().format ?? flags.format, 'auto'), title: 'rename',
-          ...(flags.transform ? { transform: flags.transform } : {}),
-          ...(flags.rawOutput ? { rawOutput: true } : {}),
-        })
-      }, options.auth)
-    })
-  program.addCommand(ssh).addCommand(rename)
+  program.addCommand(ssh)
   return program
 }
 
@@ -120,15 +101,4 @@ const runAlias = async (
     }, clientOptions, SDK)
     process.exitCode = errorExitCode(error, SDK)
   }
-}
-
-const canonicalUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u
-
-const isRenameConfirmation = (value: unknown, current: string, name: string): boolean => {
-  if (!value || typeof value !== 'object') return false
-  const response = value as Record<string, unknown>
-  if (typeof response.machine_id !== 'string' || !response.machine_id.startsWith('dm-') ||
-      !canonicalUUID.test(response.machine_id.slice(3)) || response.name !== name) return false
-  const requestedID = current.trim().replace(/^dm-/u, '').toLowerCase()
-  return !canonicalUUID.test(requestedID) || response.machine_id === `dm-${requestedID}`
 }

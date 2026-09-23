@@ -20,7 +20,8 @@ const clientOptions = [
     name: 'api-key',
     optionKey: 'apiKey',
     env: 'DEDALUS_API_KEY',
-    description: 'API key authentication using Bearer token',
+    description:
+      'Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.',
     auth: true,
   },
   {
@@ -29,45 +30,8 @@ const clientOptions = [
     name: 'x-api-key',
     optionKey: 'xApiKey',
     env: 'DEDALUS_X_API_KEY',
-    description: 'API key authentication using X-API-Key header',
+    description: 'Dedalus API key. Alternative to Bearer token.',
     auth: true,
-  },
-  {
-    clientKey: 'bearerAuth',
-    sdkKey: 'bearerAuth',
-    name: 'bearer-auth',
-    optionKey: 'bearerAuth',
-    env: 'DEDALUS_BEARER_AUTH',
-    description:
-      'Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.',
-    auth: true,
-  },
-  {
-    clientKey: 'provider',
-    sdkKey: 'provider',
-    name: 'provider',
-    optionKey: 'provider',
-    env: 'DEDALUS_PROVIDER',
-    description: 'Provider name for BYOK mode.',
-    auth: false,
-  },
-  {
-    clientKey: 'providerKey',
-    sdkKey: 'providerKey',
-    name: 'provider-key',
-    optionKey: 'providerKey',
-    env: 'DEDALUS_PROVIDER_KEY',
-    description: 'Provider API key for BYOK mode.',
-    auth: false,
-  },
-  {
-    clientKey: 'providerModel',
-    sdkKey: 'providerModel',
-    name: 'provider-model',
-    optionKey: 'providerModel',
-    env: 'DEDALUS_PROVIDER_MODEL',
-    description: 'Model identifier for BYOK provider.',
-    auth: false,
   },
 ] as const satisfies readonly CliClientOptionDefinition[];
 
@@ -80,7 +44,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -109,7 +73,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'body',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -159,7 +123,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -181,7 +145,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -240,7 +204,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -262,7 +226,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -284,7 +248,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -299,6 +263,40 @@ const commands = [
     ],
   },
   {
+    resourcePath: ['machines'],
+    commandPath: ['machines', 'reboot'],
+    methodName: 'reboot',
+    summary: 'Reboot a machine with fresh memory',
+    description:
+      'Checkpoints files and replaces the runtime. The machine ID and filesystem are preserved. RAM, processes, and temporary mounts are cleared. Poll the machine until its phase is running. Retry the same Idempotency-Key after a lost response.',
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+      {
+        name: 'force',
+        optionKey: 'force',
+        paramKey: 'force',
+        location: 'query',
+        required: false,
+        description:
+          'Recover from the last committed filesystem checkpoint without guest cooperation. Unpublished file writes are lost. The default checkpoints files before rebooting.',
+        valueKind: 'boolean',
+      },
+    ],
+  },
+  {
     resourcePath: ['machines', 'ssh'],
     commandPath: ['machines:ssh', 'list'],
     methodName: 'list',
@@ -306,7 +304,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -344,7 +342,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -374,7 +372,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -404,7 +402,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -434,7 +432,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -472,7 +470,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -534,7 +532,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -564,7 +562,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -594,7 +592,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -624,7 +622,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -663,13 +661,14 @@ const commands = [
     ],
   },
   {
-    resourcePath: ['machines', 'terminals'],
-    commandPath: ['machines:terminals', 'connect'],
-    methodName: 'connect',
-    transport: 'websocket',
-    iterable: true,
+    resourcePath: ['machines', 'executions', 'logs'],
+    commandPath: ['machines:executions:logs', 'retrieve'],
+    methodName: 'retrieve',
+    summary: 'Get execution log status',
+    transport: 'http',
+    iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['apiKey'], ['xAPIKey']],
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -678,24 +677,163 @@ const commands = [
         paramKey: 'machine_id',
         location: 'path',
         required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
         valueKind: 'string',
       },
       {
-        name: 'terminal-id',
-        optionKey: 'terminalId',
-        paramKey: 'terminal_id',
+        name: 'execution-id',
+        optionKey: 'executionId',
+        paramKey: 'execution_id',
         location: 'path',
         required: true,
         valueKind: 'string',
       },
+    ],
+  },
+  {
+    resourcePath: ['machines', 'executions', 'logs'],
+    commandPath: ['machines:executions:logs', 'reauthorize'],
+    methodName: 'reauthorize',
+    summary: 'Reauthorize execution log publication',
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [
       {
-        name: 'send',
-        optionKey: 'send',
-        paramKey: 'send',
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+      {
+        name: 'execution-id',
+        optionKey: 'executionId',
+        paramKey: 'execution_id',
+        location: 'path',
+        required: true,
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['machines', 'executions', 'logs'],
+    commandPath: ['machines:executions:logs', 'create-token'],
+    methodName: 'createToken',
+    summary: 'Create execution log read token',
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+      {
+        name: 'execution-id',
+        optionKey: 'executionId',
+        paramKey: 'execution_id',
+        location: 'path',
+        required: true,
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['machines', 'autoresizing'],
+    commandPath: ['machines:autoresizing', 'retrieve'],
+    methodName: 'retrieve',
+    summary: "Read this machine's RAM autoresizing settings",
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['machines', 'autoresizing'],
+    commandPath: ['machines:autoresizing', 'update'],
+    methodName: 'update',
+    summary: "Set this machine's RAM autoresizing settings",
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+      {
+        name: 'enabled',
+        optionKey: 'enabled',
+        paramKey: 'enabled',
         location: 'body',
-        required: false,
-        description: 'JSON message to send after connecting.',
-        valueKind: 'unknown',
+        required: true,
+        valueKind: 'boolean',
+      },
+    ],
+  },
+  {
+    resourcePath: ['organization', 'autoresizing'],
+    commandPath: ['organization:autoresizing', 'retrieve'],
+    methodName: 'retrieve',
+    summary: 'Read organization RAM autoresizing policy',
+    transport: 'http',
+    iterable: false,
+    callShape: 'options',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [],
+  },
+  {
+    resourcePath: ['organization', 'autoresizing'],
+    commandPath: ['organization:autoresizing', 'update'],
+    methodName: 'update',
+    summary: 'Set organization RAM autoresizing policy',
+    transport: 'http',
+    iterable: false,
+    callShape: 'body',
+    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'enabled',
+        optionKey: 'enabled',
+        paramKey: 'enabled',
+        location: 'body',
+        required: true,
+        description:
+          'Allow automatic RAM increases for all organization machines. Disabling preserves applied RAM and already admitted resizes.',
+        valueKind: 'boolean',
       },
     ],
   },
@@ -712,11 +850,10 @@ const auth = {
   baseUrlEnv: 'DEDALUS_BASE_URL',
   backend: 'auto',
   defaultBaseUrl: 'https://dcs.dedaluslabs.ai',
-  requirements: [['apiKey'], ['xAPIKey']],
+  requirements: [['xAPIKey'], ['apiKey']],
   envByKey: {
     apiKey: 'DEDALUS_API_KEY',
     xAPIKey: 'DEDALUS_X_API_KEY',
-    bearerAuth: 'DEDALUS_BEARER_AUTH',
   },
   methods: [
     {
@@ -732,13 +869,6 @@ const auth = {
       kind: 'token',
       clientKey: 'xAPIKey',
       prompt: 'API key: ',
-    },
-    {
-      name: 'bearer-auth',
-      label: 'Enter your access token',
-      kind: 'token',
-      clientKey: 'bearerAuth',
-      prompt: 'Access token: ',
     },
   ],
 } as const satisfies CliAuthDefinition;

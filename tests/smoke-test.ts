@@ -120,6 +120,22 @@ const cases: { operation: string; method: string; path: string; label?: string; 
   },
 
   {
+    operation: 'reboot',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/reboot',
+    label: 'required params',
+    args: ['machines', 'reboot', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+  },
+
+  {
+    operation: 'reboot',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/reboot',
+    label: 'all params',
+    args: ['machines', 'reboot', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f', '--force'],
+  },
+
+  {
     operation: 'list',
     method: 'GET',
     path: '/v1/machines/{machine_id}/ssh',
@@ -283,6 +299,82 @@ const cases: { operation: string; method: string; path: string; label?: string; 
       '--max-items',
       '10',
     ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/logs',
+    args: [
+      'machines:executions:logs',
+      'retrieve',
+      '--machine-id',
+      '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+      '--execution-id',
+      'execution_id',
+    ],
+  },
+
+  {
+    operation: 'reauthorize',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/logs/reauthorize',
+    args: [
+      'machines:executions:logs',
+      'reauthorize',
+      '--machine-id',
+      '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+      '--execution-id',
+      'execution_id',
+    ],
+  },
+
+  {
+    operation: 'createToken',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/executions/{execution_id}/logs/token',
+    args: [
+      'machines:executions:logs',
+      'create-token',
+      '--machine-id',
+      '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+      '--execution-id',
+      'execution_id',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/machines/{machine_id}/autoresizing',
+    args: ['machines:autoresizing', 'retrieve', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PUT',
+    path: '/v1/machines/{machine_id}/autoresizing',
+    args: [
+      'machines:autoresizing',
+      'update',
+      '--machine-id',
+      '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+      '--enabled',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/organization/autoresizing',
+    args: ['organization:autoresizing', 'retrieve'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PUT',
+    path: '/v1/organization/autoresizing',
+    args: ['organization:autoresizing', 'update', '--enabled'],
   },
 ];
 

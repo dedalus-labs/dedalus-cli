@@ -17,6 +17,7 @@ export type {
   MachineDeleteParams,
   MachineSleepParams,
   MachineWakeParams,
+  MachineRebootParams,
 } from './machines';
 export { SSH } from './ssh';
 export type {
@@ -31,7 +32,7 @@ export type {
   SSHRetrieveParams,
   SSHDeleteParams,
 } from './ssh';
-export { Executions } from './executions';
+export { Executions } from './executions/executions';
 export type {
   ExecutionCreateParams,
   Execution,
@@ -47,6 +48,6 @@ export type {
   ExecutionOutputParams,
   ExecutionEventsParams,
   ExecutionEventsCursorPage,
-} from './executions';
-export { Terminals } from './terminals/terminals';
-export type { ConnectClientEvent, ConnectServerEvent, TerminalConnectParams } from './terminals/terminals';
+} from './executions/executions';
+export { Autoresizing } from './autoresizing';
+export type { Settings, AutoresizingRetrieveParams, AutoresizingUpdateParams } from './autoresizing';

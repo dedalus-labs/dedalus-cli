@@ -17,4 +17,6 @@ export type {
   MachineDeleteParams,
   MachineSleepParams,
   MachineWakeParams,
+  MachineRebootParams,
 } from './machines/machines';
+export { Organization } from './organization/organization';

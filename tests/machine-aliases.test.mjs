@@ -50,12 +50,12 @@ const aliases = (options) => addMachineAliases(new Command()
 test('public program includes custom aliases alongside generated commands', () => {
   const program = getProgram()
   assert.ok(program.commands.some((command) => command.name() === 'ssh'))
-  assert.ok(program.commands.some((command) => command.name() === 'rename'))
+  assert.equal(program.commands.some((command) => command.name() === 'rename'), false)
   assert.ok(program.commands.find((command) => command.name() === 'machines').commands.some((command) => command.name() === 'update'))
 })
 
-test('SSH explicit name and ID bypass the picker even without a TTY', async () => {
-  for (const target of ['my-machine', 'dm-abc123']) {
+test('SSH explicit IDs bypass the picker even without a TTY', async () => {
+  for (const target of ['00000000-0000-4000-8000-000000000111', '00000000-0000-4000-8000-000000000123']) {
     const connected = []
     const program = aliases({ api: () => ({}), interactive: () => false,
       pick: () => { throw new Error('unexpected picker') },
@@ -67,7 +67,7 @@ test('SSH explicit name and ID bypass the picker even without a TTY', async () =
 })
 
 test('SSH picker selection transmits stable ID and cancellation creates no session', async () => {
-  for (const selected of ['dm-canonical', undefined]) {
+  for (const selected of ['00000000-0000-4000-8000-000000000111', undefined]) {
     const connected = []
     const program = aliases({ api: () => ({}), interactive: () => true,
       pick: async () => selected, connect: async (_api, id) => { connected.push(id) },
@@ -80,12 +80,12 @@ test('SSH picker selection transmits stable ID and cancellation creates no sessi
 test('SSH without a TTY or target exits promptly with actionable usage', () => {
   const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'ssh'], { encoding: 'utf8', timeout: 3000 })
   assert.equal(result.status, 2)
-  assert.match(result.stderr, /interactive terminal.*dedalus ssh <name\|machine_id>/u)
+  assert.match(result.stderr, /interactive terminal.*dedalus ssh <machine-id>/u)
   assert.equal(result.stdout, '')
 })
 
 test('aliases retain CLI usage exit codes', () => {
-  const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'rename', 'only-current'], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'ssh', 'not-a-uuid'], { encoding: 'utf8' })
   assert.equal(result.status, 2)
 })
 
@@ -93,17 +93,21 @@ test('organization flag is exposed only when the generated commands expose it', 
   const plain = addMachineAliases(new Command(), [])
   assert.equal(plain.commands.find((command) => command.name() === 'ssh').options.some((option) =>
     option.long === '--x-dedalus-org-id'), false)
-  const generated = getProgram()
+  const source = new Command()
+  source.command('machines').command('retrieve').option('--x-dedalus-org-id <id>')
+  const generated = addMachineAliases(source, [])
   assert.equal(generated.commands.find((command) => command.name() === 'ssh').options.some((option) =>
     option.long === '--x-dedalus-org-id'), true)
+  assert.equal(getProgram().commands.find((command) => command.name() === 'ssh').options.some((option) =>
+    option.long === '--x-dedalus-org-id'), false)
 })
 
 test('invariant_picker_reads_list_phases_keeps_unnamed_and_skips_destroyed', async () => {
   const cursors = []
   const pages = [
-    { items: [machine('dm-one', 'one'), { ...machine('dm-dying', 'dying'), desired_state: 'destroyed' }], next_cursor: 'page-2' },
+    { items: [machine('00000000-0000-4000-8000-000000000001', 'one'), { ...machine('00000000-0000-4000-8000-000000000003', 'dying'), desired_state: 'destroyed' }], next_cursor: 'page-2' },
     { items: [], next_cursor: 'page-3' },
-    { items: [machine('dm-two', null, 'sleeping'), machine('dm-gone', 'gone', 'destroyed')], next_cursor: null },
+    { items: [machine('00000000-0000-4000-8000-000000000002', null, 'sleeping'), machine('00000000-0000-4000-8000-000000000004', 'gone', 'destroyed')], next_cursor: null },
   ]
   const choices = await loadMachineChoices({ listMachines: async (cursor) => {
     cursors.push(cursor)
@@ -111,8 +115,8 @@ test('invariant_picker_reads_list_phases_keeps_unnamed_and_skips_destroyed', asy
   } }, new AbortController().signal)
   assert.deepEqual(cursors, [undefined, 'page-2', 'page-3'])
   assert.deepEqual(choices, [
-    { id: 'dm-one', name: 'one', status: 'running' },
-    { id: 'dm-two', name: null, status: 'sleeping' },
+    { id: '00000000-0000-4000-8000-000000000001', name: 'one', status: 'running' },
+    { id: '00000000-0000-4000-8000-000000000002', name: null, status: 'sleeping' },
   ])
 })
 
@@ -125,7 +129,7 @@ test('picker propagates load errors and reports empty fleet', async () => {
 })
 
 test('picker refuses malformed names and repeating pagination cursors', async () => {
-  await assert.rejects(loadMachineChoices({ listMachines: async () => ({ items: [machine('dm-a', 123)] }) },
+  await assert.rejects(loadMachineChoices({ listMachines: async () => ({ items: [machine('not-a-uuid', 123)] }) },
     new AbortController().signal), /invalid name/u)
   await assert.rejects(loadMachineChoices({ listMachines: async () => ({ items: [], next_cursor: 'repeat' }) },
     new AbortController().signal), /repeated cursor/u)
@@ -133,16 +137,16 @@ test('picker refuses malformed names and repeating pagination cursors', async ()
 
 test('picker search covers names, IDs, status; navigation and editing keep a valid selection', () => {
   let state = { machines: [
-    { id: 'dm-one', name: 'alpha', status: 'running' },
-    { id: 'dm-two', name: 'beta', status: 'sleeping' },
+    { id: '00000000-0000-4000-8000-000000000001', name: 'alpha', status: 'running' },
+    { id: '00000000-0000-4000-8000-000000000002', name: 'beta', status: 'sleeping' },
   ], query: '', cursor: 0 }
   state = updatePicker(state, '', { name: 'down' })
-  assert.equal(matchingMachines(state)[state.cursor].id, 'dm-two')
+  assert.equal(matchingMachines(state)[state.cursor].id, '00000000-0000-4000-8000-000000000002')
   state = updatePicker(state, 'ALPHA', {})
-  assert.deepEqual(matchingMachines(state).map(({ id }) => id), ['dm-one'])
+  assert.deepEqual(matchingMachines(state).map(({ id }) => id), ['00000000-0000-4000-8000-000000000001'])
   assert.equal(state.cursor, 0)
-  for (const query of ['dm-two', 'SLEEPING', 'beta']) {
-    assert.deepEqual(matchingMachines({ ...state, query }).map(({ id }) => id), ['dm-two'])
+  for (const query of ['00000000-0000-4000-8000-000000000002', 'SLEEPING', 'beta']) {
+    assert.deepEqual(matchingMachines({ ...state, query }).map(({ id }) => id), ['00000000-0000-4000-8000-000000000002'])
   }
   state = updatePicker(state, '', { name: 'u', ctrl: true })
   assert.equal(state.query, '')
@@ -152,153 +156,28 @@ test('picker search covers names, IDs, status; navigation and editing keep a val
   state = updatePicker(state, '', { name: 'backspace' })
   assert.equal(matchingMachines(state).length, 2)
   const view = renderPicker(state, 24, 100)
-  assert.match(view, /> alpha  \[running\]\n    dm-one/u)
-  assert.match(view, /beta  \[sleeping\]\n    dm-two/u)
+  assert.match(view, /> alpha  \[running\]\n    00000000-0000-4000-8000-000000000001/u)
+  assert.match(view, /beta  \[sleeping\]\n    00000000-0000-4000-8000-000000000002/u)
 })
 
-test('SSH session creation sends the name; polling stays on canonical ID during rename', async () => {
+test('SSH session creation and polling use the returned canonical ID', async () => {
   const requests = []
   const api = createMachineAPI(new SDK({ apiKey: 'test', maxRetries: 0, fetch: async (url, init) => {
     requests.push({ url: String(url), method: init.method, body: init.body })
-    return Response.json({ machine_id: 'dm-00000000-0000-4000-8000-000000000111', session_id: 'ss-1',
-      status: requests.length === 1 ? 'wake_in_progress' : 'ready', retry_after_ms: 1 })
+    return Response.json({ machine_id: '00000000-0000-4000-8000-000000000111', session_id: '00000000-0000-4000-8000-000000000010',
+      status: ['wake_in_progress', 'ssh_in_progress', 'ready'][requests.length - 1], retry_after_ms: 1 })
   } }))
-  await capture(() => awaitSSHSession(api, 'old-name', 'ssh-ed25519 public'))
-  assert.ok(requests[0].url.endsWith('/v1/machines/old-name/ssh'))
+  await capture(() => awaitSSHSession(api, '00000000-0000-4000-8000-000000000111', 'ssh-ed25519 public'))
+  assert.ok(requests[0].url.endsWith('/v1/machines/00000000-0000-4000-8000-000000000111/ssh'))
   assert.deepEqual(JSON.parse(requests[0].body), { public_key: 'ssh-ed25519 public' })
-  assert.ok(requests[1].url.endsWith('/v1/machines/dm-00000000-0000-4000-8000-000000000111/ssh/ss-1'))
+  assert.equal(requests.length, 3)
+  for (const request of requests.slice(1)) {
+    assert.ok(request.url.endsWith('/v1/machines/00000000-0000-4000-8000-000000000111/ssh/00000000-0000-4000-8000-000000000010'))
+  }
 })
 
 test('SSH refuses to poll without a canonical ID', async () => {
-  await assert.rejects(awaitSSHSession({ createSSHSession: async () => ({ session_id: 'ss-1', status: 'wake_in_progress' }),
+  await assert.rejects(awaitSSHSession({ createSSHSession: async () => ({ session_id: '00000000-0000-4000-8000-000000000010', status: 'wake_in_progress' }),
     getMachineSSHSession: async () => { throw new Error('must not poll') },
   }, 'name', 'key'), /omitted machine_id/u)
-})
-
-test('rename sends only the unchanged name and respects auth, org, and JSON output globals', async () => {
-  let request
-  const program = aliases({ api: (client) => createMachineAPI(client.withOptions({ maxRetries: 0,
-    fetch: async (url, init) => {
-      request = { url: String(url), method: init.method, body: init.body, headers: new Headers(init.headers) }
-      return Response.json({ machine_id: 'dm-00000000-0000-4000-8000-000000000111', name: 'new-name' })
-    },
-  })) })
-  const output = await capture(() => program.parseAsync(['--api-key', 'test-credential', '--format', 'json',
-    'rename', 'old-name', 'new-name', '--x-dedalus-org-id', 'org-1'], { from: 'user' }))
-  assert.equal(request.method, 'PATCH')
-  assert.ok(request.url.endsWith('/v1/machines/old-name'))
-  assert.deepEqual(JSON.parse(request.body), { name: 'new-name' })
-  assert.equal(request.headers.get('authorization'), 'Bearer test-credential')
-  assert.equal(request.headers.get('x-dedalus-org-id'), 'org-1')
-  assert.deepEqual(JSON.parse(output.stdout), { machine_id: 'dm-00000000-0000-4000-8000-000000000111', name: 'new-name' })
-})
-
-test('rename pretty output and transforms follow generated formatting', async () => {
-  const result = { machine_id: 'dm-00000000-0000-4000-8000-000000000111', name: 'new-name' }
-  const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => result }) })
-    .parseAsync(['--format', 'pretty', 'rename', 'old', 'new-name'], { from: 'user' }))
-  assert.match(output.stdout, /rename/u)
-  assert.match(output.stdout, /name: new-name/u)
-  const raw = await capture(() => aliases({ api: () => ({ renameMachine: async () => result }) })
-    .parseAsync(['rename', 'old', 'new-name', '--transform', 'machine_id', '--raw-output'], { from: 'user' }))
-  assert.equal(raw.stdout, 'dm-00000000-0000-4000-8000-000000000111\n')
-})
-
-test('rename never claims success when server drops name or returns a different name', async () => {
-  for (const result of [{ machine_id: 'dm-a' }, { machine_id: 'dm-a', name: 'wrong' }, { name: 'new-name' }]) {
-    const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => result }) })
-      .parseAsync(['rename', 'old', 'new-name'], { from: 'user' }))
-    assert.equal(output.stdout, '')
-    assert.match(output.stderr, /did not confirm/u)
-    assert.equal(process.exitCode, 1)
-  }
-})
-
-test('rename surfaces API validation errors through CLI JSON error formatting', async () => {
-  let sentName
-  const output = await capture(() => aliases({ api: (client) => createMachineAPI(client.withOptions({
-    maxRetries: 0, fetch: async (_url, init) => {
-      sentName = JSON.parse(init.body).name
-      return Response.json({ error: { message: 'name must be lowercase', code: 'invalid_name' } }, { status: 422 })
-    },
-  })) }).parseAsync(['rename', 'old', 'Do-Not-Normalize', '--format-error', 'json'], { from: 'user' }))
-  assert.equal(sentName, 'Do-Not-Normalize')
-  assert.equal(output.stdout, '')
-  assert.doesNotThrow(() => JSON.parse(output.stderr))
-  assert.match(output.stderr, /name must be lowercase/u)
-  assert.notEqual(process.exitCode, 0)
-})
-
-test('rename requires a canonical response ID and preserves explicit machine identity', async () => {
-  const canonicalID = 'dm-00000000-0000-4000-8000-000000000111'
-  const differentID = 'dm-00000000-0000-4000-8000-000000000222'
-  for (const [current, returnedID, success] of [
-    ['old-name', canonicalID, true],
-    ['old-name', 'dm-not-a-uuid', false],
-    ['old-name', canonicalID.slice(3), false],
-    ['old-name', 'dm-AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA', false],
-    [canonicalID, canonicalID, true],
-    [canonicalID.slice(3), canonicalID, true],
-    [canonicalID, differentID, false],
-    [canonicalID.slice(3), differentID, false],
-  ]) {
-    process.exitCode = undefined
-    const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => ({
-      machine_id: returnedID, name: 'new-name',
-    }) }) }).parseAsync(['rename', current, 'new-name'], { from: 'user' }))
-    if (success) {
-      assert.equal(JSON.parse(output.stdout).machine_id, canonicalID)
-      assert.equal(output.stderr, '')
-    } else {
-      assert.equal(output.stdout, '')
-      assert.match(output.stderr, /did not confirm/u)
-      assert.equal(process.exitCode, 1)
-    }
-  }
-})
-
-test('each rename receives a fresh idempotency key and preserves it across HTTP retries', async () => {
-  const keys = []
-  const api = createMachineAPI(new SDK({ apiKey: 'test', maxRetries: 1, fetch: async (_url, init) => {
-    keys.push(new Headers(init.headers).get('idempotency-key'))
-    if (keys.length === 1) return Response.json({ message: 'try again' }, {
-      status: 503, headers: { 'retry-after': '0.001' },
-    })
-    return Response.json({ machine_id: 'dm-00000000-0000-4000-8000-000000000111', name: 'new-name' })
-  } }))
-  await api.renameMachine('old-name', 'new-name')
-  await api.renameMachine('new-name', 'other-name')
-  assert.equal(keys.length, 3)
-  assert.ok(keys.every((key) => typeof key === 'string' && key.length > 0))
-  assert.equal(keys[0], keys[1])
-  assert.notEqual(keys[1], keys[2])
-})
-
-test('invariant_output_format_honors_local_flags_over_global_defaults', async () => {
-  const result = { machine_id: 'dm-00000000-0000-4000-8000-000000000111', name: 'new-name' }
-  for (const [before, after] of [
-    [['--format', 'yaml'], []],
-    [[], ['--format', 'yaml']],
-    [['--format', 'json'], ['--format', 'yaml']],
-  ]) {
-    const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => result }) })
-      .parseAsync([...before, 'rename', 'old', 'new-name', ...after], { from: 'user' }))
-    assert.equal(output.stdout, `machine_id: ${result.machine_id}\nname: new-name\n`)
-    assert.equal(output.stderr, '')
-  }
-})
-
-test('invariant_error_format_honors_local_flags_over_global_defaults', async () => {
-  for (const [before, after] of [
-    [['--format-error', 'yaml'], []],
-    [[], ['--format-error', 'yaml']],
-    [['--format-error', 'json'], ['--format-error', 'yaml']],
-  ]) {
-    const output = await capture(() => aliases({ api: () => ({ renameMachine: async () => {
-      throw new Error('access denied')
-    } }) }).parseAsync([...before, 'rename', 'old', 'new-name', ...after], { from: 'user' }))
-    assert.equal(output.stdout, '')
-    assert.match(output.stderr, /^message: access denied\n/mu)
-    assert.equal(process.exitCode, 1)
-  }
 })

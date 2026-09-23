@@ -43,7 +43,7 @@ test('invariant organization selection never turns a request receipt into an out
     headers = req.headers;
     req.resume();
     res.writeHead(201, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ id: 'fb_' + receipt, source: 'cli', debug: { included: false } }));
+    res.end(JSON.stringify({ id: receipt, source: 'cli', debug: { included: false } }));
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
@@ -84,7 +84,7 @@ test('invariant installed CLI sends a server-compatible multipart manifest', asy
     });
     received = await wire.formData();
     res.writeHead(201, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ id: 'fb_' + receipt, source: 'cli', debug: { included: true } }));
+    res.end(JSON.stringify({ id: receipt, source: 'cli', debug: { included: true } }));
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
@@ -173,7 +173,7 @@ test('invariant installed CLI retries one submission with the same idempotency k
       res.writeHead(201);
       res.end(
         JSON.stringify({
-          id: 'fb_' + receipt,
+          id: receipt,
           source: 'cli',
           reported_request_id: null,
           debug: { included: false },
@@ -202,7 +202,7 @@ test('invariant installed CLI retries one submission with the same idempotency k
   assert.equal(requests[0].headers['x-dedalus-cli-command'], 'dedalus feedback');
   assert.equal(requests[0].headers['x-request-id'], undefined);
   assert.equal(JSON.parse(requests[0].body).debug.included, false);
-  assert.equal(JSON.parse(result.stdout).id, 'fb_' + receipt);
+  assert.equal(JSON.parse(result.stdout).id, receipt);
 });
 
 test('invariant invalid include-logs values fail before submission', async () => {
@@ -227,7 +227,7 @@ for (const failsDecoding of [false, true]) {
           ? JSON.parse((await wire.formData()).get('metadata'))
           : await wire.json();
         res.writeHead(201, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ id: 'fb_' + receipt, source: 'cli', debug: report.debug }));
+        res.end(JSON.stringify({ id: receipt, source: 'cli', debug: report.debug }));
         return;
       }
       attempts++;
@@ -266,9 +266,7 @@ test('invariant generated and custom commands share scoped stored credentials an
     requests.push({ method: req.method, headers: req.headers });
     req.resume();
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify(req.method === 'PATCH'
-      ? { machine_id: 'dm-01973f7b-7cf6-726a-9a9f-4f37d4b47a21', name: 'new-name' }
-      : { items: [], next_cursor: null }));
+    res.end(JSON.stringify({ items: [], next_cursor: null }));
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => server.close());
@@ -283,14 +281,13 @@ test('invariant generated and custom commands share scoped stored credentials an
   for (const args of [
     ['machines', 'list'],
     ['feedback', 'stored credential', '--include-logs=false'],
-    ['rename', 'old-name', 'new-name'],
   ]) {
-    const result = await runCLI([...args, '--base-url', baseURL,
-      '--x-dedalus-org-id', 'org-current', '--format', 'json'], env);
+    const orgFlags = args[0] === 'feedback' ? ['--x-dedalus-org-id', 'org-current'] : [];
+    const result = await runCLI([...args, '--base-url', baseURL, ...orgFlags, '--format', 'json'], env);
     assert.equal(result.code, 0, result.stderr);
     const { headers } = requests.at(-1);
     assert.equal(headers.authorization, 'Bearer stored-key');
-    assert.equal(headers['x-dedalus-org-id'], 'org-current');
+    assert.equal(headers['x-dedalus-org-id'], args[0] === 'feedback' ? 'org-current' : undefined);
     assert.equal(headers['x-request-id'], undefined);
     assert.match(headers['user-agent'], /^Dedalus\/CLI /);
     assert.ok(headers['x-dedalus-cli-command'].startsWith('dedalus '));

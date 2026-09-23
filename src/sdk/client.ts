@@ -45,7 +45,9 @@ import {
   type MachineDeleteParams,
   type MachineSleepParams,
   type MachineWakeParams,
+  type MachineRebootParams,
 } from './resources/machines/machines';
+import { Organization } from './resources/organization/organization';
 
 export type AuthTokenProvider = () => string | Promise<string>;
 
@@ -59,26 +61,6 @@ export interface ClientOptions {
    * Dedalus API key for X-API-Key header authentication.
    */
   xAPIKey?: string | AuthTokenProvider | null | undefined;
-
-  /**
-   * Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
-   */
-  bearerAuth?: string | AuthTokenProvider | undefined;
-
-  /**
-   * Provider name for BYOK mode.
-   */
-  provider?: string | null | undefined;
-
-  /**
-   * Provider API key for BYOK mode.
-   */
-  providerKey?: string | null | undefined;
-
-  /**
-   * Model identifier for BYOK provider.
-   */
-  providerModel?: string | null | undefined;
 
   /**
    * MCP Authorization Server URL.
@@ -168,10 +150,6 @@ export type DedalusOptions = ClientOptions;
 export class Dedalus {
   apiKey: string | AuthTokenProvider | null;
   xAPIKey: string | AuthTokenProvider | null;
-  bearerAuth: string | AuthTokenProvider | undefined;
-  provider: string | null;
-  providerKey: string | null;
-  providerModel: string | null;
   asBaseURL: string | null;
   dedalusOrgID: string | null;
 
@@ -193,10 +171,6 @@ export class Dedalus {
    *
    * @param {string | AuthTokenProvider | null | undefined} [opts.apiKey=process.env["DEDALUS_API_KEY"] ?? null]
    * @param {string | AuthTokenProvider | null | undefined} [opts.xAPIKey=process.env["DEDALUS_X_API_KEY"] ?? null]
-   * @param {string | AuthTokenProvider | undefined} [opts.bearerAuth=process.env["DEDALUS_BEARER_AUTH"] ?? undefined]
-   * @param {string | null | undefined} [opts.provider=process.env["DEDALUS_PROVIDER"] ?? null]
-   * @param {string | null | undefined} [opts.providerKey=process.env["DEDALUS_PROVIDER_KEY"] ?? null]
-   * @param {string | null | undefined} [opts.providerModel=process.env["DEDALUS_PROVIDER_MODEL"] ?? null]
    * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string | null | undefined} [opts.dedalusOrgID=process.env["DEDALUS_ORG_ID"] ?? null]
    * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://dcs.dedaluslabs.ai] - Override the default base URL for the API.
@@ -211,10 +185,6 @@ export class Dedalus {
     baseURL = readEnv('DEDALUS_BASE_URL'),
     apiKey = readEnv('DEDALUS_API_KEY') ?? null,
     xAPIKey = readEnv('DEDALUS_X_API_KEY') ?? null,
-    bearerAuth = readEnv('DEDALUS_BEARER_AUTH'),
-    provider = readEnv('DEDALUS_PROVIDER') ?? null,
-    providerKey = readEnv('DEDALUS_PROVIDER_KEY') ?? null,
-    providerModel = readEnv('DEDALUS_PROVIDER_MODEL') ?? null,
     asBaseURL = readEnv('DEDALUS_AS_URL') ?? 'https://as.dedaluslabs.ai',
     dedalusOrgID = readEnv('DEDALUS_ORG_ID') ?? null,
     ...opts
@@ -222,10 +192,6 @@ export class Dedalus {
     const options: ClientOptions = {
       apiKey,
       xAPIKey,
-      bearerAuth,
-      provider,
-      providerKey,
-      providerModel,
       asBaseURL,
       dedalusOrgID,
       ...opts,
@@ -267,10 +233,6 @@ export class Dedalus {
 
     this.apiKey = apiKey;
     this.xAPIKey = xAPIKey;
-    this.bearerAuth = bearerAuth;
-    this.provider = provider;
-    this.providerKey = providerKey;
-    this.providerModel = providerModel;
     this.asBaseURL = asBaseURL;
     this.dedalusOrgID = dedalusOrgID;
   }
@@ -287,10 +249,6 @@ export class Dedalus {
       fetchOptions: this.fetchOptions,
       apiKey: this.apiKey,
       xAPIKey: this.xAPIKey,
-      bearerAuth: this.bearerAuth,
-      provider: this.provider,
-      providerKey: this.providerKey,
-      providerModel: this.providerModel,
       asBaseURL: this.asBaseURL,
       dedalusOrgID: this.dedalusOrgID,
       ...options,
@@ -783,9 +741,6 @@ export class Dedalus {
         ...(options.timeout ? { 'X-Scalar-Timeout': String(Math.trunc(options.timeout / 1000)) } : {}),
         ...getPlatformHeaders(),
         ...{ 'X-SDK-Version': '1.0.0' },
-        'X-Provider': this.provider,
-        'X-Provider-Key': this.providerKey,
-        'X-Provider-Model': this.providerModel,
       },
       await this.authHeaders(options),
       this._options.defaultHeaders,
@@ -865,7 +820,7 @@ export class Dedalus {
     throw new Errors.AuthenticationError(
       401,
       undefined,
-      'Could not resolve authentication method. Expected either apiKey, bearerAuth or xAPIKey to be set. Or for one of the "Authorization" or "x-api-key" headers to be explicitly omitted',
+      'Could not resolve authentication method. Expected either apiKey or xAPIKey to be set. Or for one of the "Authorization" or "x-api-key" headers to be explicitly omitted',
       headers,
     );
   }
@@ -876,8 +831,6 @@ export class Dedalus {
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
     const xAPIKey = this.resolveAuthOptionSync('xAPIKey', this.xAPIKey);
     if (xAPIKey) headers['x-api-key'] = xAPIKey;
-    const bearerAuth = this.resolveAuthOptionSync('bearerAuth', this.bearerAuth);
-    if (bearerAuth) headers['Authorization'] = `Bearer ${bearerAuth}`;
     return headers;
   }
 
@@ -890,14 +843,10 @@ export class Dedalus {
   }
 
   protected async authHeaders(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
-    return buildHeaders([
-      await this.bearerAuth2(opts),
-      await this.apiKeyAuth(opts),
-      await this.bearerAuth3(opts),
-    ]);
+    return buildHeaders([await this.bearerAuth(opts), await this.apiKeyAuth(opts)]);
   }
 
-  protected async bearerAuth2(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+  protected async bearerAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
     const apiKey = await this.resolveAuthOption('apiKey', this.apiKey);
     if (apiKey == null) {
       return undefined;
@@ -911,14 +860,6 @@ export class Dedalus {
       return undefined;
     }
     return buildHeaders([{ 'x-api-key': xAPIKey }]);
-  }
-
-  protected async bearerAuth3(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
-    const bearerAuth = await this.resolveAuthOption('bearerAuth', this.bearerAuth);
-    if (bearerAuth == null) {
-      return undefined;
-    }
-    return buildHeaders([{ Authorization: `Bearer ${bearerAuth}` }]);
   }
 
   private async authQueryAsync(): Promise<Record<string, string>> {
@@ -972,9 +913,11 @@ export class Dedalus {
   static toFile = toFile;
 
   machines: Machines = new Machines(this);
+  organization: Organization = new Organization(this);
 }
 
 Dedalus.Machines = Machines;
+Dedalus.Organization = Organization;
 
 export declare namespace Dedalus {
   export type RequestOptions = Opts.RequestOptions;
@@ -999,7 +942,10 @@ export declare namespace Dedalus {
     type MachineDeleteParams as MachineDeleteParams,
     type MachineSleepParams as MachineSleepParams,
     type MachineWakeParams as MachineWakeParams,
+    type MachineRebootParams as MachineRebootParams,
   };
+
+  export { Organization as Organization };
 }
 
 const headerExplicitlyOmitted = (source: HeadersLike | undefined, name: string): boolean => {

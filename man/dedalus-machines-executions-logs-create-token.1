@@ -1,12 +1,12 @@
 .\" File generated from our OpenAPI spec by Scalar. Do not edit.
-.TH "DEDALUS\-MACHINES\-EXECUTIONS\-DELETE" "1" "" "dedalus" "Dedalus Manual"
+.TH "DEDALUS\-MACHINES\-EXECUTIONS\-LOGS\-CREATE\-TOKEN" "1" "" "dedalus" "Dedalus Manual"
 .SH "NAME"
-dedalus\-machines\-executions\-delete \- Delete execution
+dedalus\-machines\-executions\-logs\-create\-token \- Create execution log read token
 .SH "SYNOPSIS"
-.B dedalus machines:executions delete
+.B dedalus machines:executions:logs create\-token
 \fB\-\-machine\-id\fR \fI<value>\fR \fB\-\-execution\-id\fR \fI<value>\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
-Delete execution
+Create execution log read token
 .SH "OPTIONS"
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
@@ -51,7 +51,7 @@ Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X
 .PP
 .RS 4
 .nf
-dedalus machines:executions delete \e
+dedalus machines:executions:logs create\-token \e
   \-\-x\-api\-key "$DEDALUS_X_API_KEY" \e
   \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f' \e
   \-\-execution\-id 'execution_id'

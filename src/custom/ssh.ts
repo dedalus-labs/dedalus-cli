@@ -73,7 +73,7 @@ export const awaitSSHSession = async (
   publicKey: string,
 ): Promise<SSHSession> => {
   let session = sessionFrom(await api.createSSHSession(machineID, publicKey))
-  // A name can change while waking; pin polling to the session's canonical ID.
+  // Pin polling to the machine ID returned with the session.
   machineID = requiredString(session.machine_id, 'SSH session response omitted machine_id')
   for (let poll = 0; poll <= pollLimit; poll += 1) {
     const sessionID = requiredString(session.session_id, 'SSH session response omitted session_id')
@@ -83,6 +83,7 @@ export const awaitSSHSession = async (
       case 'ready':
         return session
       case 'wake_in_progress':
+      case 'ssh_in_progress':
         if (poll === pollLimit) {
           throw new Error(`SSH session did not become ready after ${pollLimit} polls`)
         }

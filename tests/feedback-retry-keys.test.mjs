@@ -12,7 +12,7 @@ test('invariant automatic retries preserve a valid feedback identity', async () 
       keys.push(key);
       assert.match(key, uuid7, 'automatic feedback key must match the API contract');
       if (keys.length === 1) return Response.json({}, {status: 503, headers: {'retry-after-ms': '1'}});
-      return Response.json({id: 'fb_' + key}, {status: 201});
+      return Response.json({id: key}, {status: 201});
     },
   });
   await client.post('/v1/feedback', {body: {message: 'fixture', source: 'cli'}});

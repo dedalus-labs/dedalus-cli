@@ -85,7 +85,7 @@ export const pickSSHMachine = (api: MachineAPI): Promise<string | undefined> => 
   const input = process.stdin
   const output = process.stderr
   if (!input.isTTY || !process.stdout.isTTY || !output.isTTY) {
-    return Promise.reject(new Error('machine name or ID is required without an interactive terminal; usage: dedalus ssh <name|machine_id>'))
+    return Promise.reject(new Error('machine ID is required without an interactive terminal; usage: dedalus ssh <machine-id>'))
   }
   return new Promise((resolve, reject) => {
     const controller = new AbortController()

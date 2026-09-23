@@ -28,9 +28,8 @@ sudo mv dedalus /usr/local/bin/
 
 Provide credentials using the options below. Environment variables are read automatically when the target runtime supports them:
 
-- `--api-key` (env: `DEDALUS_API_KEY`) — API key authentication using Bearer token
-- `--x-api-key` (env: `DEDALUS_X_API_KEY`) — API key authentication using X-API-Key header
-- `--bearer-auth` (env: `DEDALUS_BEARER_AUTH`) — Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
+- `--api-key` (env: `DEDALUS_API_KEY`) — Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
+- `--x-api-key` (env: `DEDALUS_X_API_KEY`) — Dedalus API key. Alternative to Bearer token.
 
 ## Calling operations
 
@@ -38,7 +37,7 @@ Provide credentials using the options below. Environment variables are read auto
 dedalus [resource] [command] [flags]
 
 dedalus machines create \
-  --api-key "$DEDALUS_API_KEY" \
+  --x-api-key "$DEDALUS_X_API_KEY" \
   --autosleep '300s' \
   --memory-mib '4096' \
   --storage-gib '10' \
@@ -50,10 +49,6 @@ Method names, parameter shapes, and response types are generated from the API de
 ## Pagination
 
 Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to cap the total number of items returned.
-
-## WebSockets
-
-WebSocket commands stay connected and stream messages. Use `--send <json>` to send a message (or pipe JSON/YAML on stdin) and `--max-items <count>` to bound output.
 
 ## Error handling
 

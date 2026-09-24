@@ -1,0 +1,225 @@
+name: Release Please
+
+on:
+  # A release is cut when a human merges the platform-managed release PR into
+  # main (the PR's base, so its diff shows the full pending release).
+  # Every other push here runs release-please as well — commits written straight to
+  # this branch included — and cuts nothing, there being no release commit at the tip.
+  push:
+    branches:
+      - main
+    # The Scalar platform pushes these workflow files straight to main to keep them
+    # current between releases; that is bookkeeping, never a release. Running anyway is worse
+    # than pointless on a branch that has not been handed a .release-please-manifest.json yet —
+    # release-please fails the run outright when it cannot read one. A release commit always
+    # rewrites the manifest and the changelog, so this filter can never swallow one.
+    paths-ignore:
+      - '.github/workflows/**'
+  # Manual fallback only; nothing in the automated chain depends on dispatch.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Required to update the merged release PR's autorelease labels after tagging.
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      # Consumed by the publish job's checkout: without this mapping the checkout ref would be
+      # empty and the publish would build the triggering branch head instead of the released
+      # tag's exact commit.
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          target-branch: main
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # Release PRs are opened and updated by the Scalar platform with its own
+          # credential (so their CI runs without manual approval); this workflow only
+          # cuts the tag + GitHub Release once a release PR is merged.
+          skip-github-pull-request: true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        with:
+          fetch-depth: 0
+      # Merging the release PR into main is itself the promotion, but the
+      # version bump and changelog must also land back on scalar-next, or the next
+      # release PR would propose this release again. A real merge (never a plain
+      # commit push) so a squash- or rebase-merged release PR syncs just as well; the
+      # non-conventional message keeps the sync commit out of future changelogs. Plain
+      # (non-force) push on purpose: losing a race against a concurrent regeneration
+      # push fails loudly here, and the platform's next sync re-converges.
+      - name: Sync release back to scalar-next
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin scalar-next
+          git checkout -B scalar-next origin/scalar-next
+          git merge --no-edit -m "Sync release ${{ steps.release.outputs.tag_name }} back to scalar-next" "${{ steps.release.outputs.sha }}"
+          git push origin scalar-next
+  publish:
+    needs: release-please
+    # `!cancelled()` keeps publishing even when the back-sync to the integration branch
+    # failed: a raced integration branch must not block the release from reaching its
+    # registry.
+    if: ${{ !cancelled() && needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    # Job-level permissions replace the workflow's release-cutting grants with the publish
+    # floor. OIDC trusted publishing verifies this run's claims, which name this workflow
+    # file — register release-please.yml as the trusted publisher on the registry.
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
+    env:
+      VERSIONING_POLICY: manual
+    steps:
+      # Publishing runs inline — a top-level job of this same run — rather than dispatching
+      # sdk-release.yml: workflow_dispatch resolves the target workflow on the repository's
+      # default branch only, so a dispatch would 404 whenever the release line is any other
+      # branch, while OIDC trusted publishing accepts this job because it stays top-level
+      # (never a reusable-workflow call). The release-please job cut the tag earlier in this
+      # run; checking it out publishes exactly the released commit, not the branch head that
+      # triggered the workflow.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install
+      - run: npm run build
+      # The version is owned by release tooling in this repository, never by the SDK generator,
+      # so the asset and Homebrew steps read it from package.json at run time.
+      - name: Read package version
+        run: echo "PKG_VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+      # OIDC trusted publishing needs npm >= 11.5; pinned to the major (not `latest`) so a new
+      # npm major raising its Node engine floor cannot break publishes against the pinned Node.
+      # No token is stored: `npm publish` mints a short-lived, provenance-signed credential once
+      # this repository is registered as a trusted publisher for the package.
+      - run: npm install -g npm@11
+      - name: Publish to npm
+        run: node scripts/publish-npm.mjs
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.0"
+      # `bun build --compile` embeds the Bun runtime and every dependency in the executable, so the
+      # published artifacts run on a machine with no Node, no Bun, and no `node_modules` — unlike the
+      # npm package, which stays a normal Node CLI. Bun cross-compiles every target from this one
+      # Linux runner by downloading the matching runtime, so the matrix needs no extra jobs.
+      #
+      # The compile reads `src/bin.ts` rather than the `tsc` output in `dist/`: Bun bundles
+      # TypeScript directly, and going through `dist/` would only add the emitted ESM specifier
+      # rewriting as a failure mode between the source and the shipped binary.
+      #
+      # Asset names carry no version: the release tag in the download path already does, and a
+      # stable file name is what makes `releases/latest/download/<name>` resolve, so install
+      # instructions can point at "latest" without being rewritten every release.
+      - name: Compile standalone binaries
+        run: |
+          ROOT="$PWD"
+          mkdir -p release-binaries
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            rm -rf compile-out && mkdir -p compile-out
+            case "$target" in
+              windows-*)
+                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/dedalus.exe"
+                (cd compile-out && zip -q "$ROOT/release-binaries/dedalus-${target}.zip" "dedalus.exe")
+                ;;
+              *)
+                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/dedalus"
+                tar -czf "release-binaries/dedalus-${target}.tar.gz" -C compile-out "dedalus"
+                ;;
+            esac
+          done
+          rm -rf compile-out
+      - name: Attach binaries to the release
+        run: gh release upload "v${PKG_VERSION}" release-binaries/* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          # Reads back the archives the preceding asset step just uploaded. That step runs
+          # `gh release upload` on the ambient GITHUB_TOKEN, which can only write releases in
+          # the repository the workflow runs in, so the download must resolve against
+          # `github.repository` too. Deriving it from configured productionRepo instead lets the
+          # two disagree — a renamed, transferred, or forked destination repo then 404s here on
+          # every release, having uploaded the archives perfectly well one step earlier.
+          BASE_URL="https://github.com/${{ github.repository }}/releases/download/v${PKG_VERSION}"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/dedalus-labs/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          # Each archive holds a single `bun build --compile` executable with the Bun runtime and
+          # every dependency embedded, so the formula declares no `depends_on` and installs the
+          # binary as-is — `brew install` no longer pulls Node in as a dependency.
+          #
+          # The formula file is lowercase even when the command it installs is not: Homebrew resolves
+          # `brew install <owner>/<tap>/<name>` to `Formula/<name>.rb`, and that lookup is case-sensitive
+          # on Linux. The `bin.install` below still installs the command under its own spelling.
+          cat > "tap/Formula/dedalus.rb" <<'EOF'
+          class Dedalus < Formula
+            desc "The official CLI for Dedalus."
+            homepage "https://docs.dedaluslabs.ai"
+            version "__VERSION__"
+
+            on_macos do
+              on_arm do
+                url "__URL_DARWIN_ARM64__"
+                sha256 "__SHA_DARWIN_ARM64__"
+              end
+              on_intel do
+                url "__URL_DARWIN_X64__"
+                sha256 "__SHA_DARWIN_X64__"
+              end
+            end
+
+            on_linux do
+              on_arm do
+                url "__URL_LINUX_ARM64__"
+                sha256 "__SHA_LINUX_ARM64__"
+              end
+              on_intel do
+                url "__URL_LINUX_X64__"
+                sha256 "__SHA_LINUX_X64__"
+              end
+            end
+
+            def install
+              bin.install "dedalus"
+            end
+
+            test do
+              system "#{bin}/dedalus", "--help"
+            end
+          end
+          EOF
+          FORMULA="tap/Formula/dedalus.rb"
+          # Homebrew resolves one url/sha256 pair per platform at install time, but the formula is a
+          # single file, so every platform the tap supports has to be pinned on every release.
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+            ASSET="dedalus-${target}.tar.gz"
+            curl -fsSL "$BASE_URL/$ASSET" -o "$ASSET"
+            SHA256="$(shasum -a 256 "$ASSET" | cut -d" " -f1)"
+            # `darwin-arm64` names the `__URL_DARWIN_ARM64__`/`__SHA_DARWIN_ARM64__` placeholder
+            # pair, so the loop stays driven by the target list instead of a hand-written sed per
+            # platform that can silently fall out of step with the formula above.
+            TOKEN="$(echo "$target" | tr "a-z-" "A-Z_")"
+            sed -i -e "s|__URL_${TOKEN}__|$BASE_URL/$ASSET|" -e "s|__SHA_${TOKEN}__|$SHA256|" "$FORMULA"
+          done
+          sed -i -e "s|__VERSION__|$PKG_VERSION|" "$FORMULA"
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "Formula/dedalus.rb"
+          git commit -m "dedalus ${PKG_VERSION}" || { echo "formula unchanged, skipping"; exit 0; }
+          git push

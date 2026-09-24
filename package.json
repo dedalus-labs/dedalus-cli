@@ -1,0 +1,81 @@
+{
+  "name": "dedalus-cli",
+  "version": "0.7.0",
+  "description": "Controlplane API for Dedalus Cloud Services (DCS).",
+  "author": "Dedalus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dedalus-labs/dedalus-cli.git"
+  },
+  "type": "module",
+  "bin": {
+    "dedalus": "./dist/esm/bin.js"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "api.md",
+    "man",
+    "SKILL.md"
+  ],
+  "man": [
+    "./man/dedalus.1",
+    "./man/dedalus-login.1",
+    "./man/dedalus-logout.1",
+    "./man/dedalus-machines-list.1",
+    "./man/dedalus-machines-create.1",
+    "./man/dedalus-machines-retrieve.1",
+    "./man/dedalus-machines-update.1",
+    "./man/dedalus-machines-delete.1",
+    "./man/dedalus-machines-sleep.1",
+    "./man/dedalus-machines-wake.1",
+    "./man/dedalus-machines-reboot.1",
+    "./man/dedalus-machines-ssh-list.1",
+    "./man/dedalus-machines-ssh-create.1",
+    "./man/dedalus-machines-ssh-retrieve.1",
+    "./man/dedalus-machines-ssh-delete.1",
+    "./man/dedalus-machines-executions-list.1",
+    "./man/dedalus-machines-executions-create.1",
+    "./man/dedalus-machines-executions-retrieve.1",
+    "./man/dedalus-machines-executions-delete.1",
+    "./man/dedalus-machines-executions-output.1",
+    "./man/dedalus-machines-executions-events.1",
+    "./man/dedalus-machines-executions-logs-retrieve.1",
+    "./man/dedalus-machines-executions-logs-reauthorize.1",
+    "./man/dedalus-machines-executions-logs-create-token.1",
+    "./man/dedalus-machines-autoresizing-retrieve.1",
+    "./man/dedalus-machines-autoresizing-update.1",
+    "./man/dedalus-organization-autoresizing-retrieve.1",
+    "./man/dedalus-organization-autoresizing-update.1",
+    "./man/dedalus-completion.1"
+  ],
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/finalize-build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit",
+    "test": "node --test tests/feedback-*.test.mjs",
+    "ci:generate": "hollywood generate 'ci/**/*.ts' --source-root ci --output .",
+    "test:package": "node scripts/verify-staging-package.mjs"
+  },
+  "dependencies": {
+    "ansis": "^4.3.0",
+    "commander": "^14.0.3",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^6.0.0",
+    "@dedalus-labs/hollywood": "0.0.5"
+  },
+  "license": "Apache-2.0"
+}

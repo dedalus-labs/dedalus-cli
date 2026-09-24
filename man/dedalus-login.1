@@ -1,0 +1,44 @@
+.\" File generated from our OpenAPI spec by Scalar. Do not edit.
+.TH "DEDALUS\-LOGIN" "1" "" "dedalus" "Dedalus Manual"
+.SH "NAME"
+dedalus\-login \- sign in and save credentials
+.SH "SYNOPSIS"
+.B dedalus login
+[\fB\-\-flow\fR \fIname\fR] [\fB\-\-base\-url\fR \fIurl\fR]
+.SH "DESCRIPTION"
+Obtains a credential and saves it so later commands do not have to carry one. It goes into your operating system's credential store \- the system keyring on Linux, Credential Manager on Windows \- and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. A credential passed with a flag, or set in the environment, still takes precedence over a saved one.
+.SH "OPTIONS"
+.TP
+\fB\-\-flow\fR \fIname\fR
+Sign\-in flow to use, skipping the prompt. One of: api\-key, x\-api\-key.
+.TP
+\fB\-\-base\-url\fR \fIurl\fR
+Sign in against this base URL instead of the default.
+.SH "SIGN\-IN FLOWS"
+.TP
+\fBapi\-key\fR
+Enter your access token.
+.TP
+\fBx\-api\-key\fR
+Enter your API key.
+.SH "EXAMPLES"
+.PP
+.RS 4
+.nf
+dedalus login
+dedalus login \-\-flow api\-key
+.fi
+.RE
+.SH "EXIT STATUS"
+.TP
+\fB0\fR
+The command completed successfully.
+.TP
+\fB2\fR
+The command was invoked incorrectly (missing or invalid arguments).
+.TP
+\fB10\fR
+Sign\-in or sign\-out did not complete. The message on standard error says why.
+.SH "SEE ALSO"
+.BR dedalus (1),
+.BR dedalus\-logout (1)

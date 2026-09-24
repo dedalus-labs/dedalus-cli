@@ -7,6 +7,7 @@ import {
   type CliClientOptionDefinition, type GlobalOptions,
   sdkClientOptions, writeError, errorExitCode, normalizeFormat, usageExitCode,
 } from '../cli/runtime.js'
+import { addExecutionArguments } from './executions.js'
 import { pickSSHMachine } from './ssh-picker.js'
 import { connectMachine, type SSHAPI } from './ssh.js'
 
@@ -39,6 +40,7 @@ export const addMachineAliases = (
   clientOptions: readonly CliClientOptionDefinition[],
   options: AliasOptions = {},
 ): Command => {
+  addExecutionArguments(program)
   const makeAPI = options.api ?? createMachineAPI
   const connect = options.connect ?? connectMachine
   const pick = options.pick ?? pickSSHMachine

@@ -171,6 +171,16 @@ export const createProgram = ({
     program.option('--' + option.name + ' <value>', clientOptionDescription(option));
   }
 
+  // @custom start
+  // Resource nesting is a public CLI contract; preserve it when regenerating.
+  commands = commands.map((definition) => ({
+    ...definition, commandPath: definition.commandPath.flatMap((part) => part.split(':')),
+  }));
+  groups = groups?.map((group) => ({
+    ...group, commandPath: group.commandPath.flatMap((part) => part.split(':')),
+  }));
+  // @custom end
+
   for (const definition of commands)
     addGeneratedCommand(program, SDK, clientOptions, definition, groups, auth);
 

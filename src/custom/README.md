@@ -26,8 +26,7 @@ python3 tests/ssh-picker-pty.py
 # Execution arguments
 
 Use `dedalus machines exec --machine-id <id> -- <command> [args...]` to
-create an execution. `machines executions`, `machines:exec`, and
-`machines:executions` accept the same arguments, with optional `create`.
+create an execution. `machines executions` accepts the same arguments, with optional `create`.
 Arguments after `--` are literal: spaces, empty arguments, remote flags, and
 `@file` references are sent unchanged. The executable itself cannot be empty.
 Do not combine these arguments with `--command`.
@@ -46,3 +45,11 @@ arguments never become local file reads.
 ```sh
 node --test tests/execution-argv.test.mjs
 ```
+
+# Nested resources
+
+Resource levels use spaces: `machines ssh`, `machines executions logs`,
+`machines autoresizing`, and `organization autoresizing`. The custom runtime path normalization
+runs before execution shortcuts and creates missing parent groups without
+changing API handlers or flags. Preserve that marked block when regenerating. Colon spellings are removed.
+Help and shell completion follow the resulting command tree.

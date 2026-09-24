@@ -43,7 +43,7 @@ try {
     [
       '--test',
       ...readdirSync('tests')
-        .filter((name) => /^feedback-.*\.test\.mjs$/.test(name))
+        .filter((name) => /^feedback-.*\.test\.mjs$/.test(name) || name === 'execution-argv.test.mjs')
         .map((name) => join('tests', name)),
     ],
     {

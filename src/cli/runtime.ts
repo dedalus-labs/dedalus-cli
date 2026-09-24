@@ -13,6 +13,11 @@ import { type CliAuthDefinition, UsageError, runLogin, runLogout, storedCredenti
 
 import { createDiagnostics, diagnosticScope } from '../feedback/diagnostics.js';
 
+// Custom commands can carry literal input past flag/file coercion.
+export class LiteralCliValue {
+  constructor(readonly value: unknown) {}
+}
+
 const LOGIN_COMMAND = 'dedalus login';
 
 type OutputFormat = 'auto' | 'json' | 'jsonl' | 'pretty' | 'raw' | 'toon' | 'yaml';
@@ -1009,6 +1014,7 @@ const coerceValue = (
   itemKind?: CliValueKind,
   label = 'value',
 ): unknown => {
+  if (value instanceof LiteralCliValue) return value.value;
   if (Array.isArray(value)) {
     const elementKind = kind === 'array' ? (itemKind ?? 'unknown') : kind;
     return value.map((item) => coerceValue(item, elementKind, undefined, label));

@@ -887,7 +887,7 @@ export const getProgram = (): Command =>
   registerFeedbackCommands(addMachineAliases(createProgram({
     SDK,
     binaryName: 'dedalus',
-    version: '0.6.0', // x-release-please-version
+    version: '0.7.0', // x-release-please-version
     description: 'CLI for Dedalus',
     defaultFormat: 'auto',
     defaultErrorFormat: 'auto',

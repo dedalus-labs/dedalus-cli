@@ -43,11 +43,11 @@ try {
     [
       '--test',
       ...readdirSync('tests')
-        .filter((name) => /^feedback-.*\.test\.mjs$/.test(name))
+        .filter((name) => /^feedback-.*\.test\.mjs$/.test(name) || name === 'update.test.mjs')
         .map((name) => join('tests', name)),
     ],
     {
-      env: { ...process.env, FEEDBACK_PACKAGE_ROOT: installed },
+      env: { ...process.env, FEEDBACK_PACKAGE_ROOT: installed, UPDATE_PACKAGE_ROOT: installed },
       stdio: 'inherit',
     },
   );

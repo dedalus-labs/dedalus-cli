@@ -1,6 +1,7 @@
 /** SSH selection that shares the CLI's authentication and error settings. */
 
 import { Command, Option } from 'commander'
+import { registerUpdateCommand } from './update.js'
 import SDK from '../sdk/index.js'
 import type { CliAuthDefinition } from '../cli/login.js'
 import {
@@ -62,7 +63,7 @@ export const addMachineAliases = (
       }, options.auth)
     })
   program.addCommand(ssh)
-  return program
+  return registerUpdateCommand(program)
 }
 
 const aliasCommand = (program: Command, name: string): Command => {

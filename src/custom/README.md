@@ -22,3 +22,20 @@ node --test tests/machine-aliases.test.mjs
 node --test tests/ssh-paths.test.mjs
 python3 tests/ssh-picker-pty.py
 ```
+
+# Update command
+
+`dedalus update --check` reports the current and latest stable GitHub release
+without probing or modifying the installation. `dedalus update` upgrades a
+verified global npm installation to that exact version, or upgrades a verified
+Homebrew formula after checking that Homebrew publishes the same version.
+A GitHub release that has not reached the package manager does not authorize
+an upgrade. Equal or older releases never trigger an installation.
+
+Standalone downloads, Homebrew casks, local npm installs, Windows installs and
+unrecognized layouts receive manual update instructions. No removed installer
+scripts are invoked, and the Node executable is never replaced. Startup update
+prompts are not included. Development and prerelease versions require an
+explicit update through the original package manager.
+
+Run `npm run build && node --test tests/update.test.mjs` to check this contract.

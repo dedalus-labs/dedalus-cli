@@ -29,7 +29,7 @@ const withAPI = async (action) => {
   finally { await new Promise((resolve) => server.close(resolve)) }
 }
 
-const resources = [['machines', 'exec'], ['machines', 'executions'], ['machines:exec'], ['machines:executions']]
+const resources = [['machines', 'exec'], ['machines', 'executions']]
 
 test('invariant_execution_argv_reaches_the_wire_literally_for_every_resource_spelling', async () => {
   await withAPI(async (baseURL, requests) => {

@@ -41,6 +41,9 @@ Dedalus API key or short\-lived delegated access token in Authorization: Bearer 
 .TP
 \fB\-\-x\-api\-key\fR \fI<value>\fR
 Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X_API_KEY environment variable.
+.TP
+\fB\-\-dedalus\-org\-id\fR \fI<value>\fR
+Optional organization assertion. Must match the organization identified by the API credential. Can also be set with the DEDALUS_ORG_ID environment variable.
 .SH "EXAMPLES"
 .PP
 .RS 4
@@ -55,6 +58,9 @@ Fallback for \-\-api\-key when the flag is not passed.
 .TP
 \fBDEDALUS_X_API_KEY\fR
 Fallback for \-\-x\-api\-key when the flag is not passed.
+.TP
+\fBDEDALUS_ORG_ID\fR
+Fallback for \-\-dedalus\-org\-id when the flag is not passed.
 .SH "EXIT STATUS"
 .TP
 \fB0\fR

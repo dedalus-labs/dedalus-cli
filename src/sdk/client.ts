@@ -63,14 +63,14 @@ export interface ClientOptions {
   xAPIKey?: string | AuthTokenProvider | null | undefined;
 
   /**
+   * Optional organization assertion. Must match the organization identified by the API credential.
+   */
+  dedalusOrgID?: string | null | undefined;
+
+  /**
    * MCP Authorization Server URL.
    */
   asBaseURL?: string | null | undefined;
-
-  /**
-   * Organization ID for request scoping.
-   */
-  dedalusOrgID?: string | null | undefined;
 
   /**
    * Override the default base URL for the API, e.g., "https://api.example.com/v2/"
@@ -150,8 +150,8 @@ export type DedalusOptions = ClientOptions;
 export class Dedalus {
   apiKey: string | AuthTokenProvider | null;
   xAPIKey: string | AuthTokenProvider | null;
-  asBaseURL: string | null;
   dedalusOrgID: string | null;
+  asBaseURL: string | null;
 
   baseURL: string;
   maxRetries: number;
@@ -171,8 +171,8 @@ export class Dedalus {
    *
    * @param {string | AuthTokenProvider | null | undefined} [opts.apiKey=process.env["DEDALUS_API_KEY"] ?? null]
    * @param {string | AuthTokenProvider | null | undefined} [opts.xAPIKey=process.env["DEDALUS_X_API_KEY"] ?? null]
-   * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string | null | undefined} [opts.dedalusOrgID=process.env["DEDALUS_ORG_ID"] ?? null]
+   * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://dcs.dedaluslabs.ai] - Override the default base URL for the API.
    * @param {number} [opts.timeout=1 minute] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
    * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
@@ -185,15 +185,15 @@ export class Dedalus {
     baseURL = readEnv('DEDALUS_BASE_URL'),
     apiKey = readEnv('DEDALUS_API_KEY') ?? null,
     xAPIKey = readEnv('DEDALUS_X_API_KEY') ?? null,
-    asBaseURL = readEnv('DEDALUS_AS_URL') ?? 'https://as.dedaluslabs.ai',
     dedalusOrgID = readEnv('DEDALUS_ORG_ID') ?? null,
+    asBaseURL = readEnv('DEDALUS_AS_URL') ?? 'https://as.dedaluslabs.ai',
     ...opts
   }: ClientOptions = {}) {
     const options: ClientOptions = {
       apiKey,
       xAPIKey,
-      asBaseURL,
       dedalusOrgID,
+      asBaseURL,
       ...opts,
       baseURL: baseURL || 'https://dcs.dedaluslabs.ai',
     };
@@ -233,8 +233,8 @@ export class Dedalus {
 
     this.apiKey = apiKey;
     this.xAPIKey = xAPIKey;
-    this.asBaseURL = asBaseURL;
     this.dedalusOrgID = dedalusOrgID;
+    this.asBaseURL = asBaseURL;
   }
 
   withOptions(options: Partial<ClientOptions>): this {
@@ -249,8 +249,8 @@ export class Dedalus {
       fetchOptions: this.fetchOptions,
       apiKey: this.apiKey,
       xAPIKey: this.xAPIKey,
-      asBaseURL: this.asBaseURL,
       dedalusOrgID: this.dedalusOrgID,
+      asBaseURL: this.asBaseURL,
       ...options,
     });
     return client;
@@ -741,6 +741,7 @@ export class Dedalus {
         ...(options.timeout ? { 'X-Scalar-Timeout': String(Math.trunc(options.timeout / 1000)) } : {}),
         ...getPlatformHeaders(),
         ...{ 'X-SDK-Version': '1.0.0' },
+        'X-Dedalus-Org-Id': this.dedalusOrgID,
       },
       await this.authHeaders(options),
       this._options.defaultHeaders,

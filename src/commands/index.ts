@@ -33,6 +33,16 @@ const clientOptions = [
     description: 'Dedalus API key. Alternative to Bearer token.',
     auth: true,
   },
+  {
+    clientKey: 'dedalusOrgID',
+    sdkKey: 'dedalusOrgID',
+    name: 'dedalus-org-id',
+    optionKey: 'dedalusOrgId',
+    env: 'DEDALUS_ORG_ID',
+    description:
+      'Optional organization assertion. Must match the organization identified by the API credential.',
+    auth: false,
+  },
 ] as const satisfies readonly CliClientOptionDefinition[];
 
 const commands = [

@@ -851,7 +851,7 @@ const commands = [
 
 const groups = [] as const satisfies readonly CliCommandGroup[];
 
-const auth = {
+export const auth = {
   loginPath: ['login'],
   logoutPath: ['logout'],
   loginCommand: 'dedalus login',
@@ -866,6 +866,21 @@ const auth = {
     xAPIKey: 'DEDALUS_X_API_KEY',
   },
   methods: [
+    {
+      name: 'browser',
+      label: 'Sign in with your browser',
+      kind: 'oauth',
+      grant: 'authorizationCode',
+      clientKey: 'apiKey',
+      clientId: 'dedalus-cli',
+      authorizationUrl: 'https://dcs.dedaluslabs.ai/oauth2/auth',
+      tokenUrl: 'https://dcs.dedaluslabs.ai/oauth2/token',
+      refreshUrl: 'https://dcs.dedaluslabs.ai/oauth2/token',
+      resource: 'https://dcs.dedaluslabs.ai',
+      issuer: 'https://dcs.dedaluslabs.ai',
+      scopes: ['dedalus:cli', 'offline_access'],
+      redirectPort: 0,
+    },
     {
       name: 'api-key',
       label: 'Enter your access token',

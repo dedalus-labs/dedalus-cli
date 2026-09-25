@@ -30,6 +30,8 @@ export type CliAuthMethodDefinition = {
   | {
       readonly kind: 'oauth';
       readonly grant: 'authorizationCode';
+      readonly resource?: string;
+      readonly issuer?: string;
       readonly clientKey: string;
       readonly tokenUrl: string;
       readonly refreshUrl: string;
@@ -684,9 +686,15 @@ const authorizationCodeFlow = async (
   const clientId = method.clientId;
   if (!clientId || !method.authorizationUrl) throw new Error('This flow needs a configured OAuth client id.');
   const authorizeUrl = requireSecureUrl(method.authorizationUrl, baseUrl, 'authorization endpoint');
+  if (method.resource) {
+    if (profileKey(baseUrl) !== profileKey(method.resource)) {
+      throw new UsageError('Browser sign-in is unavailable for this API base URL.');
+    }
+    authorizeUrl.searchParams.set('resource', method.resource);
+  }
   const verifier = base64Url(randomBytes(32));
   const challenge = base64Url(createHash('sha256').update(verifier).digest());
-  const state = base64Url(randomBytes(16));
+  const state = base64Url(randomBytes(32));
 
   const server = createServer();
   // Bound first, and only then given its request handler. Registering the handler earlier meant a
@@ -708,7 +716,7 @@ const authorizationCodeFlow = async (
     }
     throw error;
   });
-  const redirect = awaitRedirect(server, state, REDIRECT_PATH);
+  const redirect = awaitRedirect(server, state, REDIRECT_PATH, method.issuer);
   const redirectUri = 'http://127.0.0.1:' + String(port) + REDIRECT_PATH;
   try {
     authorizeUrl.searchParams.set('response_type', 'code');
@@ -866,6 +874,7 @@ const awaitRedirect = (
   server: ReturnType<typeof createServer>,
   state: string,
   path: string,
+  issuer?: string,
 ): Promise<string> =>
   new Promise<string>((resolve, reject) => {
     server.on('request', (request, response) => {
@@ -890,7 +899,8 @@ const awaitRedirect = (
         send(404, 'text/plain', 'Not found.\n');
         return;
       }
-      if (!sameToken(params.get('state') ?? '', state)) {
+      if (params.getAll('state').length !== 1 || !sameToken(params.get('state') ?? '', state) ||
+          (issuer !== undefined && (params.getAll('iss').length !== 1 || params.get('iss') !== issuer))) {
         // Ends the sign-in rather than waiting for a better redirect. A request that reaches here is
         // on the registered path and carries a `code` or an `error`, which makes it the provider's
         // redirect rather than a stray probe — the path check above is what turns those away — so a

@@ -10,11 +10,17 @@ Obtains a credential and saves it so later commands do not have to carry one. It
 .SH "OPTIONS"
 .TP
 \fB\-\-flow\fR \fIname\fR
-Sign\-in flow to use, skipping the prompt. One of: api\-key, x\-api\-key.
+Sign\-in flow to use, skipping the prompt. One of: browser, device, api\-key, x\-api\-key.
 .TP
 \fB\-\-base\-url\fR \fIurl\fR
 Sign in against this base URL instead of the default.
 .SH "SIGN\-IN FLOWS"
+.TP
+\fBbrowser\fR
+Sign in using a browser and a local callback.
+.TP
+\fBdevice\fR
+Approve the displayed code in a browser on any device. Requires server support for device authorization. Saves tokens and refreshes them on later commands.
 .TP
 \fBapi\-key\fR
 Enter your access token.

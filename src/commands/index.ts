@@ -872,6 +872,18 @@ export const auth = {
       redirectPort: 0,
     },
     {
+      name: 'device',
+      label: 'Sign in with a device code',
+      kind: 'oauth',
+      grant: 'deviceAuthorization',
+      clientKey: 'apiKey',
+      clientId: 'dedalus-cli',
+      discoveryUrl: 'https://dcs.dedaluslabs.ai/.well-known/oauth-authorization-server',
+      issuer: 'https://dcs.dedaluslabs.ai',
+      resource: 'https://dcs.dedaluslabs.ai',
+      scopes: ['dedalus:cli', 'offline_access'],
+    },
+    {
       name: 'api-key',
       label: 'Enter your access token',
       kind: 'token',

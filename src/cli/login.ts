@@ -53,12 +53,13 @@ export type CliAuthMethodDefinition = {
       readonly kind: 'oauth';
       readonly grant: 'deviceAuthorization';
       readonly clientKey: string;
-      readonly deviceAuthorizationUrl: string;
-      readonly tokenUrl: string;
-      readonly refreshUrl: string;
+      readonly resource?: string;
       readonly scopes: readonly string[];
       readonly clientId?: string;
-    }
+    } & (
+      | { readonly discoveryUrl: string; readonly issuer: string }
+      | { readonly deviceAuthorizationUrl: string; readonly tokenUrl: string; readonly refreshUrl: string }
+    )
   | {
       readonly kind: 'oauth';
       readonly grant: 'openIdConnect';
@@ -461,8 +462,12 @@ const deviceAuthorizationFlow = async (
 ): Promise<OAuthFlowResult> => {
   const clientId = method.clientId ?? (await promptLine('Client id: '));
   if (!clientId) throw new UsageError('No client id entered; nothing was saved.');
+  if (method.resource && profileKey(baseUrl) !== profileKey(method.resource)) {
+    throw new UsageError('Device sign-in is unavailable for this API base URL.');
+  }
+  const endpoints = 'discoveryUrl' in method ? await discoverDeviceAuthorization(method, baseUrl) : method;
   const device = await requestDeviceAuthorization(
-    method.deviceAuthorizationUrl,
+    endpoints.deviceAuthorizationUrl,
     baseUrl,
     clientId,
     method.scopes,
@@ -474,9 +479,36 @@ const deviceAuthorizationFlow = async (
       '\n\nWaiting for authorization...\n',
   );
   return {
-    token: await pollDeviceToken(method.tokenUrl, baseUrl, clientId, device),
+    token: await pollDeviceToken(endpoints.tokenUrl, baseUrl, clientId, device),
     clientId,
-    refreshUrl: method.refreshUrl,
+    refreshUrl: endpoints.refreshUrl,
+  };
+};
+
+/** Use only device endpoints advertised by the configured issuer. */
+const discoverDeviceAuthorization = async (
+  method: { readonly discoveryUrl: string; readonly issuer: string },
+  baseUrl: string,
+): Promise<{ deviceAuthorizationUrl: string; tokenUrl: string; refreshUrl: string }> => {
+  const url = requireSecureUrl(method.discoveryUrl, baseUrl, 'OAuth discovery endpoint');
+  const { response, text } = await getJson(url, 'OAuth discovery document');
+  const payload = parseJson(text);
+  if (!response.ok) throw new Error('Device sign-in discovery is unavailable.');
+  if (payload?.['issuer'] !== method.issuer) throw new Error('Device sign-in issuer does not match.');
+  const grants = payload['grant_types_supported'];
+  if (!Array.isArray(grants) || !grants.includes('urn:ietf:params:oauth:grant-type:device_code')) {
+    throw new Error('The provider does not advertise device sign-in.');
+  }
+  const deviceUrl = payload['device_authorization_endpoint'];
+  const tokenUrl = payload['token_endpoint'];
+  if (typeof deviceUrl !== 'string' || !deviceUrl || typeof tokenUrl !== 'string' || !tokenUrl) {
+    throw new Error('The provider returned incomplete device sign-in endpoints.');
+  }
+  const token = requireSecureUrl(tokenUrl, method.issuer, 'token endpoint').toString();
+  return {
+    deviceAuthorizationUrl: requireSecureUrl(deviceUrl, method.issuer, 'device authorization endpoint').toString(),
+    tokenUrl: token,
+    refreshUrl: token,
   };
 };
 

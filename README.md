@@ -80,14 +80,27 @@ and a registered `dedalus-cli` public client supporting loopback callbacks.
 Until that server support is deployed, use an API key. Local protocol tests do
 not establish that hosted account sign-in is available.
 
+Run `dedalus login --flow device` when the terminal cannot open a browser or
+receive a local callback. Open the displayed link on any browser-capable device,
+confirm the code, and approve access. The CLI saves the resulting tokens and
+refreshes them automatically on later commands, including after a restart.
+If the refresh token expires or is revoked, sign in again.
+
+Device sign-in requires the public OAuth discovery document at
+`https://dcs.dedaluslabs.ai/.well-known/oauth-authorization-server` to advertise
+the device grant and its endpoints, with that grant enabled for the public client.
+It is bound to the same API host as browser sign-in. Until this server support is
+available, use an API key; adding the command does not enable hosted device login.
+
 `dedalus logout` removes local credentials; it does not revoke tokens on the
 server or sign out your browser. It does not read or remove sessions from the
 older `dedalus auth login` implementation.
 
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: browser, api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: browser, device, api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
 
 ```sh
 dedalus login --flow browser
+dedalus login --flow device
 dedalus login --flow api-key
 dedalus logout
 dedalus logout --all

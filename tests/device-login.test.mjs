@@ -12,19 +12,26 @@ test('invariant_device_session_is_bound_to_its_api', async () => {
   await assert.rejects(runLogin(auth, 'https://other.invalid', 'device'), /unavailable for this API/);
 });
 
-for (const scenario of ['approved', 'denied', 'expired', 'wrong-issuer', 'unsupported', 'missing-endpoint', 'insecure-endpoint']) {
+test('invariant_unconfigured_device_login_makes_no_network_request', async (t) => {
+  const fetch = t.mock.method(globalThis, 'fetch', () => { throw new Error('unexpected network request'); });
+  await assert.rejects(runLogin(auth, auth.defaultBaseUrl, 'device'), /not configured/);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+for (const scenario of ['approved', 'denied', 'expired', 'wrong-issuer', 'unsupported', 'missing-endpoint', 'insecure-endpoint', 'missing-revocation', 'insecure-revocation']) {
   test(`invariant_device_authorization_${scenario}`, { timeout: 15000 }, async (t) => {
     const directory = mkdtempSync(join(tmpdir(), 'dedalus-device-'));
     t.after(() => rmSync(directory, { recursive: true, force: true }));
     const store = join(directory, 'credentials.json');
     let polls = 0, deviceRequests = 0;
-    const grants = [], requests = [];
+    const grants = [], requests = [], revocations = [];
     const server = createServer(async (req, res) => {
       const reply = (status, body) => res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(body));
       if (req.url === '/.well-known/oauth-authorization-server') {
         reply(200, { issuer: scenario === 'wrong-issuer' ? 'https://other.invalid' : origin,
           grant_types_supported: scenario === 'unsupported' ? [] : ['urn:ietf:params:oauth:grant-type:device_code'],
           device_authorization_endpoint: scenario === 'missing-endpoint' ? undefined : origin + '/device',
+          revocation_endpoint: scenario === 'missing-revocation' ? undefined : scenario === 'insecure-revocation' ? 'http://other.invalid/revoke' : origin + '/revoke',
           token_endpoint: scenario === 'insecure-endpoint' ? 'http://other.invalid/token' : origin + '/token' });
       } else if (req.url === '/device' || req.url === '/token') {
         let body = '';
@@ -35,6 +42,7 @@ for (const scenario of ['approved', 'denied', 'expired', 'wrong-issuer', 'unsupp
         if (req.url === '/device') {
           deviceRequests++;
           assert.equal(form.get('scope'), 'dedalus:cli offline_access');
+          assert.equal(form.get('resource'), origin);
           reply(200, { device_code: 'private-device-code', user_code: 'TEST-CODE',
             verification_uri: origin + '/verify', expires_in: 600, interval: 0.2 });
         } else {
@@ -51,6 +59,11 @@ for (const scenario of ['approved', 'denied', 'expired', 'wrong-issuer', 'unsupp
             else reply(200, { access_token: 'saved-access', refresh_token: 'saved-refresh', expires_in: 3600 });
           }
         }
+      } else if (req.url === '/revoke') {
+        let body = '';
+        for await (const chunk of req) body += chunk;
+        revocations.push(Object.fromEntries(new URLSearchParams(body)));
+        res.writeHead(200).end();
       } else {
         requests.push(req.headers.authorization);
         reply(200, { items: [], next_cursor: null });
@@ -95,12 +108,14 @@ for (const scenario of ['approved', 'denied', 'expired', 'wrong-issuer', 'unsupp
     assert.equal((await run(['machines', 'list'])).code, 0);
     assert.equal(requests.at(-1), 'Bearer saved-access');
     const saved = JSON.parse(readFileSync(store, 'utf8'));
+    assert.equal(saved.profiles[origin].oauth.apiKey.revocationUrl, origin + '/revoke');
     saved.profiles[origin].oauth.apiKey.expiresAt = 0;
     writeFileSync(store, JSON.stringify(saved));
     assert.equal((await run(['machines', 'list'])).code, 0);
     assert.equal(requests.at(-1), 'Bearer renewed-access');
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].oauth.apiKey.refreshToken, 'rotated-refresh');
     assert.equal((await run(['logout'])).code, 0);
+    assert.deepEqual(revocations, [{ token: 'rotated-refresh', token_type_hint: 'refresh_token' }]);
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin], undefined);
   });
 }

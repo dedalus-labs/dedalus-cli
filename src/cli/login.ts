@@ -60,12 +60,13 @@ export type CliAuthMethodDefinition = {
       readonly kind: 'oauth';
       readonly grant: 'deviceAuthorization';
       readonly clientKey: string;
-      readonly deviceAuthorizationUrl: string;
-      readonly tokenUrl: string;
-      readonly refreshUrl: string;
+      readonly resource?: string;
       readonly scopes: readonly string[];
       readonly clientId?: string;
-    }
+    } & (
+      | { readonly discoveryUrl: string; readonly issuer: string }
+      | { readonly deviceAuthorizationUrl: string; readonly tokenUrl: string; readonly refreshUrl: string; readonly revocationUrl?: string }
+    )
   | {
       readonly kind: 'oauth';
       readonly grant: 'openIdConnect';
@@ -400,14 +401,14 @@ const captureCredentials = async (
     if (!password) throw new UsageError('No password entered; nothing was saved.');
     return { credentials: { [method.usernameKey]: username, [method.passwordKey]: password } };
   }
-  const { token, clientId, refreshUrl } = await runOauthFlow(method, baseUrl);
+  const { token, clientId, refreshUrl, revocationUrl } = await runOauthFlow(method, baseUrl);
   return {
     credentials: { [method.clientKey]: token.accessToken },
     // scalar-sdk-generator:custom-code login-revocation-metadata:start
     // retain the provider revocation endpoint with the grant
     oauth: { [method.clientKey]: {
       ...oauthMetadata(token, refreshUrl, clientId, undefined),
-      ...(method.grant === 'authorizationCode' && method.revocationUrl ? { revocationUrl: method.revocationUrl } : {}),
+      ...(revocationUrl ? { revocationUrl } : {}),
     } },
     // scalar-sdk-generator:custom-code login-revocation-metadata:end
   };
@@ -450,7 +451,7 @@ const runOauthFlow = async (
 ): Promise<OAuthFlowResult> => {
   if (method.grant === 'authorizationCode') {
     const result = await authorizationCodeFlow(method, baseUrl);
-    return { ...result, refreshUrl: method.refreshUrl };
+    return { ...result, refreshUrl: method.refreshUrl, ...(method.revocationUrl ? { revocationUrl: method.revocationUrl } : {}) };
   }
   if (method.grant === 'openIdConnect') return openIdConnectFlow(method, baseUrl);
   if (method.grant === 'deviceAuthorization') return deviceAuthorizationFlow(method, baseUrl);
@@ -494,6 +495,7 @@ type OAuthFlowResult = {
   readonly token: TokenResponse;
   readonly clientId: string | undefined;
   readonly refreshUrl: string;
+  readonly revocationUrl?: string;
 };
 
 /**
@@ -510,11 +512,19 @@ const deviceAuthorizationFlow = async (
 ): Promise<OAuthFlowResult> => {
   const clientId = method.clientId ?? (await promptLine('Client id: '));
   if (!clientId) throw new UsageError('No client id entered; nothing was saved.');
+  if (method.resource && profileKey(baseUrl) !== profileKey(method.resource)) {
+    throw new UsageError('Device sign-in is unavailable for this API base URL.');
+  }
+  if ('discoveryUrl' in method && (!method.discoveryUrl || !method.issuer)) {
+    throw new UsageError('Device sign-in is not configured for this release. Use an API key until the provider rollout is complete.');
+  }
+  const endpoints = 'discoveryUrl' in method ? await discoverDeviceAuthorization(method, baseUrl) : method;
   const device = await requestDeviceAuthorization(
-    method.deviceAuthorizationUrl,
+    endpoints.deviceAuthorizationUrl,
     baseUrl,
     clientId,
     method.scopes,
+    method.resource,
   );
   processStderr.write(
     'To sign in, visit:\n\n  ' +
@@ -523,9 +533,42 @@ const deviceAuthorizationFlow = async (
       '\n\nWaiting for authorization...\n',
   );
   return {
-    token: await pollDeviceToken(method.tokenUrl, baseUrl, clientId, device),
+    token: await pollDeviceToken(endpoints.tokenUrl, baseUrl, clientId, device),
     clientId,
-    refreshUrl: method.refreshUrl,
+    refreshUrl: endpoints.refreshUrl,
+    ...(endpoints.revocationUrl ? { revocationUrl: endpoints.revocationUrl } : {}),
+  };
+};
+
+/** Use only device endpoints advertised by the configured issuer. */
+const discoverDeviceAuthorization = async (
+  method: { readonly discoveryUrl: string; readonly issuer: string },
+  baseUrl: string,
+): Promise<{ deviceAuthorizationUrl: string; tokenUrl: string; refreshUrl: string; revocationUrl: string }> => {
+  const url = requireSecureUrl(method.discoveryUrl, baseUrl, 'OAuth discovery endpoint');
+  const { response, text } = await getJson(url, 'OAuth discovery document');
+  const payload = parseJson(text);
+  if (!response.ok) throw new Error('Device sign-in discovery is unavailable.');
+  if (payload?.['issuer'] !== method.issuer) throw new Error('Device sign-in issuer does not match.');
+  const grants = payload['grant_types_supported'];
+  if (!Array.isArray(grants) || !grants.includes('urn:ietf:params:oauth:grant-type:device_code')) {
+    throw new Error('The provider does not advertise device sign-in.');
+  }
+  const deviceUrl = payload['device_authorization_endpoint'];
+  const tokenUrl = payload['token_endpoint'];
+  const revocationUrl = payload['revocation_endpoint'];
+  if (typeof revocationUrl !== 'string' || !revocationUrl) {
+    throw new Error('The provider returned no device sign-in revocation endpoint.');
+  }
+  if (typeof deviceUrl !== 'string' || !deviceUrl || typeof tokenUrl !== 'string' || !tokenUrl) {
+    throw new Error('The provider returned incomplete device sign-in endpoints.');
+  }
+  const token = requireSecureUrl(tokenUrl, method.issuer, 'token endpoint').toString();
+  return {
+    deviceAuthorizationUrl: requireSecureUrl(deviceUrl, method.issuer, 'device authorization endpoint').toString(),
+    tokenUrl: token,
+    refreshUrl: token,
+    revocationUrl: requireSecureUrl(revocationUrl, method.issuer, 'revocation endpoint').toString(),
   };
 };
 
@@ -565,9 +608,12 @@ const requestDeviceAuthorization = async (
   baseUrl: string,
   clientId: string,
   scopes: readonly string[],
+  resource: string | undefined,
 ): Promise<DeviceAuthorization> => {
   const url = requireSecureUrl(endpoint, baseUrl, 'device authorization endpoint');
-  const { response, text } = await postForToken(url, { client_id: clientId, ...scopeParam(scopes) });
+  const { response, text } = await postForToken(url, {
+    client_id: clientId, ...scopeParam(scopes), ...(resource ? { resource } : {}),
+  });
   const payload = parseJson(text);
   if (!response.ok) {
     throw new Error(

@@ -885,6 +885,21 @@ export const auth = {
       redirectPort: 0,
     },
     // scalar-sdk-generator:custom-code configured-browser-method:end
+    // scalar-sdk-generator:custom-code configured-device-method:start
+    // Device registration must support resource and organization binding before rollout.
+    {
+      name: 'device',
+      label: 'Sign in with a device code',
+      kind: 'oauth',
+      grant: 'deviceAuthorization',
+      clientKey: 'apiKey',
+      clientId: 'dedalus-cli',
+      discoveryUrl: '',
+      issuer: '',
+      resource: 'https://dcs.dedaluslabs.ai',
+      scopes: ['dedalus:cli', 'offline_access'],
+    },
+    // scalar-sdk-generator:custom-code configured-device-method:end
     {
       name: 'api-key',
       label: 'Enter your access token',

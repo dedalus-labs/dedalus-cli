@@ -14,7 +14,7 @@ import {
   profileKey,
   readProfile,
   // scalar-sdk-generator:custom-code logout-imports:start
-  readProfileForLogout,
+  clearAll,
   readStore,
   // scalar-sdk-generator:custom-code logout-imports:end
   refreshProfile,
@@ -247,34 +247,45 @@ export const runLogin = async (
 
 // scalar-sdk-generator:custom-code oauth-logout:start
 
-// revoke OAuth grants before deleting credentials
-/** Revokes stored OAuth tokens before removing their local profile. */
+/** Attempts provider revocation, then clears local credentials even when offline. */
 export const runLogout = async (auth: CliAuthDefinition, baseUrl: string, all: boolean): Promise<string> => {
   const location = storeLocation(auth);
-  const keys = all ? Object.keys(readStore(location, true).profiles) : [profileKey(baseUrl)];
-  let removed = false;
+  const keys = all ? Object.keys(readStore(location).profiles) : [profileKey(baseUrl)];
+  const warnRevocation = () => processStderr.write(
+    'Warning: OAuth revocation could not be confirmed. Clearing local credentials; the server session may remain active.\n',
+  );
   for (const key of keys) {
-    const profile = readProfileForLogout(location, key);
+    let profile: StoredProfile;
+    try {
+      profile = readProfile(location, key);
+    } catch {
+      warnRevocation();
+      continue;
+    }
     for (const [clientKey, meta] of Object.entries(profile.oauth ?? {})) {
-      if (!meta?.revocationUrl) {
-        throw new Error('Cannot revoke this saved OAuth session: revocation configuration is missing. Credentials retained.');
-      }
-      const url = requireSecureUrl(meta.revocationUrl, '', 'revocation endpoint');
-      for (const [hint, token] of [
-        ['refresh_token', meta.refreshToken], ['access_token', profile.credentials?.[clientKey]],
-      ] as const) {
+      try {
+        // Match Codex: prefer refresh revocation; use access only when no refresh token exists.
+        const token = meta?.refreshToken || profile.credentials?.[clientKey];
         if (!token) continue;
+        if (!meta?.revocationUrl) throw new Error('Missing revocation endpoint.');
+        const url = requireSecureUrl(meta.revocationUrl, '', 'revocation endpoint');
         const { response } = await postForToken(url, {
-          token, token_type_hint: hint,
-        }).catch(() => { throw new Error('Could not revoke the OAuth session. Credentials retained; retry logout.'); });
-        if (response.status !== 200) {
-          throw new Error('Could not revoke the OAuth session (HTTP ' + response.status + '). Credentials retained; retry logout.');
-        }
+          token,
+          token_type_hint: meta.refreshToken ? 'refresh_token' : 'access_token',
+        }, 10_000);
+        if (!response.ok) throw new Error('Revocation failed.');
+      } catch {
+        // Never print provider bodies or request errors: they can contain credentials.
+        warnRevocation();
       }
     }
-    removed = deleteProfile(location, key, profile) === 'removed' || removed;
   }
-  if (all) return 'Signed out of all saved profiles.';
+  // Local deletion is independent of the network result; deletion errors still propagate.
+  if (all) {
+    clearAll(location);
+    return 'Signed out of all saved profiles.';
+  }
+  const removed = deleteProfile(location, profileKey(baseUrl)) === 'removed';
   return (removed ? 'Signed out of ' : 'No stored credentials for ') + safeText(baseUrl || 'the API') + '.';
 };
 // scalar-sdk-generator:custom-code oauth-logout:end

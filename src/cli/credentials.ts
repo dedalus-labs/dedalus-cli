@@ -33,7 +33,7 @@ export type CredentialStoreLocation = {
 /** Refresh metadata kept beside a stored OAuth access token. */
 export type StoredOAuth = {
   // scalar-sdk-generator:custom-code revocation-metadata:start
-  // provider endpoint retained for logout
+  /** Provider endpoint used for best-effort revocation on logout. */
   readonly revocationUrl?: string;
   // scalar-sdk-generator:custom-code revocation-metadata:end
   readonly refreshToken?: string;
@@ -107,27 +107,23 @@ const stateDirectory = (): string => {
  * the CLI: the worst outcome of ignoring it is one `login` the user has to run again, whereas
  * throwing would take out commands that were never going to need a stored credential at all.
  */
-// scalar-sdk-generator:custom-code strict-credential-store:start
-export const readStore = (location: CredentialStoreLocation, strict = false): CredentialStoreFile => {
+export const readStore = (location: CredentialStoreLocation): CredentialStoreFile => {
   let text: string;
   try {
     text = readFileSync(storePath(location), 'utf8');
-  } catch (error) {
-    if (strict && (error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('Could not read the credential store.');
+  } catch {
     return EMPTY_STORE;
   }
   try {
     const parsed: unknown = JSON.parse(text);
-    if (!parsed || typeof parsed !== 'object') throw new Error('Invalid credential store.');
+    if (!parsed || typeof parsed !== 'object') return EMPTY_STORE;
     const profiles = (parsed as { profiles?: unknown }).profiles;
-    if (!profiles || typeof profiles !== 'object' || Array.isArray(profiles)) throw new Error('Invalid credential store.');
+    if (!profiles || typeof profiles !== 'object') return EMPTY_STORE;
     return { version: STORE_VERSION, profiles: profiles as Record<string, StoredProfile> };
   } catch {
-    if (strict) throw new Error('Could not parse the credential store. Credentials retained.');
     return EMPTY_STORE;
   }
 };
-// scalar-sdk-generator:custom-code strict-credential-store:end
 
 /**
  * Replaces the store file.
@@ -362,20 +358,6 @@ const osStoreName = (): string => {
 export const readProfile = (location: CredentialStoreLocation, key: string): StoredProfile =>
   readProfileResult(location, key).profile;
 
-// scalar-sdk-generator:custom-code logout-profile-read:start
-
-// an unreadable secret cannot be acknowledged as logged out
-export const readProfileForLogout = (location: CredentialStoreLocation, key: string): StoredProfile => {
-  const entry = readStore(location, true).profiles[key];
-  if (entry && (entry.backend === 'keychain' ? !mayUseKeychain(location) : location.backend === 'keychain')) {
-    throw new Error('Use the credential backend that stored this session before logging out.');
-  }
-  const result = readProfileResult(location, key);
-  if (result.unreadable || (entry?.backend === 'keychain' && !result.profile.credentials)) throw new Error('Could not read credentials for revocation. Retry logout when the credential store is available.');
-  return result.profile;
-};
-// scalar-sdk-generator:custom-code logout-profile-read:end
-
 /**
  * A profile read, and whether the store actually answered.
  *
@@ -583,13 +565,8 @@ const withoutMarker = (profile: StoredProfile): StoredProfile => ({
  * entry while the secret stays behind would leave a credential that still authenticates every
  * command — and that `logout --all`, which enumerates the index, could no longer even find.
  */
-// scalar-sdk-generator:custom-code conditional-credential-deletion:start
-// refuse deletion if login or refresh replaced the revoked profile
-export const deleteProfile = (location: CredentialStoreLocation, key: string, expected?: StoredProfile): 'removed' | 'absent' =>
+export const deleteProfile = (location: CredentialStoreLocation, key: string): 'removed' | 'absent' =>
   withStoreLock(location, () => {
-    if (expected && JSON.stringify(readProfileForLogout(location, key)) !== JSON.stringify(expected)) {
-      throw new Error('Credentials changed during logout. Retry to revoke the current session.');
-    }
     const entry = indexEntry(location, key);
     if (entry.backend === 'keychain') {
       const outcome = removeSecret(location, key);
@@ -600,7 +577,6 @@ export const deleteProfile = (location: CredentialStoreLocation, key: string, ex
         throw new Error('Could not remove the credential from your ' + osStoreName() + '.');
       }
       if (outcome === 'unconfirmed') {
-        if (expected) throw new Error('Could not confirm credential deletion. Retry logout.');
         warn('Your ' + osStoreName() + ' may still hold a credential for this host; remove it there if so.');
       }
     }
@@ -611,7 +587,6 @@ export const deleteProfile = (location: CredentialStoreLocation, key: string, ex
     writeStore(location, { version: STORE_VERSION, profiles });
     return 'removed';
   });
-// scalar-sdk-generator:custom-code conditional-credential-deletion:end
 
 /**
  * Forgets everything, in both places.

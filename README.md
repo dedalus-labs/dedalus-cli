@@ -78,12 +78,15 @@ The API resource must match the command's base URL.
 
 The configured browser flow uses PKCE, verifies callback state and issuer, and
 saves access and refresh tokens. Token refresh retains the revocation endpoint.
-`dedalus logout` revokes the refresh token and access token before deleting the
-local profile. A failed revocation retains credentials and exits unsuccessfully
-so logout can be retried. `--all` applies this to each saved profile. Manually
-entered credentials are removed locally, without attempting OAuth revocation.
-Sessions saved before revocation metadata was added require provider-side
-revocation. Logout refuses to guess their provider endpoint.
+`dedalus logout` attempts to revoke the refresh token, or the access token when
+no refresh token exists, with a 10-second timeout per request. It then removes
+local credentials even if revocation fails or the device is offline. A warning
+means the server session may still be active; local deletion does not confirm
+server-side revocation. Local credential deletion failures still fail logout.
+`--all` applies this to all saved profiles. Manually entered credentials are
+removed locally without OAuth revocation. Older sessions without a saved
+revocation endpoint are cleared locally with a warning; the CLI does not guess
+their provider endpoint.
 
 Logout does not sign out the browser or read sessions from the older
 `dedalus auth login` implementation. Local tests do not prove hosted readiness.

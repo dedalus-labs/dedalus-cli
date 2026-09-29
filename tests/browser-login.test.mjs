@@ -32,7 +32,7 @@ for (const invalid of [false, true]) {
     const exchanges = [];
     const requests = [];
     const revocations = [];
-    let rejectRevocation = true;
+    let rejectRevocation = false;
     const server = createServer(async (req, res) => {
       if (req.url.startsWith('/oauth2/auth?')) {
         authorization = new URL(req.url, origin).searchParams;
@@ -125,22 +125,15 @@ for (const invalid of [false, true]) {
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].oauth.apiKey.refreshToken, 'test-rotated');
     assert.equal((await run(['machines', 'list', '--api-key', 'explicit'])).code, 0);
     assert.equal(requests.at(-1), 'Bearer explicit');
-    const rejected = await run(['logout']);
-    assert.notEqual(rejected.code, 0);
-    assert.match(rejected.stderr, /revok/i);
-    assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].oauth.apiKey.refreshToken, 'test-rotated');
-    rejectRevocation = false;
-    revocations.length = 0;
-    assert.equal((await run(['logout'])).code, 0);
-    assert.deepEqual(revocations.map(({ token, token_type_hint }) => [token, token_type_hint]), [
-      ['test-rotated', 'refresh_token'], ['test-refreshed', 'access_token'],
-    ]);
+    const logout = await run(['logout']);
+    assert.equal(logout.code, 0, logout.stderr);
+    assert.deepEqual(revocations, [{ token: 'test-rotated', token_type_hint: 'refresh_token' }]);
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin], undefined);
     assert.equal(login.stdout.includes('test-access'), false);
   });
 }
 
-test('invariant_logout_all_preserves_unrevoked_or_replaced_credentials', async (t) => {
+test('design_logout_clears_local_credentials_despite_revocation_failure', { timeout: 20000 }, async (t) => {
   const { runLogout } = await import('../dist/esm/cli/login.js');
   const directory = mkdtempSync(join(tmpdir(), 'dedalus-logout-test-'));
   const store = join(directory, 'credentials.json');
@@ -148,51 +141,68 @@ test('invariant_logout_all_preserves_unrevoked_or_replaced_credentials', async (
   process.env[variable] = store;
   t.after(() => { delete process.env[variable]; rmSync(directory, { recursive: true, force: true }); });
   const config = { ...auth, backend: 'file', storeEnv: variable };
-  let failure, replace = false;
+  let behavior = 'success';
+  let warnings = '';
+  t.mock.method(process.stderr, 'write', (chunk) => { warnings += chunk; return true; });
   const requests = [];
   const server = createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) body += chunk;
-    const form = new URLSearchParams(body);
-    requests.push(form.get('token'));
-    if (replace) {
+    requests.push(Object.fromEntries(new URLSearchParams(body)));
+    if (behavior === 'offline') { req.socket.destroy(); return; }
+    if (behavior === 'timeout') return;
+    if (behavior === 'replace') {
       const data = JSON.parse(readFileSync(store, 'utf8'));
       data.profiles[origin].credentials.apiKey = 'new-access';
       writeFileSync(store, JSON.stringify(data));
     }
-    res.writeHead(form.get('token_type_hint') === failure ? 503 : 200).end();
+    res.writeHead(behavior === 'failure' ? 503 : 204).end();
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => { server.closeAllConnections(); server.close(); });
   const origin = 'http://127.0.0.1:' + server.address().port;
-  const oauth = { credentials: { apiKey: 'access' }, oauth: { apiKey: {
-    refreshToken: 'refresh', clientId: 'client', revocationUrl: origin + '/revoke',
+  const oauth = { credentials: { apiKey: 'access-secret' }, oauth: { apiKey: {
+    refreshToken: 'refresh-secret', clientId: 'client', revocationUrl: origin + '/revoke',
   } } };
-  const save = (profile = oauth) => writeFileSync(store, JSON.stringify({ version: 1, profiles: {
-    [origin]: profile, 'https://manual.example': { credentials: { apiKey: 'manual' } },
-  } }));
-  for (failure of ['refresh_token', 'access_token']) {
+  const save = (profile = oauth) => {
+    warnings = '';
+    requests.length = 0;
+    writeFileSync(store, JSON.stringify({ version: 1, profiles: {
+      [origin]: profile, 'https://manual.example': { credentials: { apiKey: 'manual' } },
+    } }));
+  };
+  const profiles = () => JSON.parse(readFileSync(store, 'utf8')).profiles;
+  for (behavior of ['success', 'failure', 'offline', 'timeout', 'replace']) {
     save();
-    await assert.rejects(runLogout(config, origin, true), /Credentials retained/);
-    assert.deepEqual(JSON.parse(readFileSync(store, 'utf8')).profiles[origin], oauth);
+    const started = Date.now();
+    await runLogout(config, origin, true);
+    assert.throws(() => readFileSync(store), { code: 'ENOENT' });
+    assert.deepEqual(requests, [{ token: 'refresh-secret', token_type_hint: 'refresh_token' }]);
+    if (['failure', 'offline', 'timeout'].includes(behavior)) assert.match(warnings, /revocation could not be confirmed/);
+    else assert.equal(warnings, '');
+    assert.doesNotMatch(warnings, /access-secret|refresh-secret/);
+    if (behavior === 'timeout') assert.ok(Date.now() - started < 14000, 'revocation must be bounded to 10 seconds');
   }
-  failure = undefined;
-  save();
-  replace = true;
-  await assert.rejects(runLogout(config, origin, false), /Credentials changed/);
-  assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].credentials.apiKey, 'new-access');
-  replace = false;
+  behavior = 'success';
+  const accessOnly = structuredClone(oauth);
+  delete accessOnly.oauth.apiKey.refreshToken;
+  save(accessOnly);
+  await runLogout(config, origin, false);
+  assert.deepEqual(requests, [{ token: 'access-secret', token_type_hint: 'access_token' }]);
+  assert.equal(profiles()[origin], undefined);
+  assert.ok(profiles()['https://manual.example']);
   const legacy = structuredClone(oauth);
   delete legacy.oauth.apiKey.revocationUrl;
   save(legacy);
-  requests.length = 0;
-  await assert.rejects(runLogout(config, origin, true), /configuration is missing/);
-  assert.equal(requests.length, 0);
-  writeFileSync(store, '{corrupt');
-  await assert.rejects(runLogout(config, origin, true), /parse the credential store/);
-  assert.equal(readFileSync(store, 'utf8'), '{corrupt');
-  save();
   await runLogout(config, origin, true);
-  assert.deepEqual(requests, ['refresh', 'access']);
-  assert.deepEqual(JSON.parse(readFileSync(store, 'utf8')).profiles, {});
+  assert.deepEqual(requests, []);
+  assert.match(warnings, /revocation could not be confirmed/);
+  assert.throws(() => readFileSync(store), { code: 'ENOENT' });
+  writeFileSync(store, '{corrupt');
+  await runLogout(config, origin, true);
+  assert.throws(() => readFileSync(store), { code: 'ENOENT' });
+  // Local removal failures must still fail logout, even when no revocation is possible.
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(store);
+  await assert.rejects(runLogout(config, origin, true));
 });

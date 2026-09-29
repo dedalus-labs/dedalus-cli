@@ -10,10 +10,13 @@ import {
   type CredentialStoreLocation,
   type StoredOAuth,
   type StoredProfile,
-  clearAll,
   deleteProfile,
   profileKey,
   readProfile,
+  // scalar-sdk-generator:custom-code logout-imports:start
+  clearAll,
+  readStore,
+  // scalar-sdk-generator:custom-code logout-imports:end
   refreshProfile,
   storeDescription,
   writeProfile,
@@ -30,6 +33,12 @@ export type CliAuthMethodDefinition = {
   | {
       readonly kind: 'oauth';
       readonly grant: 'authorizationCode';
+      // scalar-sdk-generator:custom-code oauth-provider-contract:start
+      // resource-bound provider configuration
+      readonly resource?: string;
+      readonly issuer?: string;
+      readonly revocationUrl?: string;
+      // scalar-sdk-generator:custom-code oauth-provider-contract:end
       readonly clientKey: string;
       readonly tokenUrl: string;
       readonly refreshUrl: string;
@@ -236,18 +245,50 @@ export const runLogin = async (
   return outstanding ? line + '\n' + outstanding : line;
 };
 
-/** Forgets stored credentials, returning the line to print. */
-export const runLogout = (auth: CliAuthDefinition, baseUrl: string, all: boolean): string => {
+// scalar-sdk-generator:custom-code oauth-logout:start
+
+/** Attempts provider revocation, then clears local credentials even when offline. */
+export const runLogout = async (auth: CliAuthDefinition, baseUrl: string, all: boolean): Promise<string> => {
   const location = storeLocation(auth);
+  const keys = all ? Object.keys(readStore(location).profiles) : [profileKey(baseUrl)];
+  const warnRevocation = () => processStderr.write(
+    'Warning: OAuth revocation could not be confirmed. Clearing local credentials; the server session may remain active.\n',
+  );
+  for (const key of keys) {
+    let profile: StoredProfile;
+    try {
+      profile = readProfile(location, key);
+    } catch {
+      warnRevocation();
+      continue;
+    }
+    for (const [clientKey, meta] of Object.entries(profile.oauth ?? {})) {
+      try {
+        // Match Codex: prefer refresh revocation; use access only when no refresh token exists.
+        const token = meta?.refreshToken || profile.credentials?.[clientKey];
+        if (!token) continue;
+        if (!meta?.revocationUrl) throw new Error('Missing revocation endpoint.');
+        const url = requireSecureUrl(meta.revocationUrl, '', 'revocation endpoint');
+        const { response } = await postForToken(url, {
+          token,
+          token_type_hint: meta.refreshToken ? 'refresh_token' : 'access_token',
+        }, 10_000);
+        if (!response.ok) throw new Error('Revocation failed.');
+      } catch {
+        // Never print provider bodies or request errors: they can contain credentials.
+        warnRevocation();
+      }
+    }
+  }
+  // Local deletion is independent of the network result; deletion errors still propagate.
   if (all) {
     clearAll(location);
-    return 'Signed out everywhere.';
+    return 'Signed out of all saved profiles.';
   }
-  const key = profileKey(baseUrl);
-  const outcome = deleteProfile(location, key);
-  if (outcome === 'removed') return 'Signed out of ' + safeText(baseUrl || 'the API') + '.';
-  return 'No stored credentials for ' + safeText(baseUrl || 'the API') + '.';
+  const removed = deleteProfile(location, profileKey(baseUrl)) === 'removed';
+  return (removed ? 'Signed out of ' : 'No stored credentials for ') + safeText(baseUrl || 'the API') + '.';
 };
+// scalar-sdk-generator:custom-code oauth-logout:end
 
 /**
  * Stored credentials for one base URL, keyed by client-option name.
@@ -297,7 +338,11 @@ export const storedCredentials = async (
       // must not be undone by the token it produced. See `refreshProfile`.
       refreshProfile(location, key, {
         credentials: { [clientKey]: token.accessToken },
-        oauth: { [clientKey]: oauthMetadata(token, refreshUrl, meta.clientId, meta.refreshToken) },
+        // scalar-sdk-generator:custom-code refresh-revocation-metadata:start
+        // refresh retains revocation configuration
+        oauth: { [clientKey]: { ...oauthMetadata(token, refreshUrl, meta.clientId, meta.refreshToken),
+          ...(meta.revocationUrl ? { revocationUrl: meta.revocationUrl } : {}) } },
+        // scalar-sdk-generator:custom-code refresh-revocation-metadata:end
       });
     } catch {
       // Deliberately silent; see this function's doc comment.
@@ -358,7 +403,13 @@ const captureCredentials = async (
   const { token, clientId, refreshUrl } = await runOauthFlow(method, baseUrl);
   return {
     credentials: { [method.clientKey]: token.accessToken },
-    oauth: { [method.clientKey]: oauthMetadata(token, refreshUrl, clientId, undefined) },
+    // scalar-sdk-generator:custom-code login-revocation-metadata:start
+    // retain the provider revocation endpoint with the grant
+    oauth: { [method.clientKey]: {
+      ...oauthMetadata(token, refreshUrl, clientId, undefined),
+      ...(method.grant === 'authorizationCode' && method.revocationUrl ? { revocationUrl: method.revocationUrl } : {}),
+    } },
+    // scalar-sdk-generator:custom-code login-revocation-metadata:end
   };
 };
 
@@ -682,11 +733,26 @@ const authorizationCodeFlow = async (
   baseUrl: string,
 ): Promise<{ readonly token: TokenResponse; readonly clientId: string | undefined }> => {
   const clientId = method.clientId;
-  if (!clientId || !method.authorizationUrl) throw new Error('This flow needs a configured OAuth client id.');
+  // scalar-sdk-generator:custom-code configured-browser-login:start
+  // public provider settings must be verified before enabling login
+  if (method.resource && profileKey(baseUrl) !== profileKey(method.resource)) {
+    throw new UsageError('Browser sign-in is unavailable for this API base URL.');
+  }
+  if (!clientId || !method.authorizationUrl || !method.tokenUrl || (method.resource && (!method.issuer || !method.revocationUrl))) {
+    throw new UsageError('Browser sign-in is not configured for this release. Use an API key until the provider rollout is complete.');
+  }
+  // scalar-sdk-generator:custom-code configured-browser-login:end
   const authorizeUrl = requireSecureUrl(method.authorizationUrl, baseUrl, 'authorization endpoint');
+  // scalar-sdk-generator:custom-code oauth-resource:start
+  // RFC 8707 resource binding
+  if (method.resource) authorizeUrl.searchParams.set('resource', method.resource);
+  // scalar-sdk-generator:custom-code oauth-resource:end
   const verifier = base64Url(randomBytes(32));
   const challenge = base64Url(createHash('sha256').update(verifier).digest());
-  const state = base64Url(randomBytes(16));
+  // scalar-sdk-generator:custom-code oauth-state:start
+  // 256-bit callback state
+  const state = base64Url(randomBytes(32));
+  // scalar-sdk-generator:custom-code oauth-state:end
 
   const server = createServer();
   // Bound first, and only then given its request handler. Registering the handler earlier meant a
@@ -708,7 +774,10 @@ const authorizationCodeFlow = async (
     }
     throw error;
   });
-  const redirect = awaitRedirect(server, state, REDIRECT_PATH);
+  // scalar-sdk-generator:custom-code callback-issuer:start
+  // RFC 9207 issuer binding
+  const redirect = awaitRedirect(server, state, REDIRECT_PATH, method.issuer);
+  // scalar-sdk-generator:custom-code callback-issuer:end
   const redirectUri = 'http://127.0.0.1:' + String(port) + REDIRECT_PATH;
   try {
     authorizeUrl.searchParams.set('response_type', 'code');
@@ -866,6 +935,10 @@ const awaitRedirect = (
   server: ReturnType<typeof createServer>,
   state: string,
   path: string,
+  // scalar-sdk-generator:custom-code callback-issuer-parameter:start
+  // RFC 9207 issuer binding
+  issuer?: string,
+  // scalar-sdk-generator:custom-code callback-issuer-parameter:end
 ): Promise<string> =>
   new Promise<string>((resolve, reject) => {
     server.on('request', (request, response) => {
@@ -890,7 +963,9 @@ const awaitRedirect = (
         send(404, 'text/plain', 'Not found.\n');
         return;
       }
-      if (!sameToken(params.get('state') ?? '', state)) {
+      // scalar-sdk-generator:custom-code callback-verification:start
+      if (params.getAll('state').length !== 1 || !sameToken(params.get('state') ?? '', state) ||
+          (issuer !== undefined && (params.getAll('iss').length !== 1 || params.get('iss') !== issuer))) {
         // Ends the sign-in rather than waiting for a better redirect. A request that reaches here is
         // on the registered path and carries a `code` or an `error`, which makes it the provider's
         // redirect rather than a stray probe — the path check above is what turns those away — so a
@@ -906,6 +981,7 @@ const awaitRedirect = (
         reject(new Error('The browser redirect did not match this sign-in attempt.'));
         return;
       }
+      // scalar-sdk-generator:custom-code callback-verification:end
       const failure = params.get('error');
       if (failure) {
         finish(

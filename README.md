@@ -68,10 +68,34 @@ See the [API reference](./api.md) for every available operation.
 
 ## Signing In
 
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
+<!-- @custom start -->
+Browser sign-in is not enabled in the public package until its provider and
+client registration are verified. `dedalus login --flow browser` fails before
+opening a browser when that configuration is absent. Use an API key meanwhile.
+A configured provider must supply its exact callback issuer, authorization,
+token, refresh, and revocation endpoints, client ID, scopes, and API resource.
+The API resource must match the command's base URL.
+
+The configured browser flow uses PKCE, verifies callback state and issuer, and
+saves access and refresh tokens. Token refresh retains the revocation endpoint.
+`dedalus logout` attempts to revoke the refresh token, or the access token when
+no refresh token exists, with a 10-second timeout per request. It then removes
+local credentials even if revocation fails or the device is offline. A warning
+means the server session may still be active; local deletion does not confirm
+server-side revocation. Local credential deletion failures still fail logout.
+`--all` applies this to all saved profiles. Manually entered credentials are
+removed locally without OAuth revocation. Older sessions without a saved
+revocation endpoint are cleared locally with a warning; the CLI does not guess
+their provider endpoint.
+
+Logout does not sign out the browser or read sessions from the older
+`dedalus auth login` implementation. Local tests do not prove hosted readiness.
+<!-- @custom end -->
+
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: browser, api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
 
 ```sh
-dedalus login
+dedalus login --flow browser
 dedalus login --flow api-key
 dedalus logout
 dedalus logout --all

@@ -856,6 +856,8 @@ export const auth = {
     xAPIKey: 'DEDALUS_X_API_KEY',
   },
   methods: [
+    // scalar-sdk-generator:custom-code configured-browser-method:start
+    // configured browser login pending the public provider rollout
     {
       name: 'browser',
       label: 'Sign in with your browser',
@@ -863,14 +865,16 @@ export const auth = {
       grant: 'authorizationCode',
       clientKey: 'apiKey',
       clientId: 'dedalus-cli',
-      authorizationUrl: 'https://dcs.dedaluslabs.ai/oauth2/auth',
-      tokenUrl: 'https://dcs.dedaluslabs.ai/oauth2/token',
-      refreshUrl: 'https://dcs.dedaluslabs.ai/oauth2/token',
+      authorizationUrl: '',
+      tokenUrl: '',
+      refreshUrl: '',
       resource: 'https://dcs.dedaluslabs.ai',
-      issuer: 'https://dcs.dedaluslabs.ai',
+      issuer: '',
+      revocationUrl: '',
       scopes: ['dedalus:cli', 'offline_access'],
       redirectPort: 0,
     },
+    // scalar-sdk-generator:custom-code configured-browser-method:end
     {
       name: 'api-key',
       label: 'Enter your access token',

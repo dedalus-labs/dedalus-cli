@@ -13,18 +13,13 @@ test('browser login refuses to store a public session for another API', async ()
   await assert.rejects(runLogin(auth, 'https://other.invalid', 'browser'), /unavailable for this API/);
 });
 
-test('browser configuration uses the public native client contract', () => {
-  const method = auth.methods.find((entry) => entry.name === 'browser');
-  assert.equal(method.clientId, 'dedalus-cli');
-  assert.equal(method.resource, auth.defaultBaseUrl);
-  assert.equal(method.issuer, auth.defaultBaseUrl);
-  assert.equal(method.authorizationUrl, auth.defaultBaseUrl + '/oauth2/auth');
-  assert.equal(method.tokenUrl, auth.defaultBaseUrl + '/oauth2/token');
-  assert.deepEqual(method.scopes, ['dedalus:cli', 'offline_access']);
+test('invariant_unconfigured_public_browser_login_fails_before_opening_a_browser', async () => {
+  assert.equal(auth.methods[0].issuer, '');
+  await assert.rejects(runLogin(auth, auth.defaultBaseUrl, 'browser'), /not configured/);
 });
 
 for (const invalid of [false, true]) {
-  test(`browser login ${invalid ? 'rejects another issuer before exchange' : 'persists, refreshes and forgets credentials'}`, {
+  test(`browser login ${invalid ? 'rejects another issuer before exchange' : 'persists, refreshes and revokes credentials'}`, {
     skip: process.platform === 'win32', timeout: 15000,
   }, async (t) => {
     const directory = mkdtempSync(join(tmpdir(), 'dedalus-browser-test-'));
@@ -36,6 +31,8 @@ for (const invalid of [false, true]) {
     let authorization;
     const exchanges = [];
     const requests = [];
+    const revocations = [];
+    let rejectRevocation = true;
     const server = createServer(async (req, res) => {
       if (req.url.startsWith('/oauth2/auth?')) {
         authorization = new URL(req.url, origin).searchParams;
@@ -44,6 +41,12 @@ for (const invalid of [false, true]) {
         callback.searchParams.set('state', authorization.get('state'));
         callback.searchParams.set('iss', invalid ? 'https://other.invalid' : origin);
         res.writeHead(302, { location: callback.href }).end();
+      } else if (req.url === '/oauth2/revoke') {
+        let body = '';
+        for await (const chunk of req) body += chunk;
+        const form = new URLSearchParams(body);
+        revocations.push(Object.fromEntries(form));
+        res.writeHead(rejectRevocation ? 503 : 200).end();
       } else if (req.url === '/oauth2/token') {
         let body = '';
         for await (const chunk of req) body += chunk;
@@ -75,7 +78,7 @@ for (const invalid of [false, true]) {
         auth.defaultBaseUrl = origin;
         Object.assign(auth.methods[0], { resource: origin, issuer: origin,
           authorizationUrl: origin + '/oauth2/auth', tokenUrl: origin + '/oauth2/token',
-          refreshUrl: origin + '/oauth2/token' });
+          refreshUrl: origin + '/oauth2/token', revocationUrl: origin + '/oauth2/revoke' });
         await getProgram().parseAsync(JSON.parse(process.env.TEST_ARGS), { from: 'user' });
       `], { env: { ...env, TEST_ARGS: JSON.stringify([...args, '--base-url', origin]) }, stdio: ['ignore', 'pipe', 'pipe'] });
       t.after(() => { if (child.exitCode === null) child.kill(); });
@@ -122,8 +125,74 @@ for (const invalid of [false, true]) {
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].oauth.apiKey.refreshToken, 'test-rotated');
     assert.equal((await run(['machines', 'list', '--api-key', 'explicit'])).code, 0);
     assert.equal(requests.at(-1), 'Bearer explicit');
+    const rejected = await run(['logout']);
+    assert.notEqual(rejected.code, 0);
+    assert.match(rejected.stderr, /revok/i);
+    assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].oauth.apiKey.refreshToken, 'test-rotated');
+    rejectRevocation = false;
+    revocations.length = 0;
     assert.equal((await run(['logout'])).code, 0);
+    assert.deepEqual(revocations.map(({ token, token_type_hint }) => [token, token_type_hint]), [
+      ['test-rotated', 'refresh_token'], ['test-refreshed', 'access_token'],
+    ]);
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin], undefined);
     assert.equal(login.stdout.includes('test-access'), false);
   });
 }
+
+test('invariant_logout_all_preserves_unrevoked_or_replaced_credentials', async (t) => {
+  const { runLogout } = await import('../dist/esm/cli/login.js');
+  const directory = mkdtempSync(join(tmpdir(), 'dedalus-logout-test-'));
+  const store = join(directory, 'credentials.json');
+  const variable = 'DEDALUS_LOGOUT_TEST_STORE';
+  process.env[variable] = store;
+  t.after(() => { delete process.env[variable]; rmSync(directory, { recursive: true, force: true }); });
+  const config = { ...auth, backend: 'file', storeEnv: variable };
+  let failure, replace = false;
+  const requests = [];
+  const server = createServer(async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    const form = new URLSearchParams(body);
+    requests.push(form.get('token'));
+    if (replace) {
+      const data = JSON.parse(readFileSync(store, 'utf8'));
+      data.profiles[origin].credentials.apiKey = 'new-access';
+      writeFileSync(store, JSON.stringify(data));
+    }
+    res.writeHead(form.get('token_type_hint') === failure ? 503 : 200).end();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  const oauth = { credentials: { apiKey: 'access' }, oauth: { apiKey: {
+    refreshToken: 'refresh', clientId: 'client', revocationUrl: origin + '/revoke',
+  } } };
+  const save = (profile = oauth) => writeFileSync(store, JSON.stringify({ version: 1, profiles: {
+    [origin]: profile, 'https://manual.example': { credentials: { apiKey: 'manual' } },
+  } }));
+  for (failure of ['refresh_token', 'access_token']) {
+    save();
+    await assert.rejects(runLogout(config, origin, true), /Credentials retained/);
+    assert.deepEqual(JSON.parse(readFileSync(store, 'utf8')).profiles[origin], oauth);
+  }
+  failure = undefined;
+  save();
+  replace = true;
+  await assert.rejects(runLogout(config, origin, false), /Credentials changed/);
+  assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin].credentials.apiKey, 'new-access');
+  replace = false;
+  const legacy = structuredClone(oauth);
+  delete legacy.oauth.apiKey.revocationUrl;
+  save(legacy);
+  requests.length = 0;
+  await assert.rejects(runLogout(config, origin, true), /configuration is missing/);
+  assert.equal(requests.length, 0);
+  writeFileSync(store, '{corrupt');
+  await assert.rejects(runLogout(config, origin, true), /parse the credential store/);
+  assert.equal(readFileSync(store, 'utf8'), '{corrupt');
+  save();
+  await runLogout(config, origin, true);
+  assert.deepEqual(requests, ['refresh', 'access']);
+  assert.deepEqual(JSON.parse(readFileSync(store, 'utf8')).profiles, {});
+});

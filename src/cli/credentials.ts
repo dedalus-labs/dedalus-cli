@@ -32,6 +32,10 @@ export type CredentialStoreLocation = {
 
 /** Refresh metadata kept beside a stored OAuth access token. */
 export type StoredOAuth = {
+  // scalar-sdk-generator:custom-code revocation-metadata:start
+  /** Provider endpoint used for best-effort revocation on logout. */
+  readonly revocationUrl?: string;
+  // scalar-sdk-generator:custom-code revocation-metadata:end
   readonly refreshToken?: string;
   /** Unix epoch milliseconds the access token stops being usable, when the server said so. */
   readonly expiresAt?: number;

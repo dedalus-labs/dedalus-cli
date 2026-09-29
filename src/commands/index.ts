@@ -851,7 +851,7 @@ const commands = [
 
 const groups = [] as const satisfies readonly CliCommandGroup[];
 
-const auth = {
+export const auth = {
   loginPath: ['login'],
   logoutPath: ['logout'],
   loginCommand: 'dedalus login',
@@ -866,6 +866,25 @@ const auth = {
     xAPIKey: 'DEDALUS_X_API_KEY',
   },
   methods: [
+    // scalar-sdk-generator:custom-code configured-browser-method:start
+    // configured browser login pending the public provider rollout
+    {
+      name: 'browser',
+      label: 'Sign in with your browser',
+      kind: 'oauth',
+      grant: 'authorizationCode',
+      clientKey: 'apiKey',
+      clientId: 'dedalus-cli',
+      authorizationUrl: '',
+      tokenUrl: '',
+      refreshUrl: '',
+      resource: 'https://dcs.dedaluslabs.ai',
+      issuer: '',
+      revocationUrl: '',
+      scopes: ['dedalus:cli', 'offline_access'],
+      redirectPort: 0,
+    },
+    // scalar-sdk-generator:custom-code configured-browser-method:end
     {
       name: 'api-key',
       label: 'Enter your access token',

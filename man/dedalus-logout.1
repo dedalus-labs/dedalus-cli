@@ -1,0 +1,28 @@
+.\" File generated from our OpenAPI spec by Scalar. Do not edit.
+.TH "DEDALUS\-LOGOUT" "1" "" "dedalus" "Dedalus Manual"
+.SH "NAME"
+dedalus\-logout \- forget saved credentials
+.SH "SYNOPSIS"
+.B dedalus logout
+[\fB\-\-all\fR] [\fB\-\-base\-url\fR \fIurl\fR]
+.SH "DESCRIPTION"
+Removes the credentials saved for one base URL, or for every base URL. Nothing else is affected: a credential supplied through a flag or an environment variable is not stored here and keeps working.
+.SH "OPTIONS"
+.TP
+\fB\-\-all\fR
+Forget every saved credential, for every base URL.
+.TP
+\fB\-\-base\-url\fR \fIurl\fR
+Forget the credentials saved for this base URL.
+.SH "EXIT STATUS"
+.TP
+\fB0\fR
+The command completed successfully.
+.TP
+\fB2\fR
+The command was invoked incorrectly (missing or invalid arguments).
+.TP
+\fB10\fR
+Sign\-in or sign\-out did not complete. The message on standard error says why.
+.SH "SEE ALSO"
+.BR dedalus (1)

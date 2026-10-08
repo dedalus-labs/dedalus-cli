@@ -19,6 +19,19 @@ var machinesCreate = cli.Command{
 	Usage:   "Create machine",
 	Suggest: true,
 	Flags: []cli.Flag{
+		// @custom start
+		&cli.StringFlag{
+			Name:  "api-version",
+			Usage: "Create endpoint version: v1 or v2 (controller placement)",
+			Value: "v1",
+			Validator: func(version string) error {
+				if version != "v1" && version != "v2" {
+					return fmt.Errorf("api-version must be v1 or v2")
+				}
+				return nil
+			},
+		},
+		// @custom end
 		&requestflag.Flag[string]{
 			Name:     "autosleep",
 			Usage:    `Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.`,
@@ -187,8 +200,10 @@ func handleMachinesCreate(ctx context.Context, cmd *cli.Command) error {
 	params := dedalus.MachineNewParams{}
 
 	var res []byte
-	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Machines.New(ctx, params, options...)
+	// @custom start
+	// Use the selected endpoint with the existing body, transport, and errors.
+	err = client.Post(ctx, cmd.String("api-version")+"/machines", params, &res, options...)
+	// @custom end
 	if err != nil {
 		return err
 	}

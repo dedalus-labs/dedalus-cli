@@ -86,6 +86,19 @@ under `machines ssh` and `machines executions`.
 
 The generated contract is defined by the [OpenAPI snapshot](https://storage.googleapis.com/stainless-sdk-openapi-specs/dedalus-labs/dedalus-c0e28b234478af75f61bcf42f5f32818d96ec93b1d8239fa0ff1c801c0e4b64f.yml).
 
+### Selecting the create API
+
+`dedalus machines create` uses `/v1/machines` by default. To request controller
+placement from a server that supports `/v2/machines`, select v2 explicitly:
+
+```sh
+dedalus machines create --api-version v2 --vcpu 2 --memory-mib 4096 --storage-gib 20
+```
+
+The request body and authentication are unchanged. V2 returns acceptance before
+the Machine is running. Use the existing retrieve and lifecycle commands for the
+returned Machine. An unavailable v2 endpoint returns an error without retrying v1.
+
 ### Running commands on a machine
 
 `exec` is an alias for `executions`. Pass the executable and its arguments after

@@ -86,6 +86,20 @@ under `machines ssh` and `machines executions`.
 
 The generated contract is defined by the [OpenAPI snapshot](https://storage.googleapis.com/stainless-sdk-openapi-specs/dedalus-labs/dedalus-c0e28b234478af75f61bcf42f5f32818d96ec93b1d8239fa0ff1c801c0e4b64f.yml).
 
+### Opening a shell
+
+Use your local OpenSSH client to open a shell on a machine:
+
+```sh
+dedalus --api-key "$DEDALUS_API_KEY" ssh "$MACHINE_ID"
+```
+
+The command requests temporary credentials and uses OpenSSH's `ProxyJump` to
+connect through the SSH gateway to the guest. Each connection uses its own
+certificate and the host trust returned by the API. The credentials and SSH
+configuration are stored in a private temporary directory. OpenSSH must be
+installed and available as `ssh` on your `PATH`.
+
 ### Running commands on a machine
 
 `exec` is an alias for `executions`. Pass the executable and its arguments after

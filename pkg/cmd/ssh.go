@@ -3,7 +3,7 @@
 //  1. Generate ephemeral ed25519 keypair in a temp directory.
 //  2. POST /v1/machines/{machine_id}/ssh with the public key.
 //  3. Poll GET until status=ready.
-//  4. Write user certificate and host CA to temp files.
+//  4. Write guest and jump-host credentials to a private OpenSSH config.
 //  5. Exec the local ssh binary with explicit trust settings.
 //  6. Clean up temp directory on exit (including signal-driven exit).
 
@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -35,12 +37,12 @@ const (
 
 func init() {
 	Command.Commands = append(Command.Commands, &cli.Command{
-		Name:      "ssh",
-		Usage:     "SSH into a running machine",
-		UsageText: "dedalus ssh <machine_id>",
-		Category:  "MACHINE",
-		Suggest:   true,
-		Flags:  []cli.Flag{},
+		Name:            "ssh",
+		Usage:           "SSH into a running machine",
+		UsageText:       "dedalus ssh <machine_id>",
+		Category:        "MACHINE",
+		Suggest:         true,
+		Flags:           []cli.Flag{},
 		Action:          handleSSH,
 		HideHelpCommand: true,
 	})
@@ -79,29 +81,7 @@ func handleSSH(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	conn := sess.Connection
-	if conn.UserCertificate == "" {
-		return fmt.Errorf("SSH session %s is ready but the server returned no user certificate; this is a server-side bug", sess.SessionID)
-	}
-	if conn.Endpoint == "" {
-		return fmt.Errorf("SSH session %s is ready but the server returned no endpoint; this is a server-side bug", sess.SessionID)
-	}
-	if conn.HostTrust.PublicKey == "" {
-		return fmt.Errorf("SSH session %s is ready but the server returned no host CA public key; this is a server-side bug", sess.SessionID)
-	}
-
-	certPath := filepath.Join(dir, "key-cert.pub")
-	if err := os.WriteFile(certPath, []byte(conn.UserCertificate), 0600); err != nil {
-		return fmt.Errorf("write certificate: %w", err)
-	}
-
-	khPath := filepath.Join(dir, "known_hosts")
-	line := fmt.Sprintf("@cert-authority %s %s\n", conn.HostTrust.HostPattern, conn.HostTrust.PublicKey)
-	if err := os.WriteFile(khPath, []byte(line), 0600); err != nil {
-		return fmt.Errorf("write known_hosts: %w", err)
-	}
-
-	return runSSH(ctx, keyPath, certPath, khPath, conn)
+	return runSSH(ctx, dir, sess.Connection)
 }
 
 func awaitSSHSession(
@@ -158,24 +138,80 @@ func awaitSSHSession(
 	return nil, fmt.Errorf("SSH session did not become ready after %d polls (%v); the Dedalus Machine may be unresponsive or the SSH gateway may be down", sshPollMax, time.Duration(sshPollMax)*sshPollInterval)
 }
 
-func runSSH(ctx context.Context, keyPath, certPath, khPath string, conn dedalus.SSHConnection) error {
+func runSSH(ctx context.Context, dir string, conn dedalus.SSHConnection) error {
+	// The pinned SDK preserves new fields in RawJSON until its next generation.
+	var response struct {
+		JumpHost *dedalus.SSHConnection `json:"jump_host"`
+	}
+	if err := json.Unmarshal([]byte(conn.RawJSON()), &response); err != nil {
+		return fmt.Errorf("read SSH jump host: %w", err)
+	}
+	if response.JumpHost == nil {
+		return fmt.Errorf("SSH connection has no jump host")
+	}
+	pathValue := func(name string) string {
+		path := filepath.ToSlash(filepath.Join(dir, name))
+		return strconv.Quote(strings.ReplaceAll(path, "%", "%%"))
+	}
+	var config, knownHosts strings.Builder
+	for _, hop := range []struct {
+		name, kind, marker string
+		connection         dedalus.SSHConnection
+	}{
+		{"guest", "public_key", "", conn},
+		{"jump", "cert_authority", "@cert-authority ", *response.JumpHost},
+	} {
+		connection := hop.connection
+		if string(connection.HostTrust.Kind) != hop.kind {
+			return fmt.Errorf("SSH %s requires %s host trust", hop.name, hop.kind)
+		}
+		for _, token := range []string{connection.Endpoint, connection.SSHUsername, connection.HostTrust.HostPattern} {
+			if token == "" || strings.ContainsAny(token, "\x00\r\n\t\v\f \"\\%$`;&|<>(){}#") {
+				return fmt.Errorf("SSH %s has an invalid host, user, or host-key alias", hop.name)
+			}
+		}
+		publicKey := strings.TrimSpace(connection.HostTrust.PublicKey)
+		if connection.Port < 1 || connection.Port > 65535 || connection.UserCertificate == "" || publicKey == "" || strings.ContainsAny(publicKey, "\r\n") {
+			return fmt.Errorf("SSH %s has an invalid port or missing credentials", hop.name)
+		}
+		certName := hop.name + "-cert.pub"
+		if err := os.WriteFile(filepath.Join(dir, certName), []byte(connection.UserCertificate), 0600); err != nil {
+			return fmt.Errorf("write SSH %s certificate: %w", hop.name, err)
+		}
+		fmt.Fprintf(&knownHosts, "%s%s %s\n", hop.marker, connection.HostTrust.HostPattern, publicKey)
+		fmt.Fprintf(&config, `Host dedalus-%s
+    HostName %s
+    Port %d
+    User %s
+    HostKeyAlias %s
+    CertificateFile %s
+`,
+			hop.name, connection.Endpoint, connection.Port, connection.SSHUsername, connection.HostTrust.HostPattern, pathValue(certName))
+		if hop.name == "guest" {
+			config.WriteString("    ProxyJump dedalus-jump\n")
+		}
+	}
+	fmt.Fprintf(&config, `Host dedalus-guest dedalus-jump
+    IdentityFile %s
+    UserKnownHostsFile %s
+    GlobalKnownHostsFile %q
+    StrictHostKeyChecking yes
+    IdentitiesOnly yes
+`,
+		pathValue("key"), pathValue("known_hosts"), filepath.ToSlash(os.DevNull))
+	if err := os.WriteFile(filepath.Join(dir, "known_hosts"), []byte(knownHosts.String()), 0600); err != nil {
+		return fmt.Errorf("write SSH host trust: %w", err)
+	}
+	configPath := filepath.Join(dir, "config")
+	if err := os.WriteFile(configPath, []byte(config.String()), 0600); err != nil {
+		return fmt.Errorf("write SSH config: %w", err)
+	}
 	bin, err := exec.LookPath("ssh")
 	if err != nil {
 		return fmt.Errorf("ssh not found in PATH; install OpenSSH and ensure 'ssh' is available in your shell: %w", err)
 	}
-
-	fmt.Fprintf(os.Stderr, "connecting to %s@%s:%d\n", conn.SSHUsername, conn.Endpoint, conn.Port)
-
-	c := exec.CommandContext(ctx, bin,
-		"-i", keyPath,
-		"-o", "CertificateFile="+certPath,
-		"-o", "UserKnownHostsFile="+khPath,
-		"-o", "GlobalKnownHostsFile=/dev/null",
-		"-o", "StrictHostKeyChecking=yes",
-		"-o", "IdentitiesOnly=yes",
-		"-p", strconv.FormatInt(conn.Port, 10),
-		conn.SSHUsername+"@"+conn.Endpoint,
-	)
+	fmt.Fprintf(os.Stderr, "connecting to %s through %s\n", conn.Endpoint, response.JumpHost.Endpoint)
+	c := exec.CommandContext(ctx, bin, "-F", configPath, "dedalus-guest")
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

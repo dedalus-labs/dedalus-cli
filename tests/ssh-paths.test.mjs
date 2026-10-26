@@ -3,10 +3,12 @@ import childProcess from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
 import os from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { test } from 'node:test'
 
-import { connectMachine } from '../dist/esm/custom/ssh.js'
+const root = resolve(process.env.CLI_PACKAGE_ROOT ?? '.')
+const { connectMachine } = await import(pathToFileURL(join(root, 'dist/esm/custom/ssh.js')))
 
 test('invariant_ssh_preserves_temporary_file_paths', async (t) => {
   const prefix = process.platform === 'win32' ? 'dedalus ssh paths-' : 'dedalus ssh "paths" \\-'

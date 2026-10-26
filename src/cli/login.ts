@@ -272,6 +272,7 @@ export const runLogout = async (auth: CliAuthDefinition, baseUrl: string, all: b
         const { response } = await postForToken(url, {
           token,
           token_type_hint: meta.refreshToken ? 'refresh_token' : 'access_token',
+          ...(meta.clientId ? { client_id: meta.clientId } : {}),
         }, 10_000);
         if (!response.ok) throw new Error('Revocation failed.');
       } catch {

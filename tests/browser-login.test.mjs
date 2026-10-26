@@ -4,10 +4,13 @@ import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
-import { auth } from '../dist/esm/commands/index.js';
-import { runLogin } from '../dist/esm/cli/login.js';
+
+const root = resolve(process.env.CLI_PACKAGE_ROOT ?? '.');
+const { auth } = await import(pathToFileURL(join(root, 'dist/esm/commands/index.js')));
+const { runLogin, runLogout } = await import(pathToFileURL(join(root, 'dist/esm/cli/login.js')));
 
 test('browser login refuses to store a public session for another API', async () => {
   await assert.rejects(runLogin(auth, 'https://other.invalid', 'browser'), /unavailable for this API/);
@@ -18,8 +21,9 @@ test('invariant_unconfigured_public_browser_login_fails_before_opening_a_browser
   await assert.rejects(runLogin(auth, auth.defaultBaseUrl, 'browser'), /not configured/);
 });
 
-for (const invalid of [false, true]) {
-  test(`browser login ${invalid ? 'rejects another issuer before exchange' : 'persists, refreshes and revokes credentials'}`, {
+for (const callbackCase of ['valid', 'wrong-issuer', 'missing-issuer', 'duplicate-issuer', 'wrong-state', 'duplicate-state']) {
+  const invalid = callbackCase !== 'valid';
+  test(invalid ? `invariant_unbound_callback_never_exchanges_or_stores_tokens (${callbackCase})` : 'invariant_browser_session_persists_refreshes_and_revokes_credentials', {
     skip: process.platform === 'win32', timeout: 15000,
   }, async (t) => {
     const directory = mkdtempSync(join(tmpdir(), 'dedalus-browser-test-'));
@@ -39,14 +43,19 @@ for (const invalid of [false, true]) {
         const callback = new URL(authorization.get('redirect_uri'));
         callback.searchParams.set('code', 'test-code');
         callback.searchParams.set('state', authorization.get('state'));
-        callback.searchParams.set('iss', invalid ? 'https://other.invalid' : origin);
+        callback.searchParams.set('iss', origin);
+        if (callbackCase === 'wrong-issuer') callback.searchParams.set('iss', 'https://other.invalid');
+        if (callbackCase === 'missing-issuer') callback.searchParams.delete('iss');
+        if (callbackCase === 'duplicate-issuer') callback.searchParams.append('iss', origin);
+        if (callbackCase === 'wrong-state') callback.searchParams.set('state', 'unbound-state');
+        if (callbackCase === 'duplicate-state') callback.searchParams.append('state', authorization.get('state'));
         res.writeHead(302, { location: callback.href }).end();
       } else if (req.url === '/oauth2/revoke') {
         let body = '';
         for await (const chunk of req) body += chunk;
         const form = new URLSearchParams(body);
         revocations.push(Object.fromEntries(form));
-        res.writeHead(rejectRevocation ? 503 : 200).end();
+        res.writeHead(rejectRevocation ? 503 : form.get('client_id') !== 'dedalus-cli' ? 400 : 200).end();
       } else if (req.url === '/oauth2/token') {
         let body = '';
         for await (const chunk of req) body += chunk;
@@ -80,7 +89,7 @@ for (const invalid of [false, true]) {
           authorizationUrl: origin + '/oauth2/auth', tokenUrl: origin + '/oauth2/token',
           refreshUrl: origin + '/oauth2/token', revocationUrl: origin + '/oauth2/revoke' });
         await getProgram().parseAsync(JSON.parse(process.env.TEST_ARGS), { from: 'user' });
-      `], { env: { ...env, TEST_ARGS: JSON.stringify([...args, '--base-url', origin]) }, stdio: ['ignore', 'pipe', 'pipe'] });
+      `], { cwd: root, env: { ...env, TEST_ARGS: JSON.stringify([...args, '--base-url', origin]) }, stdio: ['ignore', 'pipe', 'pipe'] });
       t.after(() => { if (child.exitCode === null) child.kill(); });
       let stdout = '', stderr = '', opened = false;
       child.stdout.on('data', (chunk) => { stdout += chunk; });
@@ -127,14 +136,14 @@ for (const invalid of [false, true]) {
     assert.equal(requests.at(-1), 'Bearer explicit');
     const logout = await run(['logout']);
     assert.equal(logout.code, 0, logout.stderr);
-    assert.deepEqual(revocations, [{ token: 'test-rotated', token_type_hint: 'refresh_token' }]);
+    assert.equal(logout.stderr, '', 'provider must accept the revocation request');
+    assert.deepEqual(revocations, [{ token: 'test-rotated', token_type_hint: 'refresh_token', client_id: 'dedalus-cli' }]);
     assert.equal(JSON.parse(readFileSync(store, 'utf8')).profiles[origin], undefined);
     assert.equal(login.stdout.includes('test-access'), false);
   });
 }
 
 test('design_logout_clears_local_credentials_despite_revocation_failure', { timeout: 20000 }, async (t) => {
-  const { runLogout } = await import('../dist/esm/cli/login.js');
   const directory = mkdtempSync(join(tmpdir(), 'dedalus-logout-test-'));
   const store = join(directory, 'credentials.json');
   const variable = 'DEDALUS_LOGOUT_TEST_STORE';
@@ -177,7 +186,7 @@ test('design_logout_clears_local_credentials_despite_revocation_failure', { time
     const started = Date.now();
     await runLogout(config, origin, true);
     assert.throws(() => readFileSync(store), { code: 'ENOENT' });
-    assert.deepEqual(requests, [{ token: 'refresh-secret', token_type_hint: 'refresh_token' }]);
+    assert.deepEqual(requests, [{ token: 'refresh-secret', token_type_hint: 'refresh_token', client_id: 'client' }]);
     if (['failure', 'offline', 'timeout'].includes(behavior)) assert.match(warnings, /revocation could not be confirmed/);
     else assert.equal(warnings, '');
     assert.doesNotMatch(warnings, /access-secret|refresh-secret/);
@@ -188,7 +197,7 @@ test('design_logout_clears_local_credentials_despite_revocation_failure', { time
   delete accessOnly.oauth.apiKey.refreshToken;
   save(accessOnly);
   await runLogout(config, origin, false);
-  assert.deepEqual(requests, [{ token: 'access-secret', token_type_hint: 'access_token' }]);
+  assert.deepEqual(requests, [{ token: 'access-secret', token_type_hint: 'access_token', client_id: 'client' }]);
   assert.equal(profiles()[origin], undefined);
   assert.ok(profiles()['https://manual.example']);
   const legacy = structuredClone(oauth);

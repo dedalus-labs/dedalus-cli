@@ -164,3 +164,19 @@ func TestInvariantServerErrorDoesNotPromiseAnUnchangedMachine(t *testing.T) {
 		t.Fatalf("server error result: %v", err)
 	}
 }
+
+func TestInvariantRefusedShrinkReturnsFailureWithoutWaitingForTimeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, strings.Replace(oldMachine, `"resize_state":"pending"`, `"reason":"MACHINE_MEMORY_IN_USE","last_error":"The Machine's memory cannot shrink while it is in use."`, 1))
+	}))
+	defer server.Close()
+	client := dedalus.NewClient(option.WithBaseURL(server.URL), option.WithMaxRetries(0))
+	ram := int64(1024)
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	err := waitMachineUpdate(ctx, client, "machine-1", machineUpdateTarget{MemoryMiB: &ram}, time.Millisecond)
+	if err == nil || !strings.Contains(err.Error(), `"resized":false`) || !strings.Contains(err.Error(), "cannot shrink") {
+		t.Fatalf("refused shrink: %v", err)
+	}
+}

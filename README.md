@@ -208,7 +208,7 @@ machine's committed configuration. On success it prints:
 {"machine_id":"<machine-id>","resized":true,"message":"Machine resized successfully."}
 ```
 
-An API rejection prints JSON with `resized: false` and a failure message, then exits nonzero.
+An API rejection or a refused RAM shrink prints JSON with `resized: false` and a failure message, then exits nonzero. A refused shrink leaves the previous size visible in `--retrieve`.
 If confirmation fails or takes more than two minutes, the command exits nonzero
 and returns `resized: null` with a message explaining that the request may still complete. Retrieve the machine to check
 its current size.

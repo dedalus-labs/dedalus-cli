@@ -146,6 +146,10 @@ func waitMachineUpdate(ctx context.Context, client dedalus.Client, id string, ta
 		if target.matches(view) {
 			return nil
 		}
+		if gjson.GetBytes(raw, "status.reason").String() == "MACHINE_MEMORY_IN_USE" {
+			resized := false
+			return &machineResizeError{machineResizeResult{id, &resized, gjson.GetBytes(raw, "status.last_error").String()}}
+		}
 		timer := time.NewTimer(interval)
 		select {
 		case <-ctx.Done():

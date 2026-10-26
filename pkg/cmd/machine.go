@@ -236,7 +236,10 @@ func handleMachinesRetrieve(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	obj := gjson.ParseBytes(res)
+	obj, err := machineDisplay(res)
+	if err != nil {
+		return err
+	}
 	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
 	transform := cmd.Root().String("transform")
@@ -271,25 +274,7 @@ func handleMachinesUpdate(ctx context.Context, cmd *cli.Command) error {
 	params := dedalus.MachineUpdateParams{
 		MachineID: cmd.Value("machine-id").(string),
 	}
-
-	var res []byte
-	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Machines.Update(ctx, params, options...)
-	if err != nil {
-		return err
-	}
-
-	obj := gjson.ParseBytes(res)
-	format := cmd.Root().String("format")
-	explicitFormat := cmd.Root().IsSet("format")
-	transform := cmd.Root().String("transform")
-	return ShowJSON(obj, ShowJSONOpts{
-		ExplicitFormat: explicitFormat,
-		Format:         format,
-		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "machines update",
-		Transform:      transform,
-	})
+	return runMachineUpdate(ctx, cmd, client, params, options)
 }
 
 func handleMachinesList(ctx context.Context, cmd *cli.Command) error {

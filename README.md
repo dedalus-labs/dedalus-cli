@@ -148,3 +148,22 @@ To link to a local copy of the SDK:
 ```
 
 If you run the link script without any arguments, it will default to `../dedalus-go`.
+
+## Machine update results
+
+`dedalus machines update` waits for the requested fields to appear in the
+machine's committed configuration. On success it prints:
+
+```json
+{"machine_id":"<machine-id>","resized":true,"message":"Machine resized successfully."}
+```
+
+An API rejection prints JSON with `resized: false` and a failure message, then exits nonzero.
+If confirmation fails or takes more than two minutes, the command exits nonzero
+and returns `resized: null` with a message explaining that the request may still complete. Retrieve the machine to check
+its current size.
+
+`dedalus machines retrieve --machine-id <machine-id>` shows `machine_id`,
+`vcpu`, `memory_mib`, `storage_gib`, `autosleep_seconds`, `desired_state`, and
+`phase`. Pending resize targets and internal resource diagnostics are omitted.
+The current API retains the previous size until a resize commits.

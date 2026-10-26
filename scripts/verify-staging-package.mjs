@@ -1,4 +1,4 @@
-// Exercise the distributable package, including its runtime dependencies and staging defaults.
+// Exercise the distributable package, including its runtime dependencies and production defaults.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,7 +26,7 @@ try {
   const cleanEnv = { PATH: process.env.PATH };
   assert.equal(run(process.execPath, [binary, '--version'], { env: cleanEnv }).trim(), version);
   const doctor = JSON.parse(run(process.execPath, [binary, 'doctor', '--json'], { env: cleanEnv }));
-  assert.equal(doctor.api_origin, 'https://staging.dcs.dedaluslabs.ai');
+  assert.equal(doctor.api_origin, 'https://dcs.dedaluslabs.ai');
   const sdkModule = JSON.stringify(pathToFileURL(join(installed, 'dist/esm/sdk/index.js')).href);
   const sdkOrigin = run(
     process.execPath,
@@ -37,7 +37,7 @@ try {
     ],
     { env: cleanEnv },
   );
-  assert.equal(sdkOrigin, 'https://staging.dcs.dedaluslabs.ai');
+  assert.equal(sdkOrigin, 'https://dcs.dedaluslabs.ai');
   run(
     process.execPath,
     [

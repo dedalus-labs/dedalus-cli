@@ -308,7 +308,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'list'],
+    commandPath: ['machines', 'ssh', 'list'],
     methodName: 'list',
     summary: 'List SSH sessions',
     transport: 'http',
@@ -346,7 +346,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'create'],
+    commandPath: ['machines', 'ssh', 'create'],
     methodName: 'create',
     summary: 'Create SSH session',
     transport: 'http',
@@ -376,7 +376,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'retrieve'],
+    commandPath: ['machines', 'ssh', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Get SSH session',
     transport: 'http',
@@ -406,7 +406,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'delete'],
+    commandPath: ['machines', 'ssh', 'delete'],
     methodName: 'delete',
     summary: 'Delete SSH session',
     transport: 'http',
@@ -436,7 +436,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'list'],
+    commandPath: ['machines', 'executions', 'list'],
     methodName: 'list',
     summary: 'List executions',
     transport: 'http',
@@ -474,7 +474,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'create'],
+    commandPath: ['machines', 'executions', 'create'],
     methodName: 'create',
     summary: 'Create execution',
     transport: 'http',
@@ -536,7 +536,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'retrieve'],
+    commandPath: ['machines', 'executions', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Get execution',
     transport: 'http',
@@ -566,7 +566,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'delete'],
+    commandPath: ['machines', 'executions', 'delete'],
     methodName: 'delete',
     summary: 'Delete execution',
     transport: 'http',
@@ -596,7 +596,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'output'],
+    commandPath: ['machines', 'executions', 'output'],
     methodName: 'output',
     summary: 'Get execution output',
     transport: 'http',
@@ -626,7 +626,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'events'],
+    commandPath: ['machines', 'executions', 'events'],
     methodName: 'events',
     summary: 'List execution events',
     transport: 'http',
@@ -672,7 +672,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions', 'logs'],
-    commandPath: ['machines:executions:logs', 'retrieve'],
+    commandPath: ['machines', 'executions', 'logs', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Get execution log status',
     transport: 'http',
@@ -702,7 +702,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions', 'logs'],
-    commandPath: ['machines:executions:logs', 'reauthorize'],
+    commandPath: ['machines', 'executions', 'logs', 'reauthorize'],
     methodName: 'reauthorize',
     summary: 'Reauthorize execution log publication',
     transport: 'http',
@@ -732,7 +732,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions', 'logs'],
-    commandPath: ['machines:executions:logs', 'create-token'],
+    commandPath: ['machines', 'executions', 'logs', 'create-token'],
     methodName: 'createToken',
     summary: 'Create execution log read token',
     transport: 'http',
@@ -762,7 +762,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'autoresizing'],
-    commandPath: ['machines:autoresizing', 'retrieve'],
+    commandPath: ['machines', 'autoresizing', 'retrieve'],
     methodName: 'retrieve',
     summary: "Read this machine's RAM autoresizing settings",
     transport: 'http',
@@ -784,7 +784,7 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'autoresizing'],
-    commandPath: ['machines:autoresizing', 'update'],
+    commandPath: ['machines', 'autoresizing', 'update'],
     methodName: 'update',
     summary: "Set this machine's RAM autoresizing settings",
     transport: 'http',
@@ -814,7 +814,7 @@ const commands = [
   },
   {
     resourcePath: ['organization', 'autoresizing'],
-    commandPath: ['organization:autoresizing', 'retrieve'],
+    commandPath: ['organization', 'autoresizing', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Read organization RAM autoresizing policy',
     transport: 'http',
@@ -826,7 +826,7 @@ const commands = [
   },
   {
     resourcePath: ['organization', 'autoresizing'],
-    commandPath: ['organization:autoresizing', 'update'],
+    commandPath: ['organization', 'autoresizing', 'update'],
     methodName: 'update',
     summary: 'Set organization RAM autoresizing policy',
     transport: 'http',
@@ -866,25 +866,6 @@ export const auth = {
     xAPIKey: 'DEDALUS_X_API_KEY',
   },
   methods: [
-    // scalar-sdk-generator:custom-code configured-browser-method:start
-    // configured browser login pending the public provider rollout
-    {
-      name: 'browser',
-      label: 'Sign in with your browser',
-      kind: 'oauth',
-      grant: 'authorizationCode',
-      clientKey: 'apiKey',
-      clientId: 'dedalus-cli',
-      authorizationUrl: '',
-      tokenUrl: '',
-      refreshUrl: '',
-      resource: 'https://dcs.dedaluslabs.ai',
-      issuer: '',
-      revocationUrl: '',
-      scopes: ['dedalus:cli', 'offline_access'],
-      redirectPort: 0,
-    },
-    // scalar-sdk-generator:custom-code configured-browser-method:end
     {
       name: 'api-key',
       label: 'Enter your access token',
@@ -908,8 +889,8 @@ export const getProgram = (): Command =>
     binaryName: 'dedalus',
     version: '0.6.0', // x-release-please-version
     description: 'CLI for Dedalus',
-    defaultFormat: 'auto',
-    defaultErrorFormat: 'auto',
+    defaultFormat: 'json',
+    defaultErrorFormat: 'json',
     clientOptions,
     // Feedback owns a positional message and attachment selection instead of generated flags.
     commands: commands.filter((definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback'),

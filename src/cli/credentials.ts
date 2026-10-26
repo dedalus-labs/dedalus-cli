@@ -32,10 +32,6 @@ export type CredentialStoreLocation = {
 
 /** Refresh metadata kept beside a stored OAuth access token. */
 export type StoredOAuth = {
-  // scalar-sdk-generator:custom-code revocation-metadata:start
-  /** Provider endpoint used for best-effort revocation on logout. */
-  readonly revocationUrl?: string;
-  // scalar-sdk-generator:custom-code revocation-metadata:end
   readonly refreshToken?: string;
   /** Unix epoch milliseconds the access token stops being usable, when the server said so. */
   readonly expiresAt?: number;
@@ -44,6 +40,13 @@ export type StoredOAuth = {
   /** Legacy refresh endpoint field emitted before `refreshUrl` was kept separately. */
   readonly tokenUrl?: string;
   readonly clientId?: string;
+  /**
+   * The RFC 7009 endpoint `logout` revokes this token at, resolved when the token was issued.
+   *
+   * Kept with the token rather than read from the build at sign-out, so the endpoint that issued it
+   * is the one asked to revoke it — not whatever a later regeneration names.
+   */
+  readonly revocationUrl?: string;
 };
 
 /** Credentials stored for one base URL, keyed by client-option name. */
@@ -340,6 +343,7 @@ export const storeDescription = (location: CredentialStoreLocation, backend: Sto
 
 const osStoreName = (): string => {
   if (process.platform === 'win32') return 'Windows Credential Manager';
+  if (process.platform === 'darwin') return 'macOS Keychain';
   return 'system keyring';
 };
 
@@ -390,14 +394,23 @@ const readProfileResult = (
   }
   const read = keychainRead(location.storeName, key);
   if (read.secret === undefined) return { profile: {}, unreadable: read.unavailable };
+  return { profile: parseSecret(read.secret), unreadable: false };
+};
+
+/**
+ * A keychain item's JSON, as a profile.
+ *
+ * An item this cannot parse is treated as absent, for the same reason a corrupt file is: one
+ * `login` again beats taking out every command that needed no credential.
+ */
+const parseSecret = (secret: string): StoredProfile => {
   try {
-    const parsed: unknown = JSON.parse(read.secret);
-    if (parsed && typeof parsed === 'object') return { profile: parsed as StoredProfile, unreadable: false };
+    const parsed: unknown = JSON.parse(secret);
+    if (parsed && typeof parsed === 'object') return parsed as StoredProfile;
   } catch {
-    // An item this cannot parse is treated as absent, for the same reason a corrupt file is: one
-    // `login` again beats taking out every command that needed no credential.
+    // Absent; see above.
   }
-  return { profile: {}, unreadable: false };
+  return {};
 };
 
 /** The file entry for one profile: the credential itself, or the marker saying where it really is. */
@@ -523,7 +536,7 @@ const warnings: string[] = [];
  * prose with the JSON document `--format-error json` puts on that same stream. Only `login` and
  * `logout` drain this, so a warning reaches the one place a user is already reading sentences.
  */
-const warn = (message: string): void => {
+export const warn = (message: string): void => {
   if (!warnings.includes(message)) warnings.push(message);
 };
 
@@ -558,16 +571,25 @@ const withoutMarker = (profile: StoredProfile): StoredProfile => ({
 });
 
 /**
- * Removes one stored profile, reporting what became of it.
+ * Removes one stored profile, reporting what became of it and what it held.
  *
  * A secret the OS store will not give up fails the whole removal rather than being written off.
  * `readProfile` looks the OS store up by key and never through the index, so dropping the index
  * entry while the secret stays behind would leave a credential that still authenticates every
  * command — and that `logout --all`, which enumerates the index, could no longer even find.
+ *
+ * `held` is the removed profile's content, read before its secret goes so `logout` can revoke its
+ * tokens afterwards; it is empty when nothing was removed or `readHeld` is false (see
+ * {@link heldProfile}).
  */
-export const deleteProfile = (location: CredentialStoreLocation, key: string): 'removed' | 'absent' =>
+export const deleteProfile = (
+  location: CredentialStoreLocation,
+  key: string,
+  readHeld: boolean,
+): { readonly outcome: 'removed' | 'absent'; readonly held: HeldProfile } =>
   withStoreLock(location, () => {
     const entry = indexEntry(location, key);
+    const held = heldProfile(location, key, readHeld);
     if (entry.backend === 'keychain') {
       const outcome = removeSecret(location, key);
       if (outcome === 'kept') {
@@ -581,49 +603,107 @@ export const deleteProfile = (location: CredentialStoreLocation, key: string): '
       }
     }
     const store = readStore(location);
-    if (!Object.prototype.hasOwnProperty.call(store.profiles, key)) return 'absent';
+    if (!Object.prototype.hasOwnProperty.call(store.profiles, key)) {
+      return { outcome: 'absent', held: { profile: {}, unreadable: false } };
+    }
     const profiles = { ...store.profiles };
     delete profiles[key];
     writeStore(location, { version: STORE_VERSION, profiles });
-    return 'removed';
+    return { outcome: 'removed', held };
   });
 
+/** What a removed profile held, so `logout` can revoke its tokens once the local copy is gone. */
+export type HeldProfile = {
+  readonly profile: StoredProfile;
+  /**
+   * The index points at the OS store but the read came back empty, so what the profile held — and
+   * whether any of it could be revoked — is unknown. `logout` says so rather than staying silent.
+   */
+  readonly unreadable: boolean;
+};
+
+/** One profile `logout --all` removed, keyed by the base URL it was filed under. */
+export type RemovedProfile = { readonly key: string; readonly held: HeldProfile };
+
 /**
- * Forgets everything, in both places.
+ * What a profile holds, read for `logout` inside the lock that is about to remove it.
+ *
+ * `logout` revokes what it removes, and once the secret is gone there is nothing left to read it
+ * from. Reading under the removal's own lock, rather than before taking it, means a sign-in that
+ * landed in between is the credential revoked — not the one it had already replaced.
+ *
+ * It reads wherever the index says the secret is, whatever the configured backend — unlike
+ * `readProfileResult`, which will not *send* a file-held secret under `keychain` or look in the
+ * OS store under `file`. Revoking is the opposite of using a credential: a token left in the file
+ * by an earlier build is still live at its provider, and this removal is the last chance to end it.
+ *
+ * `readHeld` is false for a CLI with no OAuth sign-in: nothing it stores can be revoked, so it
+ * skips the read, which under the keychain backend is one more helper spawn per profile.
+ */
+const heldProfile = (location: CredentialStoreLocation, key: string, readHeld: boolean): HeldProfile => {
+  if (!readHeld) return { profile: {}, unreadable: false };
+  const entry = indexEntry(location, key);
+  if (entry.backend !== 'keychain') return { profile: withoutMarker(entry), unreadable: false };
+  refreshStoreLock(location);
+  const read = keychainRead(location.storeName, key);
+  const profile = read.secret === undefined ? {} : withoutMarker(parseSecret(read.secret));
+  // The index says the OS store holds a secret here, so an empty answer is not "nothing to revoke":
+  // the helper would not answer (a helper that fails looks the same as one with no such item) or
+  // the item went by hand. Either way a token may still be live, and `logout` has to say so.
+  return { profile, unreadable: Object.keys(profile).length === 0 };
+};
+
+/**
+ * Forgets everything, in both places, returning what was removed so `logout --all` can revoke it.
  *
  * The keychain items go one by one, taken from the index, before the index itself does: deleting the
  * file first would strand the secrets in the OS store with nothing left pointing at them — invisible
  * to this CLI and never cleaned up.
+ *
+ * A secret the OS store would not give up is reported through `failure` rather than thrown, so the
+ * profiles that *were* removed still reach revocation before the command fails.
  */
-export const clearAll = (location: CredentialStoreLocation): void => {
-  const kept = withStoreLock(location, () => {
+export const clearAll = (
+  location: CredentialStoreLocation,
+  readHeld: boolean,
+): { readonly removed: readonly RemovedProfile[]; readonly failure?: string } => {
+  const { kept, removed } = withStoreLock(location, () => {
     // The keychain clears and the index rewrite share one lock with login. It can hold the lock for
     // several helper calls, but that is preferable to acknowledging a logout that strands a secret.
     const entries = Object.entries(readStore(location).profiles);
     const outcomes = entries.map(
       ([key, profile]) =>
-        [key, profile?.backend === 'keychain' ? removeSecret(location, key) : 'removed'] as const,
+        [
+          key,
+          heldProfile(location, key, readHeld),
+          profile?.backend === 'keychain' ? removeSecret(location, key) : 'removed',
+        ] as const,
     );
-    const kept = outcomes.filter(([, outcome]) => outcome === 'kept').map(([key]) => key);
-    if (outcomes.some(([, outcome]) => outcome === 'unconfirmed')) {
+    const kept = outcomes.filter(([, , outcome]) => outcome === 'kept').map(([key]) => key);
+    if (outcomes.some(([, , outcome]) => outcome === 'unconfirmed')) {
       warn('Your ' + osStoreName() + ' may still hold credentials this could not remove.');
     }
     const remaining = entries.filter(([key]) => kept.includes(key));
     if (remaining.length === 0) deleteStore(location);
     else writeStore(location, { version: STORE_VERSION, profiles: Object.fromEntries(remaining) });
-    return kept;
+    const removed = outcomes
+      .filter(([, , outcome]) => outcome !== 'kept')
+      .map(([key, held]): RemovedProfile => ({ key, held }));
+    return { kept, removed };
   });
-  if (kept.length === 0) return;
+  if (kept.length === 0) return { removed };
   // The index entry is the only record of which base URLs have a secret in the OS store, so one
   // still holding a retrievable secret keeps its entry: dropping it would strand the credential
   // there — still live, and invisible to this CLI for good.
-  throw new Error(
-    'Could not remove every credential from your ' +
+  return {
+    removed,
+    failure:
+      'Could not remove every credential from your ' +
       osStoreName() +
       '; ' +
       String(kept.length) +
       ' still there.',
-  );
+  };
 };
 
 /** Writes one profile into the on-disk store while the caller holds the credential-store lock. */

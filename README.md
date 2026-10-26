@@ -38,7 +38,7 @@ npm install -g dedalus-cli
 brew install dedalus-labs/tap/dedalus
 
 # Direct download — standalone binary, no Node.js required
-curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz
+curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz dedalus
 sudo mv dedalus /usr/local/bin/
 
 # Windows — download and extract dedalus-windows-x64.zip, then add it to PATH
@@ -68,34 +68,11 @@ See the [API reference](./api.md) for every available operation.
 
 ## Signing In
 
-<!-- @custom start -->
-Browser sign-in is not enabled in the public package until its provider and
-client registration are verified. `dedalus login --flow browser` fails before
-opening a browser when that configuration is absent. Use an API key meanwhile.
-A configured provider must supply its exact callback issuer, authorization,
-token, refresh, and revocation endpoints, client ID, scopes, and API resource.
-The API resource must match the command's base URL.
+Browser login is not configured in this public package. Use an API key until the public OAuth provider registration is ready.
 
-The configured browser flow uses PKCE, verifies callback state and issuer, and
-saves access and refresh tokens. Token refresh retains the revocation endpoint.
-`dedalus logout` attempts to revoke the refresh token, or the access token when
-no refresh token exists, with a 10-second timeout per request. It then removes
-local credentials even if revocation fails or the device is offline. A warning
-means the server session may still be active; local deletion does not confirm
-server-side revocation. Local credential deletion failures still fail logout.
-`--all` applies this to all saved profiles. Manually entered credentials are
-removed locally without OAuth revocation. Older sessions without a saved
-revocation endpoint are cleared locally with a warning; the CLI does not guess
-their provider endpoint.
-
-Logout does not sign out the browser or read sessions from the older
-`dedalus auth login` implementation. Local tests do not prove hosted readiness.
-<!-- @custom end -->
-
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: browser, api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
 
 ```sh
-dedalus login --flow browser
 dedalus login --flow api-key
 dedalus logout
 dedalus logout --all
@@ -150,19 +127,19 @@ support has received it yet.
 ## Staging package testing
 
 The `CLI SDK CI` workflow builds a versioned package, installs it in a temporary
-directory, runs the feedback tests against the installed package, and uploads the
+directory, runs the tests against the installed package, and uploads the
 `dedalus-cli-staging` artifact. The artifact contains a `.tgz` and its checksum
 record. This workflow does not publish to npm or Homebrew.
 
-Staging packages are marked private and default to `https://staging.dcs.dedaluslabs.ai`.
-Pass the staging URL explicitly when testing a downloaded package:
+Test packages are marked private and retain the production API default.
+Set `DEDALUS_TEST_BASE_URL` to your test API and pass it explicitly:
 
 ```sh
 mkdir -p /tmp/dedalus-feedback-test
 npm install --prefix /tmp/dedalus-feedback-test /absolute/path/to/dedalus-cli-VERSION.tgz
 /tmp/dedalus-feedback-test/node_modules/.bin/dedalus doctor --json
 /tmp/dedalus-feedback-test/node_modules/.bin/dedalus feedback "Staging smoke test" \
-  --include-logs false --base-url https://staging.dcs.dedaluslabs.ai
+  --include-logs false --base-url "${DEDALUS_TEST_BASE_URL:?Set the test API URL}"
 ```
 
 Set `DEDALUS_API_KEY` to a staging credential before submitting. To reproduce CI
@@ -204,8 +181,8 @@ Pass credentials to the generated client constructor. Environment variables are 
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--api-key` | `string \| provider` | - | Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>. Defaults to DEDALUS_API_KEY. |
-| `--x-api-key` | `string \| provider` | - | Dedalus API key. Alternative to Bearer token. Defaults to DEDALUS_X_API_KEY. |
+| `--api-key` | `<value>` | - | Dedalus API key or short-lived delegated access token in Authorization: Bearer \<credential>. Defaults to DEDALUS_API_KEY. |
+| `--x-api-key` | `<value>` | - | Dedalus API key. Alternative to Bearer token. Defaults to DEDALUS_X_API_KEY. |
 
 Declared schemes:
 

@@ -111,7 +111,7 @@ dedalus machines reboot \
 #### List SSH sessions
 
 ```sh
-dedalus machines:ssh list \
+dedalus machines ssh list \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --max-items 10
@@ -120,7 +120,7 @@ dedalus machines:ssh list \
 #### Create SSH session
 
 ```sh
-dedalus machines:ssh create \
+dedalus machines ssh create \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --public-key ''
@@ -129,7 +129,7 @@ dedalus machines:ssh create \
 #### Get SSH session
 
 ```sh
-dedalus machines:ssh retrieve \
+dedalus machines ssh retrieve \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --session-id 'session_id'
@@ -138,7 +138,7 @@ dedalus machines:ssh retrieve \
 #### Delete SSH session
 
 ```sh
-dedalus machines:ssh delete \
+dedalus machines ssh delete \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --session-id 'session_id'
@@ -149,7 +149,7 @@ dedalus machines:ssh delete \
 #### List executions
 
 ```sh
-dedalus machines:executions list \
+dedalus machines executions list \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --max-items 10
@@ -158,7 +158,7 @@ dedalus machines:executions list \
 #### Create execution
 
 ```sh
-dedalus machines:executions create \
+dedalus machines executions create \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --command '[""]'
@@ -167,7 +167,7 @@ dedalus machines:executions create \
 #### Get execution
 
 ```sh
-dedalus machines:executions retrieve \
+dedalus machines executions retrieve \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
@@ -176,7 +176,7 @@ dedalus machines:executions retrieve \
 #### Delete execution
 
 ```sh
-dedalus machines:executions delete \
+dedalus machines executions delete \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
@@ -185,7 +185,7 @@ dedalus machines:executions delete \
 #### Get execution output
 
 ```sh
-dedalus machines:executions output \
+dedalus machines executions output \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
@@ -194,7 +194,7 @@ dedalus machines:executions output \
 #### List execution events
 
 ```sh
-dedalus machines:executions events \
+dedalus machines executions events \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id' \
@@ -206,7 +206,7 @@ dedalus machines:executions events \
 ##### Get execution log status
 
 ```sh
-dedalus machines:executions:logs retrieve \
+dedalus machines executions logs retrieve \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
@@ -215,7 +215,7 @@ dedalus machines:executions:logs retrieve \
 ##### Reauthorize execution log publication
 
 ```sh
-dedalus machines:executions:logs reauthorize \
+dedalus machines executions logs reauthorize \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
@@ -224,7 +224,7 @@ dedalus machines:executions:logs reauthorize \
 ##### Create execution log read token
 
 ```sh
-dedalus machines:executions:logs create-token \
+dedalus machines executions logs create-token \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
@@ -235,7 +235,7 @@ dedalus machines:executions:logs create-token \
 #### Read this machine's RAM autoresizing settings
 
 ```sh
-dedalus machines:autoresizing retrieve \
+dedalus machines autoresizing retrieve \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
@@ -243,7 +243,7 @@ dedalus machines:autoresizing retrieve \
 #### Set this machine's RAM autoresizing settings
 
 ```sh
-dedalus machines:autoresizing update \
+dedalus machines autoresizing update \
   --x-api-key "$DEDALUS_X_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --enabled
@@ -256,11 +256,11 @@ dedalus machines:autoresizing update \
 #### Read organization RAM autoresizing policy
 
 ```sh
-dedalus organization:autoresizing retrieve --x-api-key "$DEDALUS_X_API_KEY"
+dedalus organization autoresizing retrieve --x-api-key "$DEDALUS_X_API_KEY"
 ```
 
 #### Set organization RAM autoresizing policy
 
 ```sh
-dedalus organization:autoresizing update --x-api-key "$DEDALUS_X_API_KEY" --enabled
+dedalus organization autoresizing update --x-api-key "$DEDALUS_X_API_KEY" --enabled
 ```

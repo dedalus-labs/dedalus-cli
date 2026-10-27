@@ -95,3 +95,47 @@ export const isEmptyHeaders = (headers: HeadersLike) => {
   for (const _ of iterateHeaders(headers)) return false;
   return true;
 };
+
+/** A headers object read through a `get` method, like the fetch API's `Headers`. */
+export interface HeadersProtocol {
+  get: (header: string) => string | null | undefined;
+}
+
+export const isHeadersProtocol = (headers: unknown): headers is HeadersProtocol =>
+  typeof (headers as { get?: unknown } | null | undefined)?.get === 'function';
+
+/**
+ * Reads one header, matching its name case-insensitively, from any headers shape a request handler
+ * hands over. A repeated header yields its first value.
+ */
+export const getHeader = (headers: HeadersLike | HeadersProtocol, header: string): string | undefined => {
+  if (!headers) return undefined;
+
+  const lowerCasedHeader = header.toLowerCase();
+  if (isHeadersProtocol(headers)) {
+    // A fetch `Headers` matches any casing, but a look-alike `get` may be case-sensitive, so the common
+    // spellings are tried in turn (`Webhook-Id` covers a header stored in title case).
+    const intercapsHeader =
+      header.charAt(0).toUpperCase() +
+      header.substring(1).replace(/([^\w])(\w)/g, (_m, g1: string, g2: string) => g1 + g2.toUpperCase());
+    for (const key of [header, lowerCasedHeader, header.toUpperCase(), intercapsHeader]) {
+      const value = headers.get(key);
+      if (value) return value;
+    }
+    if (headers instanceof Headers) return undefined;
+  }
+
+  for (const [name, value] of iterateHeaders(headers as HeadersLike)) {
+    if (value !== null && name.toLowerCase() === lowerCasedHeader) return value;
+  }
+  return undefined;
+};
+
+/** Reads one header like {@link getHeader}, throwing when the headers do not carry it. */
+export const getRequiredHeader = (headers: HeadersLike | HeadersProtocol, header: string): string => {
+  const value = getHeader(headers, header);
+  if (value === undefined) {
+    throw new Error(`Could not find ${header} header`);
+  }
+  return value;
+};

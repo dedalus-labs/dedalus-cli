@@ -17,7 +17,7 @@ npm install -g dedalus-cli
 brew install dedalus-labs/tap/dedalus
 
 # Direct download — standalone binary, no Node.js required
-curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz
+curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz dedalus
 sudo mv dedalus /usr/local/bin/
 
 # Windows — download and extract dedalus-windows-x64.zip, then add it to PATH

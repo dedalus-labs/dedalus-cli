@@ -104,7 +104,7 @@ const getPlatformProperties = (): PlatformProperties => {
     };
   }
 
-  // TODO add support for Cloudflare workers, etc.
+  // TODO add support for worker runtimes that expose no EdgeRuntime global, etc.
   return {
     'X-Scalar-Lang': 'js',
     'X-Scalar-Package-Version': VERSION,

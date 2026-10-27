@@ -22,7 +22,7 @@ if (!version || !/^\d+\.\d+\.\d+-staging\.[a-zA-Z0-9.-]+$/.test(version)) {
 }
 const output = resolve(process.argv[3] ?? join(root, 'artifacts'));
 const staging = mkdtempSync(join(tmpdir(), 'dedalus-staging-package-'));
-const stagingURL = 'https://staging.dcs.dedaluslabs.ai';
+const defaultURL = 'https://dcs.dedaluslabs.ai';
 mkdirSync(output, { recursive: true });
 
 const patchBuild = (directory) => {
@@ -34,12 +34,10 @@ const patchBuild = (directory) => {
     }
     if (!/\.(js|map)$/.test(entry.name)) continue;
     const source = readFileSync(path, 'utf8');
-    const staged = source
-      .replaceAll('https://dcs.dedaluslabs.ai', stagingURL)
-      .replace(
-        /(['"])[0-9]+\.[0-9]+\.[0-9]+\1(?=;?,?\s*\/\/ x-release-please-version)/g,
-        (_, quote) => quote + version + quote,
-      );
+    const staged = source.replace(
+      /(['"])[0-9]+\.[0-9]+\.[0-9]+\1(?=;?,?\s*\/\/ x-release-please-version)/g,
+      (_, quote) => quote + version + quote,
+    );
     writeFileSync(path, staged);
   }
 };
@@ -66,7 +64,7 @@ try {
     filename,
     version,
     private: true,
-    default_api: stagingURL,
+    default_api: defaultURL,
     sha256: createHash('sha256').update(bytes).digest('hex'),
   };
   writeFileSync(path + '.json', JSON.stringify(record, null, 2) + '\n');

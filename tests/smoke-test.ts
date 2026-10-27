@@ -140,7 +140,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/ssh',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'list',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -154,7 +155,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'POST',
     path: '/v1/machines/{machine_id}/ssh',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'create',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -168,7 +170,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/ssh/{session_id}',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'retrieve',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -182,7 +185,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'DELETE',
     path: '/v1/machines/{machine_id}/ssh/{session_id}',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'delete',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -196,7 +200,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'list',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -211,7 +216,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     path: '/v1/machines/{machine_id}/executions',
     label: 'required params',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'create',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -226,7 +232,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     path: '/v1/machines/{machine_id}/executions',
     label: 'all params',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'create',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -248,7 +255,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'retrieve',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -262,7 +270,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'DELETE',
     path: '/v1/machines/{machine_id}/executions/{execution_id}',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'delete',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -276,7 +285,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/output',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'output',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -290,7 +300,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/events',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'events',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -306,7 +317,9 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/logs',
     args: [
-      'machines:executions:logs',
+      'machines',
+      'executions',
+      'logs',
       'retrieve',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -320,7 +333,9 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'POST',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/logs/reauthorize',
     args: [
-      'machines:executions:logs',
+      'machines',
+      'executions',
+      'logs',
       'reauthorize',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -334,7 +349,9 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'POST',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/logs/token',
     args: [
-      'machines:executions:logs',
+      'machines',
+      'executions',
+      'logs',
       'create-token',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -347,7 +364,7 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     operation: 'retrieve',
     method: 'GET',
     path: '/v1/machines/{machine_id}/autoresizing',
-    args: ['machines:autoresizing', 'retrieve', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+    args: ['machines', 'autoresizing', 'retrieve', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
   },
 
   {
@@ -355,7 +372,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'PUT',
     path: '/v1/machines/{machine_id}/autoresizing',
     args: [
-      'machines:autoresizing',
+      'machines',
+      'autoresizing',
       'update',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -367,14 +385,14 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     operation: 'retrieve',
     method: 'GET',
     path: '/v1/organization/autoresizing',
-    args: ['organization:autoresizing', 'retrieve'],
+    args: ['organization', 'autoresizing', 'retrieve'],
   },
 
   {
     operation: 'update',
     method: 'PUT',
     path: '/v1/organization/autoresizing',
-    args: ['organization:autoresizing', 'update', '--enabled'],
+    args: ['organization', 'autoresizing', 'update', '--enabled'],
   },
 ];
 

@@ -2,12 +2,16 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { afterEach, test } from 'node:test'
 import { Command } from 'commander'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
-import SDK from '../dist/esm/sdk/index.js'
-import { getProgram } from '../dist/esm/index.js'
-import { addMachineAliases, createMachineAPI } from '../dist/esm/custom/machines.js'
-import { loadMachineChoices, matchingMachines, renderPicker, updatePicker } from '../dist/esm/custom/ssh-picker.js'
-import { awaitSSHSession } from '../dist/esm/custom/ssh.js'
+const root = resolve(process.env.CLI_PACKAGE_ROOT ?? '.')
+const load = (path) => import(pathToFileURL(join(root, 'dist/esm', path)))
+const { default: SDK } = await load('sdk/index.js')
+const { getProgram } = await load('index.js')
+const { addMachineAliases, createMachineAPI } = await load('custom/machines.js')
+const { loadMachineChoices, matchingMachines, renderPicker, updatePicker } = await load('custom/ssh-picker.js')
+const { awaitSSHSession } = await load('custom/ssh.js')
 
 afterEach(() => { process.exitCode = undefined })
 
@@ -78,14 +82,14 @@ test('SSH picker selection transmits stable ID and cancellation creates no sessi
 })
 
 test('SSH without a TTY or target exits promptly with actionable usage', () => {
-  const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'ssh'], { encoding: 'utf8', timeout: 3000 })
+  const result = spawnSync(process.execPath, [join(root, 'dist/esm/bin.js'), 'ssh'], { encoding: 'utf8', timeout: 3000 })
   assert.equal(result.status, 2)
   assert.match(result.stderr, /interactive terminal.*dedalus ssh <machine-id>/u)
   assert.equal(result.stdout, '')
 })
 
 test('aliases retain CLI usage exit codes', () => {
-  const result = spawnSync(process.execPath, ['dist/esm/bin.js', 'ssh', 'not-a-uuid'], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [join(root, 'dist/esm/bin.js'), 'ssh', 'not-a-uuid'], { encoding: 'utf8' })
   assert.equal(result.status, 2)
 })
 

@@ -63,6 +63,11 @@ export interface ClientOptions {
   xAPIKey?: string | AuthTokenProvider | null | undefined;
 
   /**
+   * Browser session access token managed by dedalus login.
+   */
+  browserToken?: string | AuthTokenProvider | null | undefined;
+
+  /**
    * Optional organization assertion. Must match the organization identified by the API credential.
    */
   dedalusOrgID?: string | null | undefined;
@@ -150,6 +155,7 @@ export type DedalusOptions = ClientOptions;
 export class Dedalus {
   apiKey: string | AuthTokenProvider | null;
   xAPIKey: string | AuthTokenProvider | null;
+  browserToken: string | AuthTokenProvider | null;
   dedalusOrgID: string | null;
   asBaseURL: string | null;
 
@@ -171,6 +177,7 @@ export class Dedalus {
    *
    * @param {string | AuthTokenProvider | null | undefined} [opts.apiKey=process.env["DEDALUS_API_KEY"] ?? null]
    * @param {string | AuthTokenProvider | null | undefined} [opts.xAPIKey=process.env["DEDALUS_X_API_KEY"] ?? null]
+   * @param {string | AuthTokenProvider | null | undefined} [opts.browserToken=process.env["DEDALUS_BROWSER_TOKEN"] ?? null]
    * @param {string | null | undefined} [opts.dedalusOrgID=process.env["DEDALUS_ORG_ID"] ?? null]
    * @param {string | null | undefined} [opts.asBaseURL=process.env["DEDALUS_AS_URL"] ?? "https://as.dedaluslabs.ai"]
    * @param {string} [opts.baseURL=process.env["DEDALUS_BASE_URL"] ?? https://dcs.dedaluslabs.ai] - Override the default base URL for the API.
@@ -185,6 +192,7 @@ export class Dedalus {
     baseURL = readEnv('DEDALUS_BASE_URL'),
     apiKey = readEnv('DEDALUS_API_KEY') ?? null,
     xAPIKey = readEnv('DEDALUS_X_API_KEY') ?? null,
+    browserToken = readEnv('DEDALUS_BROWSER_TOKEN') ?? null,
     dedalusOrgID = readEnv('DEDALUS_ORG_ID') ?? null,
     asBaseURL = readEnv('DEDALUS_AS_URL') ?? 'https://as.dedaluslabs.ai',
     ...opts
@@ -192,6 +200,7 @@ export class Dedalus {
     const options: ClientOptions = {
       apiKey,
       xAPIKey,
+      browserToken,
       dedalusOrgID,
       asBaseURL,
       ...opts,
@@ -233,6 +242,7 @@ export class Dedalus {
 
     this.apiKey = apiKey;
     this.xAPIKey = xAPIKey;
+    this.browserToken = browserToken;
     this.dedalusOrgID = dedalusOrgID;
     this.asBaseURL = asBaseURL;
   }
@@ -249,6 +259,7 @@ export class Dedalus {
       fetchOptions: this.fetchOptions,
       apiKey: this.apiKey,
       xAPIKey: this.xAPIKey,
+      browserToken: this.browserToken,
       dedalusOrgID: this.dedalusOrgID,
       asBaseURL: this.asBaseURL,
       ...options,
@@ -823,7 +834,7 @@ export class Dedalus {
     throw new Errors.AuthenticationError(
       401,
       undefined,
-      'Could not resolve authentication method. Expected either apiKey or xAPIKey to be set. Or for one of the "Authorization" or "x-api-key" headers to be explicitly omitted',
+      'Could not resolve authentication method. Expected either apiKey, browserToken or xAPIKey to be set. Or for one of the "Authorization" or "x-api-key" headers to be explicitly omitted',
       headers,
     );
   }
@@ -834,6 +845,8 @@ export class Dedalus {
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
     const xAPIKey = this.resolveAuthOptionSync('xAPIKey', this.xAPIKey);
     if (xAPIKey) headers['x-api-key'] = xAPIKey;
+    const browserToken = this.resolveAuthOptionSync('browserToken', this.browserToken);
+    if (browserToken) headers['Authorization'] = `Bearer ${browserToken}`;
     return headers;
   }
 
@@ -846,7 +859,11 @@ export class Dedalus {
   }
 
   protected async authHeaders(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
-    return buildHeaders([await this.bearerAuth(opts), await this.apiKeyAuth(opts)]);
+    return buildHeaders([
+      await this.bearerAuth(opts),
+      await this.apiKeyAuth(opts),
+      await this.browserAuth(opts),
+    ]);
   }
 
   protected async bearerAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
@@ -863,6 +880,14 @@ export class Dedalus {
       return undefined;
     }
     return buildHeaders([{ 'x-api-key': xAPIKey }]);
+  }
+
+  protected async browserAuth(opts: FinalRequestOptions): Promise<NullableHeaders | undefined> {
+    const browserToken = await this.resolveAuthOption('browserToken', this.browserToken);
+    if (browserToken == null) {
+      return undefined;
+    }
+    return buildHeaders([{ Authorization: `Bearer ${browserToken}` }]);
   }
 
   private async authQueryAsync(): Promise<Record<string, string>> {

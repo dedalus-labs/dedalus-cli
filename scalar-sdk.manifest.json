@@ -13,7 +13,8 @@
   ],
   "auth": [
     "apiKey",
-    "bearer"
+    "bearer",
+    "oauth2"
   ],
   "authDetails": [
     {
@@ -26,6 +27,22 @@
       "kind": "bearer",
       "id": "BearerAuth",
       "bearerFormat": "Dedalus API key or delegated access token"
+    },
+    {
+      "kind": "oauth2",
+      "id": "BrowserAuth",
+      "flows": [
+        {
+          "kind": "authorizationCode",
+          "authorizationUrl": "https://clerk.dedaluslabs.ai/oauth/authorize",
+          "tokenUrl": "https://clerk.dedaluslabs.ai/oauth/token",
+          "refreshUrl": "https://clerk.dedaluslabs.ai/oauth/token",
+          "scopes": [
+            "offline_access",
+            "user:org:read"
+          ]
+        }
+      ]
     }
   ],
   "clientHeaderParams": [],

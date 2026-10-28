@@ -16,13 +16,20 @@ const browserMethod = { name: 'browser', label: 'Browser', kind: 'oauth', grant:
   clientKey: 'apiKey', clientId: 'dedalus-cli', redirectPort: 0, scopes: ['dedalus:cli', 'offline_access'],
   authorizationUrl: '', tokenUrl: '', refreshUrl: '' };
 
-test('invariant_unconfigured_browser_flow_is_unavailable_for_another_api', async () => {
-  await assert.rejects(runLogin(auth, 'https://other.invalid', 'browser'), /Unknown sign-in flow/);
-});
-
-test('invariant_unconfigured_public_browser_login_fails_before_opening_a_browser', async () => {
-  assert.equal(auth.methods.some(method => method.kind === 'oauth'), false);
-  await assert.rejects(runLogin(auth, auth.defaultBaseUrl, 'browser'), /Unknown sign-in flow/);
+test('invariant_public_browser_flow_contains_production_provider_configuration', () => {
+  const method = auth.methods.find(method => method.kind === 'oauth');
+  assert.equal(method.name, 'oauth-browser');
+  assert.equal(method.clientKey, 'browserToken');
+  assert.equal(method.issuer, 'https://clerk.dedaluslabs.ai');
+  assert.equal(method.clientId, 'j7A9ArTlXXvR2ocG');
+  assert.equal(method.authorizationUrl, method.issuer + '/oauth/authorize');
+  assert.equal(method.tokenUrl, method.issuer + '/oauth/token');
+  assert.equal(method.refreshUrl, method.tokenUrl);
+  assert.equal(method.revocationUrl, method.issuer + '/oauth/token/revoke');
+  assert.deepEqual(method.resource, ['https://dcs.dedaluslabs.ai']);
+  assert.deepEqual(method.scopes, ['offline_access', 'user:org:read']);
+  assert.equal(method.redirectPort, 0);
+  assert.deepEqual(auth.requirements, [['apiKey'], ['xAPIKey'], ['browserToken']]);
 });
 
 for (const callbackCase of ['valid', 'wrong-issuer', 'missing-issuer', 'duplicate-issuer', 'wrong-state', 'duplicate-state', 'duplicate-code', 'duplicate-error']) {
@@ -87,7 +94,7 @@ for (const callbackCase of ['valid', 'wrong-issuer', 'missing-issuer', 'duplicat
     const store = join(directory, 'credentials.json');
     const env = { ...process.env, PATH: directory + ':' + process.env.PATH,
       DEDALUS_CREDENTIALS_FILE: store, TEST_API_ORIGIN: origin };
-    for (const key of ['DEDALUS_API_KEY', 'DEDALUS_X_API_KEY', 'DEDALUS_BASE_URL', 'DEDALUS_CUSTOM_HEADERS']) delete env[key];
+    for (const key of ['DEDALUS_API_KEY', 'DEDALUS_X_API_KEY', 'DEDALUS_BASE_URL', 'DEDALUS_CUSTOM_HEADERS', 'DEDALUS_BROWSER_TOKEN']) delete env[key];
     const run = (args, browser = false) => new Promise((resolve, reject) => {
       const child = spawn(process.execPath, ['--input-type=module', '-e', `
         import { auth, getProgram } from './dist/esm/commands/index.js';

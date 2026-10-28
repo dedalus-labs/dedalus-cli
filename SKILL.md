@@ -30,6 +30,7 @@ Provide credentials using the options below. Environment variables are read auto
 
 - `--api-key` (env: `DEDALUS_API_KEY`) — Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
 - `--x-api-key` (env: `DEDALUS_X_API_KEY`) — Dedalus API key. Alternative to Bearer token.
+- `--browser-token` (env: `DEDALUS_BROWSER_TOKEN`) — Credential for the BrowserAuth scheme.
 
 ## Calling operations
 
@@ -37,7 +38,7 @@ Provide credentials using the options below. Environment variables are read auto
 dedalus [resource] [command] [flags]
 
 dedalus machines create \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --autosleep '300s' \
   --memory-mib '4096' \
   --storage-gib '10' \

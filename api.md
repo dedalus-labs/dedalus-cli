@@ -42,14 +42,14 @@ Complete reference of every operation, grouped by resource. See [the README](./R
 ### List machines
 
 ```sh
-dedalus machines list --x-api-key "$DEDALUS_X_API_KEY" --max-items 10
+dedalus machines list --api-key "$DEDALUS_API_KEY" --max-items 10
 ```
 
 ### Create machine
 
 ```sh
 dedalus machines create \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --autosleep '300s' \
   --memory-mib '4096' \
   --storage-gib '10' \
@@ -60,7 +60,7 @@ dedalus machines create \
 
 ```sh
 dedalus machines retrieve \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -68,7 +68,7 @@ dedalus machines retrieve \
 
 ```sh
 dedalus machines update \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -76,7 +76,7 @@ dedalus machines update \
 
 ```sh
 dedalus machines delete \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -84,7 +84,7 @@ dedalus machines delete \
 
 ```sh
 dedalus machines sleep \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -92,7 +92,7 @@ dedalus machines sleep \
 
 ```sh
 dedalus machines wake \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -102,7 +102,7 @@ Checkpoints files and replaces the runtime. The machine ID and filesystem are pr
 
 ```sh
 dedalus machines reboot \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -112,7 +112,7 @@ dedalus machines reboot \
 
 ```sh
 dedalus machines ssh list \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --max-items 10
 ```
@@ -121,7 +121,7 @@ dedalus machines ssh list \
 
 ```sh
 dedalus machines ssh create \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --public-key ''
 ```
@@ -130,7 +130,7 @@ dedalus machines ssh create \
 
 ```sh
 dedalus machines ssh retrieve \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --session-id 'session_id'
 ```
@@ -139,7 +139,7 @@ dedalus machines ssh retrieve \
 
 ```sh
 dedalus machines ssh delete \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --session-id 'session_id'
 ```
@@ -150,7 +150,7 @@ dedalus machines ssh delete \
 
 ```sh
 dedalus machines executions list \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --max-items 10
 ```
@@ -159,7 +159,7 @@ dedalus machines executions list \
 
 ```sh
 dedalus machines executions create \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --command '[""]'
 ```
@@ -168,7 +168,7 @@ dedalus machines executions create \
 
 ```sh
 dedalus machines executions retrieve \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -177,7 +177,7 @@ dedalus machines executions retrieve \
 
 ```sh
 dedalus machines executions delete \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -186,7 +186,7 @@ dedalus machines executions delete \
 
 ```sh
 dedalus machines executions output \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -195,7 +195,7 @@ dedalus machines executions output \
 
 ```sh
 dedalus machines executions events \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id' \
   --max-items 10
@@ -207,7 +207,7 @@ dedalus machines executions events \
 
 ```sh
 dedalus machines executions logs retrieve \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -216,7 +216,7 @@ dedalus machines executions logs retrieve \
 
 ```sh
 dedalus machines executions logs reauthorize \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -225,7 +225,7 @@ dedalus machines executions logs reauthorize \
 
 ```sh
 dedalus machines executions logs create-token \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -236,7 +236,7 @@ dedalus machines executions logs create-token \
 
 ```sh
 dedalus machines autoresizing retrieve \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -244,7 +244,7 @@ dedalus machines autoresizing retrieve \
 
 ```sh
 dedalus machines autoresizing update \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --api-key "$DEDALUS_API_KEY" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --enabled
 ```
@@ -256,11 +256,11 @@ dedalus machines autoresizing update \
 #### Read organization RAM autoresizing policy
 
 ```sh
-dedalus organization autoresizing retrieve --x-api-key "$DEDALUS_X_API_KEY"
+dedalus organization autoresizing retrieve --api-key "$DEDALUS_API_KEY"
 ```
 
 #### Set organization RAM autoresizing policy
 
 ```sh
-dedalus organization autoresizing update --x-api-key "$DEDALUS_X_API_KEY" --enabled
+dedalus organization autoresizing update --api-key "$DEDALUS_API_KEY" --enabled
 ```

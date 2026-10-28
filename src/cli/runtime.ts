@@ -13,6 +13,7 @@ import { takeWarnings } from './credentials';
 import { type CliAuthDefinition, UsageError, runLogin, runLogout, storedCredentials } from './login';
 
 import { createDiagnostics, diagnosticScope } from '../feedback/diagnostics.js';
+import { routeBrowserCredential } from '../custom/browser-routing.js';
 
 const LOGIN_COMMAND = 'dedalus login';
 
@@ -507,7 +508,7 @@ const addAuthCommands = (
   ensureCommandPath(program, auth.loginPath.slice(0, -1), authGroups(auth)).addCommand(login);
 
   const logout = usageExitCode(new Command(auth.logoutPath.at(-1) ?? 'logout'))
-    .description('Forget saved credentials')
+    .description('Forget saved credentials, and revoke them if the provider supports it')
     .showHelpAfterError()
     .option('--base-url <url>', 'Forget the credentials saved for this base URL (not with --all)')
     .option('--all', 'Forget every saved credential, for every base URL')
@@ -864,7 +865,7 @@ export const sdkClientOptions = async (
   const organization = commandOptions['xDedalusOrgId'] ?? rootOptions['xDedalusOrgId'] ??
     forwarded['dedalusOrgID'] ?? process.env['DEDALUS_ORG_ID'];
   if (organization !== undefined) forwarded['dedalusOrgID'] = organization;
-  return {
+  return routeBrowserCredential({
     ...(options.baseUrl?.trim() ? { baseURL: options.baseUrl.trim() } : {}),
     ...(environment !== undefined ? { environment, baseURL: null } : {}),
     ...(options.timeout ? { timeout: Number(options.timeout) } : {}),
@@ -880,7 +881,7 @@ export const sdkClientOptions = async (
       'X-Dedalus-CLI-Command': commandPath(command),
       'User-Agent': 'Dedalus/CLI ' + rootCommand(command).version(),
     },
-  };
+  });
 };
 
 const applyStoredCredentials = async (

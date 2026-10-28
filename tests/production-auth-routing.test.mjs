@@ -53,3 +53,28 @@ test('invariant_packaged_commands_route_each_credential_to_its_compatible_endpoi
     assert.deepEqual(requests[0], { url: origin + '/v1/machines', authorization: bearer && 'Bearer ' + bearer, apiKey });
   }
 });
+
+test('invariant_browser_credentials_reject_custom_authentication_headers', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'dedalus-header-routing-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DEDALUS_')));
+  const entry = pathToFileURL(join(root, 'dist/esm/bin.js')).href;
+  // Any request reaching the transport is the defect: a custom header would send a second
+  // credential beside the browser token, or replace it.
+  const script = `
+    globalThis.fetch = async () => { process.stderr.write('REQUEST\\n'); return new Response('{}'); };
+    process.argv = [process.execPath, 'dedalus', 'machines', 'list'];
+    await import(${JSON.stringify(entry)});
+  `;
+  for (const headers of ['x-api-key: other-key', 'X-API-Key: other-key', 'Authorization: Bearer other-token',
+    'Accept: application/json\nauthorization: Bearer other-token']) {
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      env: { ...env, DEDALUS_CREDENTIALS_FILE: join(directory, 'credentials.json'),
+        DEDALUS_BROWSER_TOKEN: 'fixture-browser', DEDALUS_CUSTOM_HEADERS: headers },
+      encoding: 'utf8', timeout: 10_000,
+    });
+    assert.notEqual(result.status, 0, headers);
+    assert.doesNotMatch(result.stderr, /REQUEST/, headers);
+    assert.match(result.stderr, /DEDALUS_CUSTOM_HEADERS/, headers);
+  }
+});

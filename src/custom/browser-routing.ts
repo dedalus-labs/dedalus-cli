@@ -11,6 +11,20 @@ const competingAPIKey = (options: Record<string, unknown>): string | undefined =
   return undefined;
 };
 
+/** Header names that carry a credential. DCS reads x-api-key before Authorization. */
+const CREDENTIAL_HEADERS = new Set(['authorization', 'x-api-key']);
+
+/**
+ * Names a credential header in DEDALUS_CUSTOM_HEADERS, the CLI's only user-supplied header source,
+ * that would send a second credential beside a browser token or replace it. Header names are
+ * case-insensitive, so they are compared lowercased.
+ */
+const competingHeader = (): string | undefined =>
+  (process.env['DEDALUS_CUSTOM_HEADERS'] ?? '')
+    .split('\n')
+    .map((line) => (line.split(':')[0] ?? '').trim().toLowerCase())
+    .find((name) => CREDENTIAL_HEADERS.has(name));
+
 /** Keeps browser tokens on their production API and rejects competing credentials. */
 export const routeBrowserCredential = (
   options: Record<string, unknown>,
@@ -20,6 +34,10 @@ export const routeBrowserCredential = (
   const apiKey = competingAPIKey(options);
   if (apiKey) {
     throw new UsageError(`Use browser sign-in or an API key (${apiKey}), not both.`);
+  }
+  const header = competingHeader();
+  if (header) {
+    throw new UsageError(`Use browser sign-in or the ${header} header in DEDALUS_CUSTOM_HEADERS, not both.`);
   }
   const source = options['baseURL'] !== undefined ? '--base-url' : 'DEDALUS_BASE_URL';
   const endpoint = options['baseURL'] ?? (process.env['DEDALUS_BASE_URL']?.trim() || API);

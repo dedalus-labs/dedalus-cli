@@ -34,6 +34,14 @@ const clientOptions = [
     auth: true,
   },
   {
+    clientKey: 'browserToken',
+    sdkKey: 'browserToken',
+    name: 'browser-token',
+    optionKey: 'browserToken',
+    env: 'DEDALUS_BROWSER_TOKEN',
+    auth: true,
+  },
+  {
     clientKey: 'dedalusOrgID',
     sdkKey: 'dedalusOrgID',
     name: 'dedalus-org-id',
@@ -54,7 +62,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -83,7 +91,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'body',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -133,7 +141,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -155,7 +163,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -214,7 +222,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -236,7 +244,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -258,7 +266,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -282,7 +290,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -314,7 +322,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -352,7 +360,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -382,7 +390,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -412,7 +420,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -442,7 +450,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -480,7 +488,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -542,7 +550,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -572,7 +580,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -602,7 +610,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -632,7 +640,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -678,7 +686,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -708,7 +716,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -738,7 +746,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -768,7 +776,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -790,7 +798,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -820,7 +828,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'options',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [],
   },
@@ -832,7 +840,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'body',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
     positional: [],
     flags: [
       {
@@ -860,10 +868,11 @@ export const auth = {
   baseUrlEnv: 'DEDALUS_BASE_URL',
   backend: 'auto',
   defaultBaseUrl: 'https://dcs.dedaluslabs.ai',
-  requirements: [['xAPIKey'], ['apiKey']],
+  requirements: [['browserToken'], ['xAPIKey'], ['apiKey']],
   envByKey: {
     apiKey: 'DEDALUS_API_KEY',
     xAPIKey: 'DEDALUS_X_API_KEY',
+    browserToken: 'DEDALUS_BROWSER_TOKEN',
   },
   methods: [
     {
@@ -879,6 +888,22 @@ export const auth = {
       kind: 'token',
       clientKey: 'xAPIKey',
       prompt: 'API key: ',
+    },
+    {
+      name: 'oauth-browser',
+      label: 'Sign in with a browser (OAuth authorization code)',
+      kind: 'oauth',
+      grant: 'authorizationCode',
+      clientKey: 'browserToken',
+      tokenUrl: 'https://clerk.dedaluslabs.ai/oauth/token',
+      refreshUrl: 'https://clerk.dedaluslabs.ai/oauth/token',
+      authorizationUrl: 'https://clerk.dedaluslabs.ai/oauth/authorize',
+      scopes: ['offline_access', 'user:org:read'],
+      clientId: 'j7A9ArTlXXvR2ocG',
+      redirectPort: 0,
+      revocationUrl: 'https://clerk.dedaluslabs.ai/oauth/token/revoke',
+      resource: ['https://dcs.dedaluslabs.ai'],
+      issuer: 'https://clerk.dedaluslabs.ai',
     },
   ],
 } as const satisfies CliAuthDefinition;

@@ -68,17 +68,20 @@ See the [API reference](./api.md) for every available operation.
 
 ## Signing In
 
-Browser login is not configured in this public package. Use an API key until the public OAuth provider registration is ready.
+Run `dedalus login` and select “Sign in with a browser” at the prompt.
 
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. It also asks the provider to revoke a saved OAuth token when a revocation endpoint is known. The local copy is removed first, so if the provider cannot be reached the credential is still gone from this machine; the failure is printed as a warning and the command still succeeds. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key, oauth-browser. Pass `--flow <name>` to pick one without being asked.
 
 ```sh
-dedalus login --flow api-key
+dedalus login
+dedalus machines list
 dedalus logout
 dedalus logout --all
 ```
 
 <br />
+
+Browser sessions send API requests directly to `https://dcs.dedaluslabs.ai`. API-key authentication uses the same endpoint by default, or your selected API endpoint. Do not combine browser-token flags or environment variables with API-key credentials.
 
 ## File Arguments
 

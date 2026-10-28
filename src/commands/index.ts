@@ -890,7 +890,7 @@ export const auth = {
       prompt: 'API key: ',
     },
     {
-      name: 'oauth',
+      name: 'oauth-browser',
       label: 'Sign in with a browser (OAuth authorization code)',
       kind: 'oauth',
       grant: 'authorizationCode',

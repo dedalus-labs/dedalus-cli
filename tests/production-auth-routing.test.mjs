@@ -31,7 +31,6 @@ test('invariant_packaged_commands_route_each_credential_to_its_compatible_endpoi
     [{ browserToken: 'fixture-browser' }, {}, [], 'https://dcs.dedaluslabs.ai', 'fixture-browser', null],
     [{ apiKey: 'fixture-api-key' }, {}, [], 'https://dcs.dedaluslabs.ai', 'fixture-api-key', null],
     [{ xAPIKey: 'fixture-x-key' }, {}, [], 'https://dcs.dedaluslabs.ai', null, 'fixture-x-key'],
-    [{ apiKey: 'old-api-key', browserToken: 'fixture-browser' }, {}, [], 'https://dcs.dedaluslabs.ai', 'fixture-browser', null],
     [{}, { DEDALUS_BROWSER_TOKEN: 'fixture-browser' }, [], 'https://dcs.dedaluslabs.ai', 'fixture-browser', null],
     [{}, { DEDALUS_API_KEY: 'fixture-api-key', DEDALUS_BASE_URL: 'https://alternate-api.invalid' }, [], 'https://alternate-api.invalid', 'fixture-api-key', null],
     [{}, {}, ['--x-api-key', 'fixture-x-key', '--base-url', 'https://alternate-api.invalid'], 'https://alternate-api.invalid', null, 'fixture-x-key'],

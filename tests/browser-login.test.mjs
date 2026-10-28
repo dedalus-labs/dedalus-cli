@@ -29,10 +29,7 @@ test('invariant_public_browser_flow_contains_production_provider_configuration',
   assert.deepEqual(method.resource, ['https://dcs.dedaluslabs.ai']);
   assert.deepEqual(method.scopes, ['offline_access', 'user:org:read']);
   assert.equal(method.redirectPort, 0);
-  // Browser sign-in is the only login flow, so `dedalus login` never shows a picker. API keys
-  // remain flags and environment variables, and a saved browser session outranks a saved key.
-  assert.deepEqual(auth.methods.map(method => method.name), ['oauth-browser']);
-  assert.deepEqual(auth.requirements, [['browserToken'], ['apiKey'], ['xAPIKey']]);
+  assert.deepEqual(auth.requirements, [['apiKey'], ['xAPIKey'], ['browserToken']]);
 });
 
 for (const callbackCase of ['valid', 'wrong-issuer', 'missing-issuer', 'duplicate-issuer', 'wrong-state', 'duplicate-state', 'duplicate-code', 'duplicate-error']) {

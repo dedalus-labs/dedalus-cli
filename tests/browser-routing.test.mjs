@@ -30,20 +30,22 @@ test('invariant_browser_credentials_are_routed_only_to_the_production_api', asyn
   }
   for (const baseUrl of ['https://gateway.invalid/dcs', 'https://other.invalid', 'http://dcs.dedaluslabs.ai',
     'https://dcs.dedaluslabs.ai.attacker.invalid', 'https://dcs.dedaluslabs.ai/private']) {
-    await assert.rejects(options({ browserToken: 'fixture-browser-token', baseUrl }), /production DCS API/);
+    await assert.rejects(options({ browserToken: 'fixture-browser-token', baseUrl }),
+      new RegExp(`production DCS API .*--base-url is ${baseUrl.replace(/[.\/]/g, '\\$&')}\\. Unset --base-url`));
   }
   process.env.DEDALUS_BASE_URL = 'https://other.invalid';
-  await assert.rejects(options({ browserToken: 'fixture-browser-token' }), /production DCS API/);
+  await assert.rejects(options({ browserToken: 'fixture-browser-token' }),
+    /DEDALUS_BASE_URL is https:\/\/other\.invalid\. Unset DEDALUS_BASE_URL/);
 });
 
 test('invariant_mixed_authentication_and_other_environments_fail_before_request_construction', async (t) => {
   cleanEnvironment(t);
-  for (const credential of [{ apiKey: 'fixture-key' }, { xApiKey: 'fixture-key' }]) {
-    await assert.rejects(options({ browserToken: 'fixture-browser-token', ...credential }), /not both/);
+  for (const [credential, source] of [[{ apiKey: 'fixture-key' }, 'DEDALUS_API_KEY'], [{ xApiKey: 'fixture-key' }, 'DEDALUS_X_API_KEY']]) {
+    await assert.rejects(options({ browserToken: 'fixture-browser-token', ...credential }), new RegExp(`${source}\\), not both`));
   }
   for (const key of ['DEDALUS_API_KEY', 'DEDALUS_X_API_KEY']) {
     process.env[key] = 'fixture-key';
-    await assert.rejects(options({ browserToken: 'fixture-browser-token' }), /not both/);
+    await assert.rejects(options({ browserToken: 'fixture-browser-token' }), new RegExp(`${key}\\), not both`));
     delete process.env[key];
   }
   await assert.rejects(options({ browserToken: 'fixture-browser-token' }, 'staging'), /production environment/);

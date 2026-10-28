@@ -1,16 +1,16 @@
 {
   "packages": {
-    ".": {}
+    ".": {
+      "release-type": "node",
+      "extra-files": ["src/commands/index.ts", "src/sdk/version.ts"]
+    }
   },
-  "$schema": "https://raw.githubusercontent.com/stainless-api/release-please/main/schemas/config.json",
-  "include-v-in-tag": true,
-  "include-component-in-tag": false,
-  "versioning": "prerelease",
-  "prerelease": true,
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
-  "pull-request-header": "Automated Release PR",
+  "include-component-in-tag": false,
   "pull-request-title-pattern": "release: ${version}",
+  "pull-request-header": "Automated Release PR",
+  "pull-request-footer": "The semver version number is based on included commit messages. To release a specific version,\nedit this pull request title to `release: 1.2.3` — Scalar re-creates this pull request at that\nversion, so wait for the `Release PR version` check to pass before merging.\n\nBrought to you by [Scalar](https://scalar.com)",
   "changelog-sections": [
     {
       "type": "feat",
@@ -37,34 +37,8 @@
       "section": "Documentation"
     },
     {
-      "type": "style",
-      "section": "Styles"
-    },
-    {
       "type": "refactor",
       "section": "Refactors"
-    },
-    {
-      "type": "test",
-      "section": "Tests",
-      "hidden": true
-    },
-    {
-      "type": "build",
-      "section": "Build System"
-    },
-    {
-      "type": "ci",
-      "section": "Continuous Integration",
-      "hidden": true
     }
-  ],
-  "reviewers": [
-    "@windsornguyen"
-  ],
-  "release-type": "simple",
-  "extra-files": [
-    "pkg/cmd/version.go",
-    "README.md"
   ]
 }

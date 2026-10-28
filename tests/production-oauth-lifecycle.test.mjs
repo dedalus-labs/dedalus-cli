@@ -59,7 +59,7 @@ test('invariant_production_browser_configuration_drives_the_complete_credential_
   skip: process.platform === 'win32', timeout: 15000,
 }, async (t) => {
   const { run, store, revoked, readStore, requests, authorization: readAuthorization } = fixture(t);
-  const login = await run(['login', '--flow', 'oauth-browser'], true);
+  const login = await run(['login', '--flow', 'oauth'], true);
   assert.equal(login.code, 0, login.stderr);
   const authorization = readAuthorization();
   assert.deepEqual(authorization.getAll('resource'), [api]);

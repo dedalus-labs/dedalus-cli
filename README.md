@@ -68,11 +68,11 @@ See the [API reference](./api.md) for every available operation.
 
 ## Signing In
 
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. It also asks the provider to revoke a saved OAuth token when a revocation endpoint is known. The local copy is removed first, so if the provider cannot be reached the credential is still gone from this machine; the failure is printed as a warning and the command still succeeds. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key, oauth-browser. Pass `--flow <name>` to pick one without being asked.
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. It also asks the provider to revoke a saved OAuth token when a revocation endpoint is known. The local copy is removed first, so if the provider cannot be reached the credential is still gone from this machine; the failure is printed as a warning and the command still succeeds. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key, oauth. Pass `--flow <name>` to pick one without being asked.
 
 ```sh
 dedalus login
-dedalus login --flow oauth-browser
+dedalus login --flow oauth
 dedalus machines list
 dedalus logout
 dedalus logout --all

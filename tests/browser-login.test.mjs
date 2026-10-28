@@ -18,7 +18,7 @@ const browserMethod = { name: 'browser', label: 'Browser', kind: 'oauth', grant:
 
 test('invariant_public_browser_flow_contains_production_provider_configuration', () => {
   const method = auth.methods.find(method => method.kind === 'oauth');
-  assert.equal(method.name, 'oauth-browser');
+  assert.equal(method.name, 'oauth');
   assert.equal(method.clientKey, 'browserToken');
   assert.equal(method.issuer, 'https://clerk.dedaluslabs.ai');
   assert.equal(method.clientId, 'j7A9ArTlXXvR2ocG');

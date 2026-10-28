@@ -68,9 +68,9 @@ See the [API reference](./api.md) for every available operation.
 
 ## Signing In
 
-Run `dedalus login` and select “Sign in with a browser” at the prompt.
+Run `dedalus login` to sign in with your browser. On a machine without a browser, or in CI, set `DEDALUS_API_KEY` instead.
 
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. It also asks the provider to revoke a saved OAuth token when a revocation endpoint is known. The local copy is removed first, so if the provider cannot be reached the credential is still gone from this machine; the failure is printed as a warning and the command still succeeds. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key, oauth-browser. Pass `--flow <name>` to pick one without being asked.
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. It also asks the provider to revoke a saved OAuth token when a revocation endpoint is known. The local copy is removed first, so if the provider cannot be reached the credential is still gone from this machine; the failure is printed as a warning and the command still succeeds. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. A saved browser session is used before an API key saved by an earlier version of the CLI.
 
 ```sh
 dedalus login

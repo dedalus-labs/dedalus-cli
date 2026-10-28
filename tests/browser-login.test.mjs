@@ -29,7 +29,8 @@ test('invariant_public_browser_flow_contains_production_provider_configuration',
   assert.deepEqual(method.resource, ['https://dcs.dedaluslabs.ai']);
   assert.deepEqual(method.scopes, ['offline_access', 'user:org:read']);
   assert.equal(method.redirectPort, 0);
-  assert.deepEqual(auth.requirements, [['apiKey'], ['xAPIKey'], ['browserToken']]);
+  // Follows the spec's security order, so a saved browser session outranks a saved key.
+  assert.deepEqual(auth.requirements, [['browserToken'], ['xAPIKey'], ['apiKey']]);
 });
 
 for (const callbackCase of ['valid', 'wrong-issuer', 'missing-issuer', 'duplicate-issuer', 'wrong-state', 'duplicate-state', 'duplicate-code', 'duplicate-error']) {

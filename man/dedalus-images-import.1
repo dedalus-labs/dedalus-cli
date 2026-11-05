@@ -1,0 +1,34 @@
+.TH "DEDALUS\-IMAGES\-IMPORT" "1" "" "dedalus" "Dedalus Manual"
+.SH "NAME"
+dedalus\-images\-import \- Upload an image archive and wait for readiness
+.SH "SYNOPSIS"
+.B dedalus images import
+.I archive
+[options]
+.SH "DESCRIPTION"
+Stream a docker save archive to signed storage, register the image, and poll until
+ready. Progress is written to stderr and one final image object to stdout.
+.SH "OPTIONS"
+.TP
+.B \-\-name <name>
+Image label.
+.TP
+.B \-\-platform <platform>
+linux/amd64 (default) or linux/arm64.
+.TP
+.B \-\-no-wait
+Return after upload and registration while preparation continues.
+.TP
+.B \-\-wait
+Wait for readiness (default).
+.TP
+.B \-\-wait-timeout <seconds>
+Total import budget, default 3600. Does not cancel server preparation.
+.TP
+.B \-\-idempotency-key <key>
+Reuse the same key when retrying the same archive and options.
+.SH "EXIT STATUS"
+Zero means ready, or accepted when using \-\-no\-wait. Preparation failures exit
+nonzero. Ctrl-C exits 130 without deleting an accepted image.
+.SH "SEE ALSO"
+dedalus(1)

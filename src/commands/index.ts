@@ -10,6 +10,7 @@ import {
 } from '../cli/runtime';
 import { completions } from '../cli/completions';
 import type { CliAuthDefinition } from '../cli/login';
+import { addImageImport } from '../custom/images.js';
 import { addMachineAliases } from '../custom/machines.js';
 import { registerFeedbackCommands } from '../feedback/command.js';
 
@@ -909,17 +910,31 @@ export const auth = {
 } as const satisfies CliAuthDefinition;
 
 export const getProgram = (): Command =>
-  registerFeedbackCommands(addMachineAliases(createProgram({
-    SDK,
-    binaryName: 'dedalus',
-    version: '0.6.0', // x-release-please-version
-    description: 'CLI for Dedalus',
-    defaultFormat: 'json',
-    defaultErrorFormat: 'json',
+  addImageImport(
+    registerFeedbackCommands(
+      addMachineAliases(
+        createProgram({
+          SDK,
+          binaryName: 'dedalus',
+          version: '0.6.0', // x-release-please-version
+          description: 'CLI for Dedalus',
+          defaultFormat: 'json',
+          defaultErrorFormat: 'json',
+          clientOptions,
+          // Feedback owns a positional message and attachment selection instead of generated flags.
+          commands: commands.filter(
+            (definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback',
+          ),
+          groups,
+          completions,
+          auth,
+        }),
+        clientOptions,
+        { auth },
+      ),
+      clientOptions,
+      auth,
+    ),
     clientOptions,
-    // Feedback owns a positional message and attachment selection instead of generated flags.
-    commands: commands.filter((definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback'),
-    groups,
-    completions,
     auth,
-  }), clientOptions, { auth }), clientOptions, auth);
+  );

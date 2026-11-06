@@ -1,0 +1,158 @@
+name: CLI SDK Release
+
+on:
+  # Manual re-publish only: the automated publish for each release runs as the `publish` job
+  # inside release-please.yml, in the same run that cuts the tag (dispatching a workflow here
+  # instead would resolve it on the repository's default branch only, which breaks releasing
+  # from any other release line). Dispatch this workflow at an existing release tag to re-run
+  # a failed or skipped publish. A dispatched run is top-level, so OIDC trusted-publisher
+  # claims name this file; register it as an additional trusted publisher only when manual
+  # re-publishes are used. Never add a workflow_call trigger here — registries reject
+  # publishes from called (reusable) workflows.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERSIONING_POLICY: manual
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install
+      - run: npm run build
+      # The version is owned by release tooling in this repository, never by the SDK generator,
+      # so the asset and Homebrew steps read it from package.json at run time.
+      - name: Read package version
+        run: echo "PKG_VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+      # OIDC trusted publishing needs npm >= 11.5; pinned to the major (not `latest`) so a new
+      # npm major raising its Node engine floor cannot break publishes against the pinned Node.
+      # No token is stored: `npm publish` mints a short-lived, provenance-signed credential once
+      # this repository is registered as a trusted publisher for the package.
+      - run: npm install -g npm@11
+      - name: Publish to npm
+        run: node scripts/publish-npm.mjs
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.0"
+      # `bun build --compile` embeds the Bun runtime and every dependency in the executable, so the
+      # published artifacts run on a machine with no Node, no Bun, and no `node_modules` — unlike the
+      # npm package, which stays a normal Node CLI. Bun cross-compiles every target from this one
+      # Linux runner by downloading the matching runtime, so the matrix needs no extra jobs.
+      #
+      # The compile reads `src/bin.ts` rather than the `tsc` output in `dist/`: Bun bundles
+      # TypeScript directly, and going through `dist/` would only add the emitted ESM specifier
+      # rewriting as a failure mode between the source and the shipped binary.
+      #
+      # Asset names carry no version: the release tag in the download path already does, and a
+      # stable file name is what makes `releases/latest/download/<name>` resolve, so install
+      # instructions can point at "latest" without being rewritten every release.
+      - name: Compile standalone binaries
+        run: |
+          ROOT="$PWD"
+          mkdir -p release-binaries
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            rm -rf compile-out && mkdir -p compile-out
+            case "$target" in
+              windows-*)
+                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/dedalus.exe"
+                (cd compile-out && zip -q "$ROOT/release-binaries/dedalus-${target}.zip" "dedalus.exe")
+                ;;
+              *)
+                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/dedalus"
+                tar -czf "release-binaries/dedalus-${target}.tar.gz" -C compile-out "dedalus"
+                ;;
+            esac
+          done
+          rm -rf compile-out
+      - name: Attach binaries to the release
+        run: gh release upload "v${PKG_VERSION}" release-binaries/* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          # Reads back the archives the preceding asset step just uploaded. That step runs
+          # `gh release upload` on the ambient GITHUB_TOKEN, which can only write releases in
+          # the repository the workflow runs in, so the download must resolve against
+          # `github.repository` too. Deriving it from configured productionRepo instead lets the
+          # two disagree — a renamed, transferred, or forked destination repo then 404s here on
+          # every release, having uploaded the archives perfectly well one step earlier.
+          BASE_URL="https://github.com/${{ github.repository }}/releases/download/v${PKG_VERSION}"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/dedalus-labs/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          # Each archive holds a single `bun build --compile` executable with the Bun runtime and
+          # every dependency embedded, so the formula declares no `depends_on` and installs the
+          # binary as-is — `brew install` no longer pulls Node in as a dependency.
+          #
+          # The formula file is lowercase even when the command it installs is not: Homebrew resolves
+          # `brew install <owner>/<tap>/<name>` to `Formula/<name>.rb`, and that lookup is case-sensitive
+          # on Linux. The `bin.install` below still installs the command under its own spelling.
+          cat > "tap/Formula/dedalus.rb" <<'EOF'
+          class Dedalus < Formula
+            desc "The official CLI for Dedalus."
+            homepage "https://docs.dedaluslabs.ai"
+            version "__VERSION__"
+
+            on_macos do
+              on_arm do
+                url "__URL_DARWIN_ARM64__"
+                sha256 "__SHA_DARWIN_ARM64__"
+              end
+              on_intel do
+                url "__URL_DARWIN_X64__"
+                sha256 "__SHA_DARWIN_X64__"
+              end
+            end
+
+            on_linux do
+              on_arm do
+                url "__URL_LINUX_ARM64__"
+                sha256 "__SHA_LINUX_ARM64__"
+              end
+              on_intel do
+                url "__URL_LINUX_X64__"
+                sha256 "__SHA_LINUX_X64__"
+              end
+            end
+
+            def install
+              bin.install "dedalus"
+            end
+
+            test do
+              system "#{bin}/dedalus", "--help"
+            end
+          end
+          EOF
+          FORMULA="tap/Formula/dedalus.rb"
+          # Homebrew resolves one url/sha256 pair per platform at install time, but the formula is a
+          # single file, so every platform the tap supports has to be pinned on every release.
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+            ASSET="dedalus-${target}.tar.gz"
+            curl -fsSL "$BASE_URL/$ASSET" -o "$ASSET"
+            SHA256="$(shasum -a 256 "$ASSET" | cut -d" " -f1)"
+            # `darwin-arm64` names the `__URL_DARWIN_ARM64__`/`__SHA_DARWIN_ARM64__` placeholder
+            # pair, so the loop stays driven by the target list instead of a hand-written sed per
+            # platform that can silently fall out of step with the formula above.
+            TOKEN="$(echo "$target" | tr "a-z-" "A-Z_")"
+            sed -i -e "s|__URL_${TOKEN}__|$BASE_URL/$ASSET|" -e "s|__SHA_${TOKEN}__|$SHA256|" "$FORMULA"
+          done
+          sed -i -e "s|__VERSION__|$PKG_VERSION|" "$FORMULA"
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "Formula/dedalus.rb"
+          git commit -m "dedalus ${PKG_VERSION}" || { echo "formula unchanged, skipping"; exit 0; }
+          git push

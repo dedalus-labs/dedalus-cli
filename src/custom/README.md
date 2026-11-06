@@ -9,6 +9,10 @@ For scripts, use `dedalus ssh <machine-id>` with a bare UUID. Omitting the ID
 without a terminal is a usage error. SSH polling uses the machine ID returned
 by the server and waits through wake and SSH setup states.
 
+Temporary SSH credentials are removed on completion or SIGINT, SIGTERM, and
+SIGHUP. Cancellation signals the active key-generation or SSH process and exits
+with the signal's status. The machine remains available for a later session.
+
 ```sh
 dedalus ssh 12345678-1234-4234-8234-123456789abc
 ```

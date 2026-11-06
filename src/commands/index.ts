@@ -10,7 +10,9 @@ import {
 } from '../cli/runtime';
 import { completions } from '../cli/completions';
 import type { CliAuthDefinition } from '../cli/login';
-import { addMachineAliases } from '../custom/machines.js';
+// @custom start
+import { addMachineAliases, handleMachineResult } from '../custom/machines.js';
+// @custom end
 import { registerFeedbackCommands } from '../feedback/command.js';
 
 const clientOptions = [
@@ -922,4 +924,7 @@ export const getProgram = (): Command =>
     groups,
     completions,
     auth,
+    // @custom start
+    handleResult: handleMachineResult,
+    // @custom end
   }), clientOptions, { auth }), clientOptions, auth);

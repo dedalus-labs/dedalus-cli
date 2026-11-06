@@ -1,5 +1,20 @@
 # SSH shortcut
 
+`dedalus machines create --ssh` creates a machine, then connects through the
+same SSH flow as `dedalus ssh <machine-id>`. The generated command owns the create flags,
+piped JSON, API defaults, and authentication. Its result hook passes the raw
+machine ID and the existing client to SSH before output transforms run.
+Creation errors skip SSH. Session errors retain the usual CLI error format.
+
+With piped JSON, SSH reads from the controlling terminal after the create command
+consumes stdin. If the terminal cannot be opened, the command rejects `--ssh`
+before creating a machine. The terminal descriptor closes after command execution.
+
+Reconnect hints use the SDK's resolved endpoint and organization. Explicit
+credential flags become environment-variable references with instructions to
+reuse the same credential. File references remain file references. Endpoint URLs
+containing credentials or query parameters also use an environment reference.
+
 `dedalus ssh` opens a searchable machine picker in an interactive terminal.
 Filter by machine ID or lifecycle status, then use the arrow keys and Enter to
 connect. Escape and Ctrl-C cancel, including while machines are loading.

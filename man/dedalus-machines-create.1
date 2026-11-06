@@ -12,6 +12,9 @@ Create machine
 \fB\-\-autosleep\fR \fI<value>\fR
 Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
 .TP
+\fB\-\-image\-id\fR \fI<value>\fR
+Organization\-owned ready custom image ID. Requires Pro. Omit for the platform default.
+.TP
 \fB\-\-memory\-mib\fR \fI<number>\fR
 Memory in MiB.
 .TP
@@ -49,7 +52,7 @@ Print transformed string values without JSON quotes.
 Enable SDK debug logging on standard error.
 .TP
 \fB\-\-api\-key\fR \fI<value>\fR
-Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_API_KEY environment variable.
+Dedalus API key or short\-lived delegated access token in `Authorization: Bearer <credential>`. Can also be set with the DEDALUS_API_KEY environment variable.
 .TP
 \fB\-\-x\-api\-key\fR \fI<value>\fR
 Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X_API_KEY environment variable.
@@ -64,7 +67,7 @@ Optional organization assertion. Must match the organization identified by the A
 .RS 4
 .nf
 dedalus machines create \e
-  \-\-api\-key "$DEDALUS_API_KEY" \e
+  \-\-browser\-token "$DEDALUS_BROWSER_TOKEN" \e
   \-\-autosleep '300s' \e
   \-\-memory\-mib '4096' \e
   \-\-storage\-gib '10' \e

@@ -10,6 +10,7 @@ The full API of this library can be found in [api.md](./api.md).
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Image import](#image-import)
 - [Feedback](#feedback)
 - [Staging package testing](#staging-package-testing)
 - [API Reference](./api.md)
@@ -46,6 +47,42 @@ sudo mv dedalus /usr/local/bin/
 ```
 
 <br />
+
+## Image import
+
+Save a Docker image as an archive, then import it:
+
+```sh
+docker save my-app:latest -o my-app.tar
+dedalus images import my-app.tar --name my-app --platform linux/amd64
+```
+
+Import hashes and streams the file to signed storage, registers the image, then
+polls until it is ready. Progress goes to stderr; stdout contains one final image
+object. A failed, rejected, or revoked image makes the command exit nonzero.
+
+Use `--no-wait` to return after upload and registration while preparation continues:
+
+```sh
+dedalus images import my-app.tar --name my-app --no-wait
+```
+
+`--wait` is accepted explicitly but is already the default. `--wait-timeout 3600`
+sets the total import budget in seconds; the global `--timeout` remains a per-request
+limit in milliseconds. Timing out or pressing Ctrl-C stops the client and does not
+cancel accepted preparation. Keep the image ID from progress output to check its
+status later. Use `--idempotency-key <key>` to reuse the same import identity when
+retrying the same archive and options.
+
+Archives must be regular, nonempty `docker save` files of at most 5 GiB. This command
+requires the image API to be deployed and enabled for your organization; it does not
+bypass access controls. Shell completion for this custom command is not yet included.
+
+Custom image imports currently require an Ubuntu 24.04 `linux/amd64` Docker-save
+archive. On Apple silicon, build or pull with `--platform linux/amd64` before
+saving the archive. The image provides the filesystem; container entrypoint,
+CMD, environment, working directory, and user settings are not applied. Start
+processes using Machine exec or SSH after the Machine reaches running.
 
 ## Usage
 

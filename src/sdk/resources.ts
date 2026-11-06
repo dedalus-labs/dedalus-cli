@@ -1,6 +1,6 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-export { Machines, Organization } from './resources/index';
+export { Machines, Organization, Images } from './resources/index';
 export type {
   Machine,
   MachineList,
@@ -18,4 +18,15 @@ export type {
   MachineSleepParams,
   MachineWakeParams,
   MachineRebootParams,
+  MachineResizeParams,
+  MachineResizeResponse,
+  Image,
+  ImageList,
+  Source,
+  Error,
+  ImageListParams,
+  ImageCreateParams,
+  ImageRetrieveParams,
+  ImageUpdateParams,
+  ImageDeleteParams,
 } from './resources/index';

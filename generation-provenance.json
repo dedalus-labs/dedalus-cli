@@ -1,0 +1,12 @@
+{
+  "source_spec_sha": "9f8d54f123e81b8bc7252f855c52ecbf7cc8ae42",
+  "source_spec_sha256": "c0b2db893e3017c5c83c14375e6085581584641f617ee7ea1305ab80e9b50421",
+  "generator_version": "0.38.0",
+  "build_version": "0.1.16",
+  "configuration_sha256": "10d2f59b8a69dce627060e1104eac425cec104dd90d3177c08a29a902cb48875",
+  "operation_count": 31,
+  "generated_commit": null,
+  "download_sha256": "922dc96ebbb257e7b8016ff581243ec40d0a263a27b4fd3a5e4c00995cf9a168",
+  "integration_base": "scalar-next",
+  "published_package": false
+}

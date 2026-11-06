@@ -2,6 +2,12 @@
 
 import type { Dedalus } from './client';
 import type { FinalRequestOptions } from './internal/request-options';
+import {
+  MAX_RESPONSE_BODY_BYTES,
+  readBodyText,
+  readUnderDeadline,
+  releaseDeadline,
+} from './internal/utils/body';
 
 export type APIResponseProps = {
   readonly response: Response;
@@ -14,17 +20,20 @@ export type APIResponseProps = {
 
 export type ParseResponse<T> = (client: Dedalus, props: APIResponseProps) => T | Promise<T>;
 
-export const defaultParseResponse = async <T>(_client: unknown, props: APIResponseProps): Promise<T> => {
-  const { response } = props;
-  if (response.status === 204) return null as T;
-  if (props.options.__binaryResponse) return response as T;
-  const contentType = response.headers.get('content-type');
-  const mediaType = contentType?.split(';')[0]?.trim();
-  const isJson = mediaType?.includes('application/json') || mediaType?.endsWith('+json');
-  if (isJson && response.headers.get('content-length') === '0') return undefined as T;
-  if (isJson) return (await response.json()) as T;
-  return (await response.text()) as unknown as T;
-};
+// The read runs under the request deadline, which `makeRequest` left armed for it and which is
+// disarmed here once the body is in, however the read ends.
+export const defaultParseResponse = async <T>(_client: unknown, props: APIResponseProps): Promise<T> =>
+  readUnderDeadline(props, async () => {
+    const { response } = props;
+    if (response.status === 204) return null as T;
+    if (props.options.__binaryResponse) return response as T;
+    const contentType = response.headers.get('content-type');
+    const mediaType = contentType?.split(';')[0]?.trim();
+    const isJson = mediaType?.includes('application/json') || mediaType?.endsWith('+json');
+    if (isJson && response.headers.get('content-length') === '0') return undefined as T;
+    if (isJson) return JSON.parse(await readBodyText(response, MAX_RESPONSE_BODY_BYTES)) as T;
+    return (await readBodyText(response, MAX_RESPONSE_BODY_BYTES)) as unknown as T;
+  });
 
 /** A Promise subclass providing SDK response helpers. */
 export class APIPromise<T> extends Promise<T> {
@@ -47,11 +56,19 @@ export class APIPromise<T> extends Promise<T> {
   }
 
   asResponse(): Promise<Response> {
-    return this.responsePromise.then((props) => props.response);
+    // The caller reads this body at its own pace, so the request deadline stops here.
+    return this.responsePromise.then((props) => {
+      releaseDeadline(props.controller);
+      return props.response;
+    });
   }
 
   async withResponse(): Promise<{ data: T; response: Response }> {
-    const [data, response] = await Promise.all([this.parse(), this.asResponse()]);
+    // Not `asResponse()`, which would disarm the deadline the body parse runs under.
+    const [data, response] = await Promise.all([
+      this.parse(),
+      this.responsePromise.then((props) => props.response),
+    ]);
     return { data, response };
   }
 

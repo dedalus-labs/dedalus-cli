@@ -30,29 +30,6 @@ export class Logs extends APIResource {
   }
 
   /**
-   * Reauthorize execution log publication
-   *
-   * @param {LogReauthorizeParams} params - The parameters to send with the request.
-   * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
-   * @returns {APIPromise<Status>} OK
-   *
-   * @example
-   * ```ts
-   * const status = await client.machines.executions.logs.reauthorize({
-   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
-   *   execution_id: 'executionID',
-   * });
-   * ```
-   */
-  reauthorize(params: LogReauthorizeParams, options?: RequestOptions): APIPromise<Status> {
-    const { machine_id, execution_id } = params;
-    return this._client.post(
-      __scalarPath`/v1/machines/${machine_id}/executions/${execution_id}/logs/reauthorize`,
-      options,
-    );
-  }
-
-  /**
    * Create execution log read token
    *
    * @param {LogCreateTokenParams} params - The parameters to send with the request.
@@ -79,8 +56,6 @@ export class Logs extends APIResource {
 export interface Status {
   capture: Status.Capture;
   execution_id: string;
-  code?: string;
-  publication?: Status.Publication;
   stream_id?: string;
 }
 
@@ -99,17 +74,6 @@ export namespace Status {
      */
     unconfirmed_bytes?: string;
   }
-
-  export interface Publication {
-    complete: boolean;
-    /**
-     * @format int64
-     * @minimum 0
-     */
-    queued_messages: number;
-    state: 'active' | 'finishing' | 'failed' | 'closed';
-    code?: string;
-  }
 }
 
 export interface ReadToken {
@@ -125,22 +89,6 @@ export interface ReadToken {
 }
 
 export interface LogRetrieveParams {
-  /**
-   * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
-   * @minLength 36
-   * @maxLength 39
-   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
-   */
-  machine_id: string;
-  /**
-   * @minLength 1
-   * @maxLength 253
-   * @pattern ^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$
-   */
-  execution_id: string;
-}
-
-export interface LogReauthorizeParams {
   /**
    * Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
    * @minLength 36
@@ -176,7 +124,6 @@ export declare namespace Logs {
     type Status as Status,
     type ReadToken as ReadToken,
     type LogRetrieveParams as LogRetrieveParams,
-    type LogReauthorizeParams as LogReauthorizeParams,
     type LogCreateTokenParams as LogCreateTokenParams,
   };
 }

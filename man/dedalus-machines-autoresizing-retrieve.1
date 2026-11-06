@@ -1,12 +1,12 @@
 .\" File generated from our OpenAPI spec by Scalar. Do not edit.
 .TH "DEDALUS\-MACHINES\-AUTORESIZING\-RETRIEVE" "1" "" "dedalus" "Dedalus Manual"
 .SH "NAME"
-dedalus\-machines\-autoresizing\-retrieve \- Read this machine's RAM autoresizing settings
+dedalus\-machines\-autoresizing\-retrieve \- Read this machine's autoresizing settings
 .SH "SYNOPSIS"
 .B dedalus machines autoresizing retrieve
 \fB\-\-machine\-id\fR \fI<value>\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
-Read this machine's RAM autoresizing settings
+Read this machine's autoresizing settings
 .SH "OPTIONS"
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
@@ -40,7 +40,7 @@ Print transformed string values without JSON quotes.
 Enable SDK debug logging on standard error.
 .TP
 \fB\-\-api\-key\fR \fI<value>\fR
-Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_API_KEY environment variable.
+Dedalus API key or short\-lived delegated access token in `Authorization: Bearer <credential>`. Can also be set with the DEDALUS_API_KEY environment variable.
 .TP
 \fB\-\-x\-api\-key\fR \fI<value>\fR
 Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X_API_KEY environment variable.
@@ -55,7 +55,7 @@ Optional organization assertion. Must match the organization identified by the A
 .RS 4
 .nf
 dedalus machines autoresizing retrieve \e
-  \-\-api\-key "$DEDALUS_API_KEY" \e
+  \-\-browser\-token "$DEDALUS_BROWSER_TOKEN" \e
   \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f'
 .fi
 .RE

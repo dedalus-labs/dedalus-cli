@@ -46,6 +46,10 @@ function fixture(states = ['ready'], mutate = () => {}, retryReservation = false
           return new Response('{}', { status: 503, headers: { 'retry-after-ms': '1' } });
         return json(grant);
       }
+      if (new URL(url).pathname === '/v1/machines') {
+        assert.equal(JSON.parse(options.body).image_id, id);
+        return json({ machine_id: 'machine-fixture' });
+      }
       if (options.method === 'POST') return json(image('submitted'), 202);
       return json(image(states.shift() ?? 'ready'));
     },
@@ -164,4 +168,68 @@ test('failed uploads never register an image; a repeated immutable PUT can proce
         assert.equal(f.requests.length, 1);
       } else assert.equal((await result).state, 'submitted');
     }
+  }));
+
+test('a default-wait import feeds its ready image ID into generated Machine creation', () =>
+  archive(async (path) => {
+    const f = fixture(['ready']);
+    const ready = await importImage(f.client, path, { uploadFetch: f.uploadFetch, pollIntervalMs: 1 });
+    const machine = await f.client.machines.create({ image_id: ready.image_id });
+    assert.equal(machine.machine_id, 'machine-fixture');
+    assert.deepEqual(f.requests, ['/v1/images/uploads', '/v1/images', `/v1/images/${id}`, '/v1/machines']);
+  }));
+
+test('generated image errors preserve the flat public error envelope', async () => {
+  const envelope = {
+    error_code: 'IMAGE_SOURCE_INVALID',
+    message: 'archive rejected',
+    retryable: false,
+    details: { stage: 'validation' },
+    retry_after_ms: 500,
+  };
+  const client = new Dedalus({ apiKey: 'fixture', maxRetries: 0, fetch: async () => json(envelope, 422) });
+  await assert.rejects(client.images.retrieve({ image_id: id }), (error) => {
+    assert.deepEqual(error.error, envelope);
+    assert.match(error.message, /archive rejected/);
+    return true;
+  });
+});
+
+test('generated autoresizing uses PATCH and manual resize uses POST', async () => {
+  const requests = [];
+  const client = new Dedalus({
+    apiKey: 'fixture',
+    fetch: async (url, options) => {
+      requests.push([options.method, new URL(url).pathname]);
+      return json({
+        status: {
+          autoresize: {
+            cpu: { blocked_reason: 'MACHINE_QUOTA_EXCEEDED', blocked_at: '2026-01-01T00:00:00Z' },
+            memory: null,
+          },
+        },
+      });
+    },
+  });
+  await client.machines.autoresizing.update({ machine_id: id });
+  await client.organization.autoresizing.update({});
+  const resized = await client.machines.resize({ machine_id: id, vcpu: 2 });
+  assert.equal(resized.status.autoresize.cpu.blocked_reason, 'MACHINE_QUOTA_EXCEEDED');
+  assert.equal(resized.status.autoresize.memory, null);
+  assert.deepEqual(requests, [
+    ['PATCH', `/v1/machines/${id}/autoresizing`],
+    ['PATCH', '/v1/organization/autoresizing'],
+    ['POST', `/v1/machines/${id}/resize`],
+  ]);
+});
+
+test('unsupported platforms fail before reserving or uploading', () =>
+  archive(async (path) => {
+    const f = fixture();
+    await assert.rejects(
+      importImage(f.client, path, { platform: 'linux/arm64', uploadFetch: f.uploadFetch }),
+      /linux\/amd64/,
+    );
+    assert.deepEqual(f.requests, []);
+    assert.deepEqual(f.uploads, []);
   }));

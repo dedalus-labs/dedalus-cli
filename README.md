@@ -78,6 +78,12 @@ Archives must be regular, nonempty `docker save` files of at most 5 GiB. This co
 requires the image API to be deployed and enabled for your organization; it does not
 bypass access controls. Shell completion for this custom command is not yet included.
 
+Custom image imports currently require an Ubuntu 24.04 `linux/amd64` Docker-save
+archive. On Apple silicon, build or pull with `--platform linux/amd64` before
+saving the archive. The image provides the filesystem; container entrypoint,
+CMD, environment, working directory, and user settings are not applied. Start
+processes using Machine exec or SSH after the Machine reaches running.
+
 ## Usage
 
 ```sh

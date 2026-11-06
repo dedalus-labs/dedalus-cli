@@ -99,3 +99,23 @@ test('CLI default waits, no-wait skips GET, and terminal failures exit nonzero',
     await rm(dir, { recursive: true });
   }
 });
+
+test('machines create exposes --image-id and sends it unchanged', async () => {
+  const originalFetch = globalThis.fetch,
+    out = process.stdout.write;
+  let sent;
+  try {
+    process.stdout.write = () => true;
+    globalThis.fetch = async (url, options) => {
+      sent = [new URL(url).pathname, options.method, JSON.parse(options.body)];
+      return Response.json({ machine_id: 'fixture' });
+    };
+    await getProgram().parseAsync(['machines', 'create', '--image-id', id, '--api-key', 'fixture'], {
+      from: 'user',
+    });
+    assert.deepEqual(sent, ['/v1/machines', 'POST', { image_id: id }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.stdout.write = out;
+  }
+});

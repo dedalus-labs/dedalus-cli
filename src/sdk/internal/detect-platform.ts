@@ -122,35 +122,52 @@ type BrowserInfo = {
 
 declare const navigator: { userAgent: string } | undefined;
 
-// Note: modified from https://github.com/JS-DevTools/host-environment/blob/b1ab79ecde37db5d6e163c050e54fe7d287d7c92/src/isomorphic.browser.ts
+/**
+ * Reads the browser family and version from `navigator.userAgent`, or returns `null` outside a
+ * browser or for an agent it does not recognise.
+ *
+ * Every major browser also carries the tokens of the engines it grew out of (Edge says `Chrome/` and
+ * `Safari/`, Chrome says `Safari/`), so the most specific token is checked first.
+ */
 function getBrowserInfo(): BrowserInfo | null {
-  if (typeof navigator === 'undefined' || !navigator) {
+  if (typeof navigator === 'undefined' || !navigator || typeof navigator.userAgent !== 'string') {
     return null;
   }
+  const userAgent = navigator.userAgent;
+  const tokens = userAgentTokens(userAgent);
+  /** Returns the version of the first of `names` the agent carries a token for. */
+  const pick = (...names: string[]): string | undefined =>
+    names.map((name) => tokens.get(name)).find((version) => version !== undefined);
 
-  // NOTE: The order matters here!
-  const browserPatterns = [
-    { key: 'edge' as const, pattern: /Edge(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
-    { key: 'ie' as const, pattern: /MSIE(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
-    { key: 'ie' as const, pattern: /Trident(?:.*rv\:(\d+)\.(\d+)(?:\.(\d+))?)?/ },
-    { key: 'chrome' as const, pattern: /Chrome(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
-    { key: 'firefox' as const, pattern: /Firefox(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
-    { key: 'safari' as const, pattern: /(?:Version\W+(\d+)\.(\d+)(?:\.(\d+))?)?(?:\W+Mobile\S*)?\W+Safari/ },
-  ];
-
-  // Find the FIRST matching browser
-  for (const { key, pattern } of browserPatterns) {
-    const match = pattern.exec(navigator.userAgent);
-    if (match) {
-      const major = match[1] || 0;
-      const minor = match[2] || 0;
-      const patch = match[3] || 0;
-
-      return { browser: key, version: `${major}.${minor}.${patch}` };
-    }
-  }
-
+  const edge = pick('Edg', 'Edge', 'EdgA', 'EdgiOS');
+  if (edge) return { browser: 'edge', version: edge };
+  // IE 11 dropped `MSIE`; it is told apart by its `Trident/` engine token and an `rv:` version.
+  const ie =
+    /\bMSIE (\d+(?:\.\d+)*)/.exec(userAgent)?.[1] ??
+    (tokens.has('Trident') ? /\brv:(\d+(?:\.\d+)*)/.exec(userAgent)?.[1] : undefined);
+  if (ie) return { browser: 'ie', version: ie };
+  const firefox = pick('Firefox', 'FxiOS');
+  if (firefox) return { browser: 'firefox', version: firefox };
+  const chrome = pick('Chrome', 'CriOS', 'HeadlessChrome');
+  if (chrome) return { browser: 'chrome', version: chrome };
+  // Safari's own version is the `Version/` token; its `Safari/` token is the WebKit build, so an
+  // iOS app's web view that carries only `Safari/` is still Safari, at a version it does not state.
+  if (tokens.has('Safari')) return { browser: 'safari', version: tokens.get('Version') ?? 'unknown' };
   return null;
+}
+
+/**
+ * Collects the `Name/1.2.3` product tokens of a user-agent string, keeping the first version seen for
+ * each name.
+ */
+function userAgentTokens(userAgent: string): Map<string, string> {
+  const tokens = new Map<string, string>();
+  // The lookbehind starts a name only where a run of letters starts, so a long run is scanned once
+  // rather than retried from every letter in it.
+  for (const match of userAgent.matchAll(/(?<![A-Za-z])([A-Za-z]+)\/(\d+(?:\.\d+)*)/g)) {
+    if (!tokens.has(match[1]!)) tokens.set(match[1]!, match[2]!);
+  }
+  return tokens;
 }
 
 const normalizeArch = (arch: string): Arch => {

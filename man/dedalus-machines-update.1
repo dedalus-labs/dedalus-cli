@@ -6,23 +6,17 @@ dedalus\-machines\-update \- Update machine
 .B dedalus machines update
 \fB\-\-machine\-id\fR \fI<value>\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
-Update machine
+Changes settings such as autosleep.
 .SH "OPTIONS"
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
 Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.
 .TP
 \fB\-\-autosleep\fR \fI<value>\fR
-Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.
-.TP
-\fB\-\-memory\-mib\fR \fI<number>\fR
-Memory in MiB.
+The autosleep body parameter.
 .TP
 \fB\-\-storage\-gib\fR \fI<number>\fR
-Storage in GiB.
-.TP
-\fB\-\-vcpu\fR \fI<number>\fR
-CPU in vCPUs.
+The storage\-gib body parameter.
 .TP
 \fB\-\-base\-url\fR \fI<url>\fR
 Override the base URL for API requests.
@@ -52,7 +46,7 @@ Print transformed string values without JSON quotes.
 Enable SDK debug logging on standard error.
 .TP
 \fB\-\-api\-key\fR \fI<value>\fR
-Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_API_KEY environment variable.
+Dedalus API key or short\-lived delegated access token in `Authorization: Bearer <credential>`. Can also be set with the DEDALUS_API_KEY environment variable.
 .TP
 \fB\-\-x\-api\-key\fR \fI<value>\fR
 Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X_API_KEY environment variable.
@@ -67,7 +61,7 @@ Optional organization assertion. Must match the organization identified by the A
 .RS 4
 .nf
 dedalus machines update \e
-  \-\-api\-key "$DEDALUS_API_KEY" \e
+  \-\-browser\-token "$DEDALUS_BROWSER_TOKEN" \e
   \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f'
 .fi
 .RE

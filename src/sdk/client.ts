@@ -8,7 +8,8 @@ import { uuid4 } from './internal/utils/uuid';
 import { validatePositiveInteger, isAbsoluteURL, safeJSON, isEmptyObj } from './internal/utils/values';
 import { sleep } from './internal/utils/sleep';
 import { castToError, isAbortError } from './internal/errors';
-import { getPlatformHeaders } from './internal/detect-platform';
+import { MAX_ERROR_BODY_BYTES, holdDeadline, readBodyText } from './internal/utils/body';
+import { getPlatformHeaders, isRunningInBrowser } from './internal/detect-platform';
 import * as Shims from './internal/shims';
 import * as Opts from './internal/request-options';
 import { readEnv } from './internal/utils/env';
@@ -16,6 +17,7 @@ import {
   formatRequestDetails,
   loggerFor,
   parseLogLevel,
+  redactHeaders,
   redactUrl,
   type LogLevel,
   type Logger,
@@ -38,6 +40,7 @@ import {
   type LifecycleStatus,
   type MachineListItemsCursorPage,
   type MachineRetrieveResponse,
+  type MachineResizeResponse,
   type MachineListParams,
   type MachineCreateParams,
   type MachineRetrieveParams,
@@ -46,8 +49,21 @@ import {
   type MachineSleepParams,
   type MachineWakeParams,
   type MachineRebootParams,
+  type MachineResizeParams,
 } from './resources/machines/machines';
 import { Organization } from './resources/organization/organization';
+import {
+  Images,
+  type Image,
+  type ImageList,
+  type Source,
+  type Error as ImagesError,
+  type ImageListParams,
+  type ImageCreateParams,
+  type ImageRetrieveParams,
+  type ImageUpdateParams,
+  type ImageDeleteParams,
+} from './resources/images/images';
 
 export type AuthTokenProvider = () => string | Promise<string>;
 
@@ -105,6 +121,19 @@ export interface ClientOptions {
    * Specify a custom `fetch` function implementation.
    *
    * If not provided, we expect that `fetch` is defined globally.
+   *
+   * The client passes `redirect: 'manual'` and follows redirects itself, dropping credentials when
+   * a redirect leaves the API's origin. A custom `fetch` must honor that option: one that follows
+   * redirects on its own would re-send API keys and cookies to whatever host a redirect names, and
+   * a response it reports as `redirected` is refused for that reason. Every hop of a redirect goes
+   * through this function, so a wrapper that adds a credential itself must add it only for the
+   * API's own origin. A request whose `fetchOptions` set `redirect: 'manual'` gets its 3xx answer
+   * back unfollowed, so a caller can read a signed URL from `Location`; `'error'` is kept too.
+   *
+   * In a browser or a browser worker, which hide a manual redirect's target, a request whose only
+   * credentials are ones the browser itself keeps on the origin (`Authorization`, cookies) is sent
+   * with `redirect: 'follow'`. A request carrying an API key header is not, so a redirect it meets
+   * fails with an `APIConnectionError` rather than handing that key to another host.
    */
   fetch?: Fetch | undefined;
 
@@ -165,7 +194,11 @@ export class Dedalus {
   logger: Logger;
   logLevel: LogLevel | undefined;
   fetchOptions: MergedRequestInit | undefined;
-  private fetch: Fetch;
+  /**
+   * The `fetch` implementation every request is sent through: the `fetch` client option, or the
+   * platform default. A replacement must honor the same contract as that option.
+   */
+  fetch: Fetch;
   #encoder: Opts.RequestEncoder;
   protected idempotencyHeader?: string;
   private _baseURLOverridden: boolean;
@@ -270,6 +303,25 @@ export class Dedalus {
   #baseURLOverridden(): boolean {
     // A named environment selects a default URL; only explicit overrides should bypass per-request defaults.
     return this._baseURLOverridden || this.baseURL !== this._defaultBaseURL;
+  }
+
+  /**
+   * The client as `JSON.stringify` sees it: every credential masked, and the resource accessors,
+   * which point back at the client, left out.
+   */
+  toJSON(): Record<string, unknown> {
+    const view: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(this)) {
+      if (typeof value === 'object' && value !== null && (value as { _client?: unknown })._client === this)
+        continue;
+      view[key] = redactClientField(key, value);
+    }
+    return view;
+  }
+
+  /** What `console.log` and `util.inspect` print for the client: the masked view `toJSON` builds. */
+  [Symbol.for('nodejs.util.inspect.custom')](): Record<string, unknown> {
+    return this.toJSON();
   }
 
   protected defaultQuery(): Record<string, string | undefined> | undefined {
@@ -422,10 +474,25 @@ export class Dedalus {
     }
 
     const controller = new AbortController();
-    const response = await this.fetchWithTimeout(url, req, timeout, controller).catch(castToError);
+    // The deadline stays armed until the body is read, not just until headers arrive, so a server
+    // that answers quickly and then trickles its body is still cut off at `timeout`.
+    const { release: releaseDeadline, unref: unrefDeadline } = this.#armDeadline(
+      req.signal,
+      timeout,
+      controller,
+    );
+    // A subclass's own `fetchWithTimeout` sends the request; the deadline above still covers the body.
+    const viaOverride = this.fetchWithTimeout !== Dedalus.prototype.fetchWithTimeout;
+    const response = await (viaOverride
+      ? Promise.resolve().then(() => this.fetchWithTimeout(url, req, timeout, controller))
+      : this.#fetchFollowingRedirects(url, req, controller)
+    ).catch(castToError);
     const headersTime = Date.now();
 
     if (response instanceof globalThis.Error) {
+      releaseDeadline();
+      // A redirect the SDK refused to follow fails the same way on every attempt, so it is not retried.
+      if (isRefusedRedirect(response)) throw response;
       const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
       if (options.signal?.aborted) {
         throw new Errors.APIUserAbortError();
@@ -480,6 +547,7 @@ export class Dedalus {
         const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
 
         // We don't need the body of this response.
+        releaseDeadline();
         await Shims.CancelReadableStream(response.body);
         loggerFor(this).info(`${responseInfo} - ${retryMessage}`);
         loggerFor(this).debug(
@@ -504,7 +572,12 @@ export class Dedalus {
 
       loggerFor(this).info(`${responseInfo} - ${retryMessage}`);
 
-      const errText = await response.text().catch((err: any) => castToError(err).message);
+      // Only the first 64 KiB of an error body is read: enough for any message, and a hostile or
+      // broken server cannot make the client buffer more. The read still runs under the deadline.
+      const errText = await readBodyText(response, MAX_ERROR_BODY_BYTES, 'truncate').catch(
+        (err: any) => castToError(err).message,
+      );
+      releaseDeadline();
       const errJSON = safeJSON(errText) as any;
       const errMessage = errJSON ? undefined : errText;
 
@@ -536,6 +609,16 @@ export class Dedalus {
       }),
     );
 
+    // A streamed or binary body is the caller's to read at its own pace, so the deadline ends with
+    // the headers there; a buffered body keeps it until `defaultParseResponse` has read it.
+    if (options.stream || options.__binaryResponse) releaseDeadline();
+    else {
+      // Unreferenced so a response nobody parses (a call never awaited) cannot hold the process
+      // open until the deadline; a body being read keeps it alive through its own socket.
+      unrefDeadline();
+      holdDeadline(controller, releaseDeadline);
+    }
+
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
   }
 
@@ -564,28 +647,84 @@ export class Dedalus {
     return new PagePromise<Page, Item>(this, this.makeRequest(options, null, undefined), Page);
   }
 
+  /**
+   * Sends one request with a deadline on its response headers, following redirects as the client
+   * does.
+   *
+   * Override it in a subclass to wrap every HTTP request this client sends to its API, retries included;
+   * call `super.fetchWithTimeout` to send, which keeps the client's redirect handling. When a redirect
+   * leaves the origin that drops the client's own credential headers, but a header an override adds
+   * goes on to the redirect target, so a secret belongs in a client option rather than added here.
+   * A client that does not override it skips this method and sends directly.
+   *
+   * The SDK's own deadline aborts `controller` and stays armed until a buffered body is read, so it
+   * cuts off an override that sends through `super` or passes `controller.signal` on; a larger `ms`
+   * passed to `super` cannot extend it, so set the `timeout` option instead.
+   */
   async fetchWithTimeout(
     url: RequestInfo,
     init: RequestInit | undefined,
     ms: number,
     controller: AbortController,
   ): Promise<Response> {
-    const { signal, method, ...options } = init || {};
+    const deadline = this.#armDeadline(init?.signal, ms, controller);
+    try {
+      return await this.#fetchFollowingRedirects(url, init, controller);
+    } finally {
+      deadline.release();
+    }
+  }
+
+  /**
+   * Starts the request deadline on `controller` and forwards the caller's abort signal to it.
+   *
+   * `release` disarms the deadline. `unref` stops it alone from keeping a Node process alive, for
+   * the stretch where it waits on a body nobody may ever read.
+   */
+  #armDeadline(
+    signal: RequestInit['signal'],
+    ms: number,
+    controller: AbortController,
+  ): { release: () => void; unref: () => void } {
     const abort = this._makeAbort(controller);
     if (signal?.aborted) abort();
     else if (signal) signal.addEventListener('abort', abort, { once: true });
 
     const timeout = setTimeout(abort, ms);
+    return {
+      release: () => clearTimeout(timeout),
+      unref: () => (timeout as { unref?: () => void } | undefined)?.unref?.(),
+    };
+  }
 
-    const isReadableBody =
-      ((globalThis as any).ReadableStream && options.body instanceof (globalThis as any).ReadableStream) ||
-      (typeof options.body === 'object' && options.body !== null && Symbol.asyncIterator in options.body);
+  /**
+   * Sends one request, following its redirects here rather than in `fetch`.
+   *
+   * Platform `fetch` strips only `Authorization` when a redirect leaves the origin, so it would hand
+   * a header API key, cookies and a 307 body to whatever host the API names. Following here, where
+   * the client knows which headers carry credentials, keeps them on the API's own origin.
+   */
+  async #fetchFollowingRedirects(
+    url: RequestInfo,
+    init: RequestInit | undefined,
+    controller: AbortController,
+  ): Promise<Response> {
+    const { signal, method, ...options } = init || {};
+    const isReadableBody = isOneShotBody(options.body);
+    const request = typeof url === 'string' || url instanceof URL ? undefined : url;
+    const carriesUnguardedCredential = [...new Headers(options.headers ?? request?.headers).keys()].some(
+      (name) => CREDENTIAL_HEADERS.includes(name) && !BROWSER_GUARDED_HEADERS.includes(name),
+    );
+    const browserFollows = hidesRedirectTargets() && !carriesUnguardedCredential;
+    const callerRedirect =
+      options.redirect === 'error' || options.redirect === 'manual' ? options.redirect : undefined;
 
     const fetchOptions: RequestInit = {
       signal: controller.signal as any,
       ...(isReadableBody ? { duplex: 'half' } : {}),
       method: 'GET',
       ...options,
+      redirect: callerRedirect ?? (browserFollows ? 'follow' : 'manual'),
     };
     if (method) {
       // Custom methods like 'patch' need to be uppercased
@@ -593,11 +732,97 @@ export class Dedalus {
       fetchOptions.method = method.toUpperCase();
     }
 
-    try {
-      // use undefined this binding; fetch errors if bound to something else in browsers and edge runtimes / workers
-      return await this.fetch.call(undefined, url, fetchOptions);
-    } finally {
-      clearTimeout(timeout);
+    // use undefined this binding; fetch errors if bound to something else in browsers and edge runtimes / workers
+    let response = await this.fetch.call(undefined, url, fetchOptions);
+    let current = request ? request.url : String(url);
+    let hop: RequestInit = {
+      ...fetchOptions,
+      headers: new Headers(fetchOptions.headers ?? request?.headers),
+    };
+    // Once a hop leaves the origin, credentials stay dropped for the rest of the chain, even if a
+    // later hop comes back: the foreign host chose where that hop goes.
+    let leftOrigin = false;
+    for (let redirects = 0; ; redirects++) {
+      if (callerRedirect) return response;
+      if (hop.redirect === 'manual' && response.redirected) {
+        throw refuseRedirect(
+          "The fetch implementation followed a redirect itself although the client asked it not to, so its response was not used. A custom fetch must honor redirect: 'manual'.",
+        );
+      }
+      if (response.type === 'opaqueredirect') {
+        // Browsers answer a manual redirect with an opaque response that hides its target, so there
+        // is nothing safe to follow; it is refused rather than mistaken for the API's answer.
+        throw refuseRedirect(
+          carriesUnguardedCredential
+            ? 'The server answered with a redirect, which this request does not follow: the platform hides the target from the SDK, and the request carries an API key header that could reach another host. Call the redirect target directly, or send the request from a server.'
+            : 'The server answered with a redirect whose target this platform hides from the SDK, so it was not followed. Call the redirect target directly, or send the request from a server.',
+        );
+      }
+      const location = REDIRECT_STATUSES.includes(response.status)
+        ? response.headers.get('location')?.trim()
+        : undefined;
+      if (!location) return response;
+      await Shims.CancelReadableStream(response.body);
+      if (redirects >= MAX_REDIRECTS) throw refuseRedirect(`Maximum redirects exceeded (${MAX_REDIRECTS}).`);
+
+      const from = new URL(current);
+      let target: URL;
+      try {
+        target = new URL(location, from);
+      } catch {
+        throw refuseRedirect('The server redirected to a URL that cannot be parsed.');
+      }
+      if (target.protocol !== 'https:' && target.protocol !== 'http:') {
+        throw refuseRedirect(`Refusing to follow a redirect to a ${target.protocol} URL.`);
+      }
+      if (from.protocol === 'https:' && target.protocol === 'http:') {
+        throw refuseRedirect('Refusing to follow a redirect from https to http.');
+      }
+
+      const headers = new Headers(hop.headers);
+      let nextMethod = hop.method ?? 'GET';
+      let body = hop.body ?? request?.body ?? undefined;
+      // A 303 (but for HEAD), and a 301 or 302 answering a POST, re-ask with a bodiless GET, as
+      // browsers do. Every other redirect repeats the request, so its body has to be sent again.
+      if (
+        (response.status === 303 && nextMethod !== 'HEAD') ||
+        ((response.status === 301 || response.status === 302) && nextMethod === 'POST')
+      ) {
+        nextMethod = 'GET';
+        body = undefined;
+        for (const name of [...headers.keys()]) if (name.startsWith('content-')) headers.delete(name);
+      } else if (body != null && isOneShotBody(body)) {
+        throw refuseRedirect(
+          `Refusing to follow a ${response.status} redirect: the request body was a stream, which cannot be sent again.`,
+        );
+      }
+
+      if (target.origin !== from.origin) leftOrigin = true;
+      if (leftOrigin) {
+        for (const name of CREDENTIAL_HEADERS) headers.delete(name);
+      } else {
+        // A `Location` the server spelled does not repeat our query credentials, so a same-origin
+        // hop carries them over; appended rather than set so the target's own query keeps its bytes.
+        for (const name of CREDENTIAL_QUERY) {
+          const value = from.searchParams.get(name);
+          if (value === null || target.searchParams.has(name)) continue;
+          target.search =
+            (target.search ? target.search + '&' : '?') +
+            encodeURIComponent(name) +
+            '=' +
+            encodeURIComponent(value);
+        }
+      }
+
+      hop = { ...hop, method: nextMethod, headers };
+      if (body == null) {
+        delete hop.body;
+        delete (hop as { duplex?: unknown }).duplex;
+      } else {
+        hop.body = body;
+      }
+      current = target.href;
+      response = await this.fetch.call(undefined, current, hop);
     }
   }
 
@@ -762,12 +987,24 @@ export class Dedalus {
     appendAuthCookies(headers.values, await this.authCookiesAsync());
 
     this.validateAuth(url, headers.values, options);
+    // Last, so a subclass sees the headers as they leave here, after the SDK has checked the auth.
+    await this.validateHeaders(headers);
 
     return headers.values;
   }
 
+  /**
+   * Runs once for every HTTP request built from the client's headers, at the end of header building,
+   * with the headers it will be sent with: `values` holds them and `nulls` the names the call removed
+   * with a `null`.
+   * Throwing, or rejecting from an `async` override, which is awaited, rejects the request before it
+   * is sent. Does nothing unless a subclass overrides it.
+   * `fetchOptions.headers` and `prepareRequest` are applied afterwards, so the hook does not see them.
+   */
+  protected validateHeaders({ values, nulls }: NullableHeaders): void {}
+
   private _makeAbort(controller: AbortController) {
-    // note: we can't just inline this method inside `fetchWithTimeout()` because then the closure
+    // note: we can't just inline this method inside `#armDeadline()` because then the closure
     //       would capture all request options, and cause a memory leak.
     return () => controller.abort();
   }
@@ -942,10 +1179,12 @@ export class Dedalus {
 
   machines: Machines = new Machines(this);
   organization: Organization = new Organization(this);
+  images: Images = new Images(this);
 }
 
 Dedalus.Machines = Machines;
 Dedalus.Organization = Organization;
+Dedalus.Images = Images;
 
 export declare namespace Dedalus {
   export type RequestOptions = Opts.RequestOptions;
@@ -963,6 +1202,7 @@ export declare namespace Dedalus {
     type LifecycleStatus as LifecycleStatus,
     type MachineListItemsCursorPage as MachineListItemsCursorPage,
     type MachineRetrieveResponse as MachineRetrieveResponse,
+    type MachineResizeResponse as MachineResizeResponse,
     type MachineListParams as MachineListParams,
     type MachineCreateParams as MachineCreateParams,
     type MachineRetrieveParams as MachineRetrieveParams,
@@ -971,9 +1211,23 @@ export declare namespace Dedalus {
     type MachineSleepParams as MachineSleepParams,
     type MachineWakeParams as MachineWakeParams,
     type MachineRebootParams as MachineRebootParams,
+    type MachineResizeParams as MachineResizeParams,
   };
 
   export { Organization as Organization };
+
+  export {
+    Images as Images,
+    type Image as Image,
+    type ImageList as ImageList,
+    type Source as Source,
+    type ImagesError as Error,
+    type ImageListParams as ImageListParams,
+    type ImageCreateParams as ImageCreateParams,
+    type ImageRetrieveParams as ImageRetrieveParams,
+    type ImageUpdateParams as ImageUpdateParams,
+    type ImageDeleteParams as ImageDeleteParams,
+  };
 }
 
 const headerExplicitlyOmitted = (source: HeadersLike | undefined, name: string): boolean => {
@@ -996,3 +1250,97 @@ const cookieHeaderHas = (value: string | null, name: string): boolean => {
   const target = encodeURIComponent(name) + '=';
   return value.split(';').some((cookie) => cookie.trim().startsWith(target));
 };
+
+/** Client fields holding a secret, masked whenever the client is printed or serialized. */
+const SECRET_CLIENT_FIELDS: readonly string[] = ['apiKey', 'xAPIKey', 'browserToken'];
+
+/**
+ * One field of the client (or of its stored options) as a printed client shows it. Credentials are
+ * masked outright; header bags go through the log redaction, which knows every header this SDK
+ * authenticates with; a base URL loses any userinfo or query credential it carries.
+ */
+const redactClientField = (key: string, value: unknown): unknown => {
+  if (value === null || value === undefined) return value;
+  if (SECRET_CLIENT_FIELDS.includes(key)) return '***';
+  if (key === 'baseURL' && typeof value === 'string') return redactUrl(value);
+  if (key === 'defaultHeaders') {
+    if (value instanceof Headers) return redactHeaders(value);
+    if (typeof value !== 'object' || Array.isArray(value)) return '***';
+    const redactValue = (name: string, field: unknown): unknown => {
+      if (typeof field === 'string') return redactHeaders({ [name]: field })[name];
+      if (Array.isArray(field)) return field.map((entry) => redactValue(name, entry));
+      return field === null || field === undefined ? field : '***';
+    };
+    return Object.fromEntries(Object.entries(value).map(([name, field]) => [name, redactValue(name, field)]));
+  }
+  if (typeof value !== 'object') return value;
+  if (key === 'fetchOptions') {
+    const { headers: _headers, ...rest } = value as Record<string, unknown>;
+    return _headers === undefined ? rest : { ...rest, headers: '***' };
+  }
+  if (key === '_options') {
+    return Object.fromEntries(
+      Object.entries(value).map(([name, field]) => [name, redactClientField(name, field)]),
+    );
+  }
+  return value;
+};
+
+/** Statuses the client follows when they carry a `Location`; any other 3xx is the server's answer. */
+const REDIRECT_STATUSES: readonly number[] = [301, 302, 303, 307, 308];
+
+/** The most redirects one request follows, the same cap the platform `fetch` uses. */
+const MAX_REDIRECTS = 20;
+
+/**
+ * Headers that carry a credential: the platform's own and every header this API's security schemes
+ * place. A redirect that leaves the origin drops each of them, wherever it was set.
+ */
+const CREDENTIAL_HEADERS: readonly string[] = ['authorization', 'cookie', 'proxy-authorization', 'x-api-key'];
+
+/** Query parameters this API's security schemes place, carried only to a same-origin redirect target. */
+const CREDENTIAL_QUERY: readonly string[] = [];
+
+/**
+ * Credential headers a browser keeps on the origin itself: it drops `Authorization` from a
+ * cross-origin redirect and never lets script set the other two.
+ */
+const BROWSER_GUARDED_HEADERS: readonly string[] = ['authorization', 'cookie', 'proxy-authorization'];
+
+/**
+ * Whether this runtime's fetch answers a manual redirect opaquely, hiding its target: a browser
+ * page, or a dedicated, shared or service worker in one. A worker scope alone is not enough,
+ * since edge runtimes model theirs on it while returning the real 3xx; a browser user agent is.
+ */
+const hidesRedirectTargets = (): boolean => {
+  if (isRunningInBrowser()) return true;
+  if (typeof (globalThis as { WorkerGlobalScope?: unknown }).WorkerGlobalScope === 'undefined') return false;
+  const agent: unknown = (globalThis as any).navigator?.userAgent;
+  return typeof agent === 'string' && agent.startsWith('Mozilla/');
+};
+
+/** Marks the error for a redirect the client refused to follow, which `makeRequest` does not retry. */
+const REFUSED_REDIRECT = Symbol('refusedRedirect');
+
+/** Marks `error` as a redirect refusal, which no retry layer repeats. */
+const markRefusedRedirect = (error: Errors.APIConnectionError): Errors.APIConnectionError => {
+  (error as { [REFUSED_REDIRECT]?: true })[REFUSED_REDIRECT] = true;
+  return error;
+};
+
+/** A connection error for a redirect the client will not follow. */
+const refuseRedirect = (message: string): Errors.APIConnectionError =>
+  markRefusedRedirect(new Errors.APIConnectionError({ message }));
+
+/** Whether `error` is a redirect refusal from {@link refuseRedirect}. */
+const isRefusedRedirect = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { [REFUSED_REDIRECT]?: true })[REFUSED_REDIRECT] === true;
+
+/** Whether a request body can be read only once, so a redirect that repeats the request cannot resend it. */
+const isOneShotBody = (body: unknown): boolean =>
+  !!(
+    ((globalThis as any).ReadableStream && body instanceof (globalThis as any).ReadableStream) ||
+    (typeof body === 'object' && body !== null && Symbol.asyncIterator in body)
+  );

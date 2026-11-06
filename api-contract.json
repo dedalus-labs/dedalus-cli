@@ -1,0 +1,161 @@
+{
+  "source_sha": "9f8d54f123e81b8bc7252f855c52ecbf7cc8ae42",
+  "spec_sha256": "c0b2db893e3017c5c83c14375e6085581584641f617ee7ea1305ab80e9b50421",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/v1/images",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/images",
+      "bodyParams": ["credential_ref", "name", "platform", "source"]
+    },
+    {
+      "method": "POST",
+      "path": "/v1/images/uploads",
+      "bodyParams": ["platform", "sha256", "size_bytes"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/images/{image_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/images/{image_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/images/{image_id}",
+      "bodyParams": ["name"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines",
+      "bodyParams": ["autosleep", "image_id", "memory_mib", "storage_gib", "vcpu"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}",
+      "bodyParams": ["autosleep", "storage_gib"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/autoresizing",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}/autoresizing",
+      "bodyParams": ["cpu", "cpu_max_vcpu", "memory", "memory_max_mib"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/executions",
+      "bodyParams": ["command", "cwd", "env", "stdin", "timeout_ms"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/events",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs/token",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/output",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/reboot",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/resize",
+      "bodyParams": ["memory_mib", "vcpu"]
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/sleep",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ssh",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ssh",
+      "bodyParams": ["public_key"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ssh/{session_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ssh/{session_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/wake",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/organization/autoresizing",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/organization/autoresizing",
+      "bodyParams": ["cpu", "cpu_max_vcpu", "memory", "memory_max_mib"]
+    }
+  ]
+}

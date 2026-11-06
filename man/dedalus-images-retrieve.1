@@ -1,19 +1,16 @@
 .\" File generated from our OpenAPI spec by Scalar. Do not edit.
-.TH "DEDALUS\-MACHINES\-EXECUTIONS\-LOGS\-REAUTHORIZE" "1" "" "dedalus" "Dedalus Manual"
+.TH "DEDALUS\-IMAGES\-RETRIEVE" "1" "" "dedalus" "Dedalus Manual"
 .SH "NAME"
-dedalus\-machines\-executions\-logs\-reauthorize \- Reauthorize execution log publication
+dedalus\-images\-retrieve \- Read preparation status for an organization\-owned image
 .SH "SYNOPSIS"
-.B dedalus machines executions logs reauthorize
-\fB\-\-machine\-id\fR \fI<value>\fR \fB\-\-execution\-id\fR \fI<value>\fR [\fIoptions\fR]
+.B dedalus images retrieve
+\fB\-\-image\-id\fR \fI<value>\fR [\fIoptions\fR]
 .SH "DESCRIPTION"
-Reauthorize execution log publication
+A preparing image reports its stage, the worker's last step and an estimated percent of the whole preparation. A failed image names the cause: IMAGE_OS_UNSUPPORTED, IMAGE_SOURCE_INVALID, IMAGE_SOURCE_NOT_FOUND and IMAGE_SOURCE_UNAUTHORIZED describe the image or its reference and are final; IMAGE_SOURCE_UNAVAILABLE, IMAGE_REGISTRY_UNREACHABLE, IMAGE_REGISTRY_RATE_LIMITED, IMAGE_ARCHIVE_UNAVAILABLE and IMAGE_EXECUTION_FAILED describe this attempt and are retryable with a new idempotency key.
 .SH "OPTIONS"
 .TP
-\fB\-\-machine\-id\fR \fI<value>\fR
-Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.
-.TP
-\fB\-\-execution\-id\fR \fI<value>\fR
-The execution\-id path parameter. Required.
+\fB\-\-image\-id\fR \fI<value>\fR
+The image\-id path parameter. Required.
 .TP
 \fB\-\-base\-url\fR \fI<url>\fR
 Override the base URL for API requests.
@@ -43,7 +40,7 @@ Print transformed string values without JSON quotes.
 Enable SDK debug logging on standard error.
 .TP
 \fB\-\-api\-key\fR \fI<value>\fR
-Dedalus API key or short\-lived delegated access token in Authorization: Bearer <credential>. Can also be set with the DEDALUS_API_KEY environment variable.
+Dedalus API key or short\-lived delegated access token in `Authorization: Bearer <credential>`. Can also be set with the DEDALUS_API_KEY environment variable.
 .TP
 \fB\-\-x\-api\-key\fR \fI<value>\fR
 Dedalus API key. Alternative to Bearer token. Can also be set with the DEDALUS_X_API_KEY environment variable.
@@ -57,10 +54,7 @@ Optional organization assertion. Must match the organization identified by the A
 .PP
 .RS 4
 .nf
-dedalus machines executions logs reauthorize \e
-  \-\-api\-key "$DEDALUS_API_KEY" \e
-  \-\-machine\-id '017f22e2\-79b0\-7cc3\-98c4\-dc0c0c07398f' \e
-  \-\-execution\-id 'execution_id'
+dedalus images retrieve \-\-browser\-token "$DEDALUS_BROWSER_TOKEN" \-\-image\-id 'image_id'
 .fi
 .RE
 .SH "ENVIRONMENT"

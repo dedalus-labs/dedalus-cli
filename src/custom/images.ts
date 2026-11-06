@@ -31,7 +31,7 @@ export function addImageImport(
     .option('--name <name>', 'Image label')
     .addOption(
       new Option('--platform <platform>', 'Image architecture')
-        .choices(['linux/amd64', 'linux/arm64'])
+        .choices(['linux/amd64'])
         .default('linux/amd64'),
     )
     .option('--idempotency-key <key>', 'Reuse this key when retrying the same import')
@@ -43,7 +43,7 @@ export function addImageImport(
         GlobalOptions & {
           name?: string;
           idempotencyKey?: string;
-          platform: 'linux/amd64' | 'linux/arm64';
+          platform: 'linux/amd64';
           wait: boolean;
           waitTimeout: string;
         }

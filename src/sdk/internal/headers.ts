@@ -27,6 +27,14 @@ export type NullableHeaders = {
   nulls: Set<string>;
 };
 
+/**
+ * Whether `value` is a fetch `Headers`. Checked through `typeof` first, so a runtime without the global
+ * (a verifier imported on its own into an older Node, say) reads the value as some other shape instead
+ * of throwing a `ReferenceError`.
+ */
+const isFetchHeaders = (value: unknown): value is Headers =>
+  typeof Headers !== 'undefined' && value instanceof Headers;
+
 function* iterateHeaders(headers: HeadersLike): IterableIterator<readonly [string, string | null]> {
   if (!headers) return;
 
@@ -41,7 +49,7 @@ function* iterateHeaders(headers: HeadersLike): IterableIterator<readonly [strin
 
   let shouldClear = false;
   let iter: Iterable<readonly (HeaderValue | readonly HeaderValue[])[]>;
-  if (headers instanceof Headers) {
+  if (isFetchHeaders(headers)) {
     iter = headers.entries();
   } else if (isReadonlyArray(headers)) {
     iter = headers;
@@ -105,13 +113,25 @@ export const isHeadersProtocol = (headers: unknown): headers is HeadersProtocol 
   typeof (headers as { get?: unknown } | null | undefined)?.get === 'function';
 
 /**
- * Reads one header, matching its name case-insensitively, from any headers shape a request handler
- * hands over. A repeated header yields its first value.
+ * Lowercases ASCII letters only. HTTP header names are ASCII, and `toLowerCase` also folds characters
+ * such as the Kelvin sign (U+212A) to `k`, which would let a header no client sends match one it does.
  */
-export const getHeader = (headers: HeadersLike | HeadersProtocol, header: string): string | undefined => {
-  if (!headers) return undefined;
+const asciiLowerCase = (name: string): string => name.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
 
-  const lowerCasedHeader = header.toLowerCase();
+/**
+ * Reads every value of one header, matching its name case-insensitively, from any headers shape a
+ * request handler hands over: each entry of an array value, and the value of every name that differs
+ * only in case, in order. A fetch `Headers`, or any object read through `get`, has already folded
+ * repeated lines into one comma-joined value, so it yields at most one.
+ *
+ * This is the one lookup the webhook verifier and its companions read headers through, so a delivery is
+ * read the same way whichever method receives it. A value that is not a non-empty string is skipped
+ * rather than coerced, since a JavaScript caller may hand over anything.
+ */
+export const getHeaderValues = (headers: HeadersLike | HeadersProtocol, header: string): string[] => {
+  if (!headers) return [];
+
+  const lowerCasedHeader = asciiLowerCase(header);
   if (isHeadersProtocol(headers)) {
     // A fetch `Headers` matches any casing, but a look-alike `get` may be case-sensitive, so the common
     // spellings are tried in turn (`Webhook-Id` covers a header stored in title case).
@@ -120,16 +140,24 @@ export const getHeader = (headers: HeadersLike | HeadersProtocol, header: string
       header.substring(1).replace(/([^\w])(\w)/g, (_m, g1: string, g2: string) => g1 + g2.toUpperCase());
     for (const key of [header, lowerCasedHeader, header.toUpperCase(), intercapsHeader]) {
       const value = headers.get(key);
-      if (value) return value;
+      if (typeof value === 'string' && value) return [value];
     }
-    if (headers instanceof Headers) return undefined;
+    if (isFetchHeaders(headers)) return [];
   }
 
+  const values: string[] = [];
   for (const [name, value] of iterateHeaders(headers as HeadersLike)) {
-    if (value !== null && name.toLowerCase() === lowerCasedHeader) return value;
+    if (typeof value === 'string' && value && asciiLowerCase(name) === lowerCasedHeader) values.push(value);
   }
-  return undefined;
+  return values;
 };
+
+/**
+ * Reads one header like {@link getHeaderValues}, yielding its first value: the first entry of an array
+ * value, or the first of two names that differ only in case.
+ */
+export const getHeader = (headers: HeadersLike | HeadersProtocol, header: string): string | undefined =>
+  getHeaderValues(headers, header)[0];
 
 /** Reads one header like {@link getHeader}, throwing when the headers do not carry it. */
 export const getRequiredHeader = (headers: HeadersLike | HeadersProtocol, header: string): string => {

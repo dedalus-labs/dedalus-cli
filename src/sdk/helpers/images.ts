@@ -20,7 +20,7 @@ export interface ImportOptions extends PollOptions {
   /** Wait for readiness by default. False returns after registration. */
   wait?: boolean;
   name?: string;
-  platform?: 'linux/amd64' | 'linux/arm64';
+  platform?: 'linux/amd64';
   idempotencyKey?: string;
   /** Separate storage transport, without the API client's auth headers. */
   uploadFetch?: typeof fetch;
@@ -116,6 +116,7 @@ export async function importImage(
   const signal = deadline(options);
   positive(options.pollIntervalMs ?? 2000, 'pollIntervalMs');
   const platform = options.platform ?? 'linux/amd64';
+  if (platform !== 'linux/amd64') throw new Error('Custom images currently require linux/amd64');
   const idempotencyKey = options.idempotencyKey ?? randomUUID();
   const file = await open(path, 'r');
   try {

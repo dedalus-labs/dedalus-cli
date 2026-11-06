@@ -1205,7 +1205,7 @@ export const getProgram = (): Command => {
         createProgram({
           SDK,
           binaryName: 'dedalus',
-          version: '0.6.0', // x-release-please-version
+          version: '0.7.0', // x-release-please-version
           description: 'CLI for Dedalus',
           defaultFormat: 'json',
           defaultErrorFormat: 'json',
@@ -1227,6 +1227,6 @@ export const getProgram = (): Command => {
     clientOptions,
     auth,
   );
-  addUpgradeCommands(program, 'dedalus', '0.6.0'); // x-release-please-version
+  addUpgradeCommands(program, 'dedalus', '0.7.0'); // x-release-please-version
   return program;
 };

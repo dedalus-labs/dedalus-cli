@@ -1,6 +1,6 @@
 /** Connect with an ephemeral key and the server's SSH certificate and host CA. */
 
-import { spawn, type ChildProcess } from 'node:child_process'
+import { spawn, type ChildProcess, type StdioOptions } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -33,7 +33,7 @@ type SSHSession = {
   readonly status?: unknown
 }
 
-export const connectMachine = async (api: SSHAPI, machineID: string): Promise<void> => {
+export const connectMachine = async (api: SSHAPI, machineID: string, input?: number): Promise<void> => {
   const directory = await mkdtemp(join(tmpdir(), 'dedalus-ssh-'))
   let child: ChildProcess | undefined
   const trackChild = (active: ChildProcess | undefined): void => { child = active }
@@ -75,7 +75,7 @@ export const connectMachine = async (api: SSHAPI, machineID: string): Promise<vo
       '-o', 'IdentitiesOnly=yes',
       '-p', String(connection.port),
       '--', `${connection.sshUsername}@${connection.endpoint}`,
-    ], 'inherit', trackChild)
+    ], input === undefined ? 'inherit' : [input, 'inherit', 'inherit'], trackChild)
     if (code !== 0) process.exitCode = code
   } finally {
     try {
@@ -192,7 +192,7 @@ const quoteSSHPath = (path: string): string => `"${path.replace(/[\\"]/gu, '\\$&
 const runProcess = (
   command: string,
   args: readonly string[],
-  stdio: 'ignore' | 'inherit',
+  stdio: StdioOptions,
   trackChild: (child: ChildProcess | undefined) => void,
 ): Promise<number> => new Promise((resolve, reject) => {
   const child = spawn(command, args, { stdio })

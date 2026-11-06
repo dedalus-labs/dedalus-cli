@@ -62,6 +62,27 @@ dedalus machines create \
 
 Every command accepts the global flags below, so the examples that follow show only what is specific to them.
 
+Create a machine with API defaults and open an interactive SSH shell:
+
+```sh
+dedalus machines create --ssh
+```
+
+`--ssh` reuses the connection flow from `dedalus ssh <machine-id>`, including
+the selected API endpoint, credentials, and organization. OpenSSH (`ssh` and
+`ssh-keygen`) must be in PATH. SSH owns the terminal output and exit status.
+Without `--ssh`, creation prints the usual response in the selected format.
+If SSH fails or is cancelled, the machine remains available. The CLI prints
+its ID and a reconnect command on stderr before opening the session.
+
+Piped JSON can supply machine options while SSH reads from the controlling
+terminal. A missing controlling terminal is reported before creating a machine.
+
+The reconnect command retains the selected API endpoint and organization.
+Credential flags use environment-variable references. Set each variable to the
+credential used for creation before running the command. Credential file
+references are retained. Environment credentials and saved login remain in use.
+
 See the [API reference](./api.md) for every available operation.
 
 <br />

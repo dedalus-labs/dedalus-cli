@@ -139,6 +139,10 @@ export type CreateProgramOptions = {
   readonly environmentEnv?: string;
   readonly baseUrlEnv?: string;
   readonly auth?: CliAuthDefinition;
+  // @custom start
+  // A handled result owns output while retaining the request's authenticated client.
+  readonly handleResult?: (result: unknown, client: unknown, command: Command) => Promise<boolean>;
+  // @custom end
 };
 
 type OutputOptions = {
@@ -182,6 +186,9 @@ export const createProgram = ({
   environmentEnv,
   baseUrlEnv,
   auth,
+  // @custom start
+  handleResult,
+  // @custom end
 }: CreateProgramOptions): Command => {
   const selection: EnvironmentSelection = { environments, defaultEnvironment, environmentEnv, baseUrlEnv };
   const program = usageExitCode(new Command());
@@ -224,7 +231,9 @@ export const createProgram = ({
   }
 
   for (const definition of commands)
-    addGeneratedCommand(program, SDK, clientOptions, definition, groups, selection, auth);
+    // @custom start
+    addGeneratedCommand(program, SDK, clientOptions, definition, groups, selection, auth, handleResult);
+    // @custom end
 
   if (environments.length > 0) addEnvironmentsCommand(program, selection, defaultFormat);
 
@@ -621,6 +630,9 @@ const addGeneratedCommand = (
   groups: readonly CliCommandGroup[] | undefined,
   selection: EnvironmentSelection,
   auth: CliAuthDefinition | undefined,
+  // @custom start
+  handleResult: CreateProgramOptions['handleResult'],
+  // @custom end
 ): void => {
   const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1), groups);
   const commandName = definition.commandPath.at(-1) ?? definition.methodName;
@@ -705,7 +717,9 @@ const addGeneratedCommand = (
     const command = args.at(-1);
     if (!(command instanceof Command)) throw new Error('Expected Commander command context');
     const positionalValues = args.slice(0, -1);
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, selection, auth);
+    // @custom start
+    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, selection, auth, handleResult);
+    // @custom end
   });
 
   parent.addCommand(command);
@@ -756,6 +770,9 @@ const runGeneratedCommand = async (
   positionalValues: readonly unknown[],
   selection: EnvironmentSelection,
   auth: CliAuthDefinition | undefined,
+  // @custom start
+  handleResult: CreateProgramOptions['handleResult'],
+  // @custom end
 ): Promise<void> => {
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
@@ -827,6 +844,9 @@ const runGeneratedCommand = async (
       return;
     }
 
+    // @custom start
+    if (await handleResult?.(resolved, client, command)) return;
+    // @custom end
     await writeOutput(resolved, outputOptions);
   } catch (error) {
     diagnostics?.record({ kind: 'command_failure' });

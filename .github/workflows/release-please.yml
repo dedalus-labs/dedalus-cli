@@ -94,7 +94,7 @@ jobs:
           rm -rf compile-out
         shell: bash
       - name: Attach binaries to the release
-        run: gh release upload "v${PKG_VERSION}" release-binaries/* --clobber
+        run: node scripts/publish-binaries.mjs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash

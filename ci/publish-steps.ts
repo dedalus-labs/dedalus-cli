@@ -70,13 +70,10 @@ rm -rf compile-out
   },
   {
     name: "Attach binaries to the release",
-    run: unsafeShell(
-      `gh release upload "v\${PKG_VERSION}" release-binaries/* --clobber`,
-    ),
+    run: command({ file: "node", args: ["scripts/publish-binaries.mjs"] }),
     env: {
       GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}",
     },
-    shell: "bash",
   },
   {
     name: "Open Homebrew release PR",

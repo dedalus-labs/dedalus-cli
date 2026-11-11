@@ -433,6 +433,8 @@ export namespace LifecycleStatus {
   }
 }
 
+export type AutoresizingSwitch = 'on' | 'off';
+
 export interface MachineListParams extends CursorPageParams {}
 
 export type MachineListItemsCursorPage = CursorPage<MachineListItem>;
@@ -640,6 +642,7 @@ export declare namespace Machines {
     type CreateParams as CreateParams,
     type UpdateParams as UpdateParams,
     type LifecycleStatus as LifecycleStatus,
+    type AutoresizingSwitch as AutoresizingSwitch,
     type MachineListItemsCursorPage as MachineListItemsCursorPage,
     type MachineRetrieveResponse as MachineRetrieveResponse,
     type MachineResizeResponse as MachineResizeResponse,

@@ -198,19 +198,8 @@
             "required": true,
             "deprecated": false,
             "type": {
-              "kind": "enum",
-              "values": [
-                "on",
-                "off"
-              ],
-              "names": [
-                "On",
-                "Off"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
+              "kind": "ref",
+              "name": "autoresizing_switch"
             }
           },
           {
@@ -294,19 +283,8 @@
             "required": true,
             "deprecated": false,
             "type": {
-              "kind": "enum",
-              "values": [
-                "on",
-                "off"
-              ],
-              "names": [
-                "On",
-                "Off"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
+              "kind": "ref",
+              "name": "autoresizing_switch"
             }
           },
           {
@@ -370,19 +348,8 @@
             "required": false,
             "deprecated": false,
             "type": {
-              "kind": "enum",
-              "values": [
-                "on",
-                "off"
-              ],
-              "names": [
-                "On",
-                "Off"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
+              "kind": "ref",
+              "name": "autoresizing_switch"
             }
           },
           {
@@ -414,19 +381,8 @@
             "required": false,
             "deprecated": false,
             "type": {
-              "kind": "enum",
-              "values": [
-                "on",
-                "off"
-              ],
-              "names": [
-                "On",
-                "Off"
-              ],
-              "deprecations": [
-                false,
-                false
-              ]
+              "kind": "ref",
+              "name": "autoresizing_switch"
             }
           },
           {
@@ -3178,6 +3134,27 @@
           }
         ],
         "additionalProperties": false
+      }
+    },
+    {
+      "name": "autoresizing_switch",
+      "source": "autoresizing_switch",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "enum",
+        "values": [
+          "on",
+          "off"
+        ],
+        "names": [
+          "On",
+          "Off"
+        ],
+        "deprecations": [
+          false,
+          false
+        ]
       }
     },
     {

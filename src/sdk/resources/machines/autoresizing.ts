@@ -4,6 +4,7 @@ import { APIResource } from '../../resource';
 import { APIPromise } from '../../api-promise';
 import type { RequestOptions } from '../../internal/request-options';
 import { path as __scalarPath } from '../../internal/utils/path';
+import type * as MachinesAPI from './machines';
 
 export class Autoresizing extends APIResource {
   /**
@@ -49,7 +50,7 @@ export interface Policy {
   /**
    * Permit automatic CPU growth independently of RAM.
    */
-  cpu: 'on' | 'off';
+  cpu: MachinesAPI.AutoresizingSwitch;
   cpu_limit_source: 'plan' | 'configured' | 'platform';
   /**
    * Configured CPU growth limit in 0.25-vCPU steps. Null uses the plan limit.
@@ -74,7 +75,7 @@ export interface Policy {
   /**
    * Permit automatic RAM growth. Automatic shrink remains internal.
    */
-  memory: 'on' | 'off';
+  memory: MachinesAPI.AutoresizingSwitch;
   memory_limit_source: 'plan' | 'configured' | 'platform';
   /**
    * Configured RAM growth limit in MiB. Null uses the plan limit.
@@ -104,7 +105,7 @@ export interface AutoresizingUpdateParams {
   /**
    * Body param
    */
-  cpu?: 'on' | 'off';
+  cpu?: MachinesAPI.AutoresizingSwitch;
   /**
    * Body param
    * @format double
@@ -115,7 +116,7 @@ export interface AutoresizingUpdateParams {
   /**
    * Body param
    */
-  memory?: 'on' | 'off';
+  memory?: MachinesAPI.AutoresizingSwitch;
   /**
    * Body param
    * @format int64

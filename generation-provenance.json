@@ -1,12 +1,12 @@
 {
-  "source_spec_sha": "9f8d54f123e81b8bc7252f855c52ecbf7cc8ae42",
-  "source_spec_sha256": "c0b2db893e3017c5c83c14375e6085581584641f617ee7ea1305ab80e9b50421",
+  "source_spec_sha": "f5b640b324aafb001a8da6facd807f13197630bb",
+  "source_spec_sha256": "a717ed108ea8bbb6b9c0b70255a07da7e9a01224c6941546089084e02097a632",
   "generator_version": "0.38.0",
-  "build_version": "0.1.16",
-  "configuration_sha256": "10d2f59b8a69dce627060e1104eac425cec104dd90d3177c08a29a902cb48875",
+  "build_version": "0.1.19",
+  "configuration_sha256": "477d944077da8e1163423c505fe3f773cce14eda953aa934fe91582d04e4e915",
   "operation_count": 31,
   "generated_commit": null,
-  "download_sha256": "922dc96ebbb257e7b8016ff581243ec40d0a263a27b4fd3a5e4c00995cf9a168",
+  "download_sha256": "449d6baf322f0f55edb97085298e4d72238dc8da19749e2f578505ae19c0a239",
   "integration_base": "scalar-next",
   "published_package": false
 }

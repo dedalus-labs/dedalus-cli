@@ -4,7 +4,7 @@ import { APIPromise, type APIResponseProps } from './api-promise';
 import { PagePromise, type AbstractPage, type CursorPageParams, CursorPageResponse } from './core/pagination';
 import * as Pagination from './core/pagination';
 import * as Errors from './error';
-import { uuid4 } from './internal/utils/uuid';
+import { uuid7 } from './internal/utils/uuid7';
 import { validatePositiveInteger, isAbsoluteURL, safeJSON, isEmptyObj } from './internal/utils/values';
 import { sleep } from './internal/utils/sleep';
 import { castToError, isAbortError } from './internal/errors';
@@ -38,6 +38,7 @@ import {
   type CreateParams,
   type UpdateParams,
   type LifecycleStatus,
+  type AutoresizingSwitch,
   type MachineListItemsCursorPage,
   type MachineRetrieveResponse,
   type MachineResizeResponse,
@@ -337,10 +338,7 @@ export class Dedalus {
   }
 
   protected defaultIdempotencyKey(): string {
-    // @custom start
-    // Use the API's UUIDv7 format. Automatic retries reuse this value.
-    return `${Date.now().toString(16).padStart(12, '0')}7${uuid4().replace(/-/g, '').slice(13)}`;
-    // @custom end
+    return uuid7().replace(/-/g, '');
   }
 
   protected makeStatusError(
@@ -1200,6 +1198,7 @@ export declare namespace Dedalus {
     type CreateParams as CreateParams,
     type UpdateParams as UpdateParams,
     type LifecycleStatus as LifecycleStatus,
+    type AutoresizingSwitch as AutoresizingSwitch,
     type MachineListItemsCursorPage as MachineListItemsCursorPage,
     type MachineRetrieveResponse as MachineRetrieveResponse,
     type MachineResizeResponse as MachineResizeResponse,

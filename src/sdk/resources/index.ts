@@ -8,6 +8,7 @@ export type {
   CreateParams,
   UpdateParams,
   LifecycleStatus,
+  AutoresizingSwitch,
   MachineListParams,
   MachineListItemsCursorPage,
   MachineCreateParams,

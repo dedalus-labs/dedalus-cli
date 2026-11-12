@@ -1,12 +1,15 @@
 {
-  "source_spec_sha": "f5b640b324aafb001a8da6facd807f13197630bb",
-  "source_spec_sha256": "a717ed108ea8bbb6b9c0b70255a07da7e9a01224c6941546089084e02097a632",
+  "source_spec_sha": "ee925948d478f27871ca2bcef103af91fed821ea",
+  "source_spec_sha256": "c76f69c26e4f6e84fb6db5ef3543d18644363ef566e441fbfb716380ac149912",
   "generator_version": "0.38.0",
-  "build_version": "0.1.19",
-  "configuration_sha256": "477d944077da8e1163423c505fe3f773cce14eda953aa934fe91582d04e4e915",
-  "operation_count": 31,
+  "build_version": "0.2.1",
+  "configuration_sha256": "6c62222fd16cf8320d26f32553c9b092b953cd500c2ff1e923a8cbab9329228a",
+  "operation_count": 32,
   "generated_commit": null,
-  "download_sha256": "449d6baf322f0f55edb97085298e4d72238dc8da19749e2f578505ae19c0a239",
+  "download_sha256": "d4de236eb87141dd851fc65646ca58ec863cb26ae8795d3a6e77079ed7efdc6b",
   "integration_base": "scalar-next",
-  "published_package": false
+  "published_package": false,
+  "base_spec_sha": "f5b640b324aafb001a8da6facd807f13197630bb",
+  "input_composition": "Base spec plus GET /v1/machines/{machine_id}/status/stream from source spec.",
+  "generation_input_sha256": "a903137953416de7c77c1598c966f1a0ed397241adb5ac431359c03713fce7d6"
 }

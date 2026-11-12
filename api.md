@@ -14,6 +14,7 @@ Complete reference of every operation, grouped by resource. See [the README](./R
   - [Wake a sleeping machine](#wake-a-sleeping-machine)
   - [Reboot a machine with fresh memory](#reboot-a-machine-with-fresh-memory)
   - [Resize machine](#resize-machine)
+  - [Watch machine status](#watch-machine-status)
   - [`Machines Ssh`](#machines-ssh)
     - [List SSH sessions](#list-ssh-sessions)
     - [Create SSH session](#create-ssh-session)
@@ -124,6 +125,17 @@ Wakes a sleeping Machine, then waits up to 30 seconds for the host to confirm CP
 dedalus machines resize \
   --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
+```
+
+### Watch machine status
+
+Streams lifecycle changes as Server-Sent Events. Each `status` event carries the full machine, in the same shape as Get machine. The stream closes when the machine reaches its desired state, or after five minutes. A `bookmark` event moves the resume point without a change. An `error` event carries an error envelope, and the stream ends after it.
+
+```sh
+dedalus machines watch \
+  --api-key "$DEDALUS_API_KEY" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --max-items 10
 ```
 
 ### `Machines Ssh`

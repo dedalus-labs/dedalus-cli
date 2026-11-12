@@ -1,6 +1,6 @@
 {
-  "source_sha": "9f8d54f123e81b8bc7252f855c52ecbf7cc8ae42",
-  "spec_sha256": "c0b2db893e3017c5c83c14375e6085581584641f617ee7ea1305ab80e9b50421",
+  "source_sha": "ee925948d478f27871ca2bcef103af91fed821ea",
+  "spec_sha256": "c76f69c26e4f6e84fb6db5ef3543d18644363ef566e441fbfb716380ac149912",
   "operations": [
     {
       "method": "GET",
@@ -140,6 +140,11 @@
     {
       "method": "GET",
       "path": "/v1/machines/{machine_id}/ssh/{session_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/status/stream",
       "bodyParams": []
     },
     {

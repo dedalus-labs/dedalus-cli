@@ -358,6 +358,41 @@ const commands = [
     ],
   },
   {
+    resourcePath: ['machines'],
+    commandPath: ['machines', 'watch'],
+    methodName: 'watch',
+    summary: 'Watch machine status',
+    description:
+      'Streams lifecycle changes as Server-Sent Events. Each `status` event carries the full machine, in the same shape as Get machine. The stream closes when the machine reaches its desired state, or after five minutes. A `bookmark` event moves the resume point without a change. An `error` event carries an error envelope, and the stream ends after it.',
+    transport: 'http',
+    streaming: 'sse',
+    iterable: true,
+    callShape: 'params',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+      {
+        name: 'last-event-id',
+        optionKey: 'lastEventId',
+        paramKey: 'Last-Event-ID',
+        location: 'header',
+        required: false,
+        description:
+          'The `id` of an event from an earlier stream. The stream resumes after that event instead of sending the current state first.',
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
     resourcePath: ['machines', 'ssh'],
     commandPath: ['machines', 'ssh', 'list'],
     methodName: 'list',

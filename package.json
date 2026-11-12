@@ -42,6 +42,7 @@
     "./man/dedalus-machines-wake.1",
     "./man/dedalus-machines-reboot.1",
     "./man/dedalus-machines-resize.1",
+    "./man/dedalus-machines-watch.1",
     "./man/dedalus-machines-ssh-list.1",
     "./man/dedalus-machines-ssh-create.1",
     "./man/dedalus-machines-ssh-retrieve.1",

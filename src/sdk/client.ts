@@ -1,6 +1,7 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-import { APIPromise, type APIResponseProps } from './api-promise';
+import { APIPromise } from './api-promise';
+import type { APIResponseProps } from './internal/parse';
 import { PagePromise, type AbstractPage, type CursorPageParams, CursorPageResponse } from './core/pagination';
 import * as Pagination from './core/pagination';
 import * as Errors from './error';
@@ -42,6 +43,7 @@ import {
   type MachineListItemsCursorPage,
   type MachineRetrieveResponse,
   type MachineResizeResponse,
+  type MachineWatchResponse,
   type MachineListParams,
   type MachineCreateParams,
   type MachineRetrieveParams,
@@ -51,6 +53,7 @@ import {
   type MachineWakeParams,
   type MachineRebootParams,
   type MachineResizeParams,
+  type MachineWatchParams,
 } from './resources/machines/machines';
 import { Organization } from './resources/organization/organization';
 import {
@@ -1202,6 +1205,7 @@ export declare namespace Dedalus {
     type MachineListItemsCursorPage as MachineListItemsCursorPage,
     type MachineRetrieveResponse as MachineRetrieveResponse,
     type MachineResizeResponse as MachineResizeResponse,
+    type MachineWatchResponse as MachineWatchResponse,
     type MachineListParams as MachineListParams,
     type MachineCreateParams as MachineCreateParams,
     type MachineRetrieveParams as MachineRetrieveParams,
@@ -1211,6 +1215,7 @@ export declare namespace Dedalus {
     type MachineWakeParams as MachineWakeParams,
     type MachineRebootParams as MachineRebootParams,
     type MachineResizeParams as MachineResizeParams,
+    type MachineWatchParams as MachineWatchParams,
   };
 
   export { Organization as Organization };

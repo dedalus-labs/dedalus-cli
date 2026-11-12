@@ -21,6 +21,8 @@ export type {
   MachineRebootParams,
   MachineResizeParams,
   MachineResizeResponse,
+  MachineWatchParams,
+  MachineWatchResponse,
 } from './machines';
 export { SSH } from './ssh';
 export type {

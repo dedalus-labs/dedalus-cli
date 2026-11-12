@@ -53,10 +53,8 @@ install it. Package-manager installations use their owning manager. Standalone
 macOS and Linux installations download the release archive and verify its
 `checksums.txt` before replacing the executable.
 
-The legacy `dedalus update` command uses `scripts/install.sh` to migrate direct
-macOS and Linux installations to the current archive format. That compatibility
-URL preserves `DEDALUS_VERSION` and `DEDALUS_INSTALL_DIR`; keep it available when
-publishing future releases. After migration, use `dedalus upgrade`.
+If your CLI does not recognize `dedalus upgrade`, reinstall it using one of the
+methods above. Older Go CLI versions do not support this command.
 
 <br />
 

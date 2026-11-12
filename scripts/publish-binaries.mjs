@@ -1,7 +1,8 @@
 // Both release workflows call this after compilation. Published archives stay
 // immutable; retries fill missing assets and download the bytes Homebrew hashes.
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -50,6 +51,19 @@ try {
   // Hash the published assets, including any reused from a previous attempt.
   for (const archive of archives) {
     copyFileSync(join(directory, archive), join("release-binaries", archive));
+  }
+  // The standalone upgrade command requires checksums for the published bytes.
+  const checksums = archives.map(archive =>
+    `${createHash("sha256").update(readFileSync(join(directory, archive))).digest("hex")}  ${archive}\n`,
+  ).join("");
+  if (published.has("checksums.txt")) {
+    run(["release", "download", tag, "--repo", repository,
+      "--pattern", "checksums.txt", "--dir", directory]);
+    if (readFileSync(join(directory, "checksums.txt"), "utf8") !== checksums)
+      throw new Error("Published checksums.txt does not match the release archives");
+  } else {
+    writeFileSync(join(directory, "checksums.txt"), checksums);
+    run(["release", "upload", tag, join(directory, "checksums.txt"), "--repo", repository]);
   }
 } finally {
   rmSync(directory, { recursive: true, force: true });

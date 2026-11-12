@@ -174,9 +174,11 @@ else if (action === 'create') {
     if (workflow === "release-please")
       assert.deepEqual(assets.get(archive), original, "partial release retains its original archive");
     const assertPublishedBytes = () => {
+      const checksums = readFileSync(join(published, "checksums.txt"), "utf8");
       for (const [name, bytes] of assets) {
         assert.deepEqual(readFileSync(join(published, name)), bytes, `${name}: published bytes`);
         assert.deepEqual(readFileSync(join(release, "release-binaries", name)), bytes, `${name}: formula input`);
+        assert.ok(checksums.includes(`${createHash("sha256").update(bytes).digest("hex")}  ${name}\n`));
       }
     };
     assertPublishedBytes();
@@ -216,6 +218,10 @@ else if (action === 'create') {
     }
     assert.equal(git(["--git-dir", bare, "rev-parse", "main"]), first);
     assert.equal(JSON.parse(readFileSync(state, "utf8")).creates, 1);
+    // Never silently replace an existing checksum manifest, even if it is wrong.
+    writeFileSync(join(published, "checksums.txt"), "invalid checksum manifest\n");
+    assert.throws(() => shell(upload), /Published checksums.txt does not match/);
+    assert.equal(readFileSync(join(published, "checksums.txt"), "utf8"), "invalid checksum manifest\n");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

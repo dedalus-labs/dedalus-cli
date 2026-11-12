@@ -46,6 +46,18 @@ sudo mv dedalus /usr/local/bin/
 # https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-windows-x64.zip
 ```
 
+### Upgrading
+
+Run `dedalus upgrade --check` to check for a release, then `dedalus upgrade` to
+install it. Package-manager installations use their owning manager. Standalone
+macOS and Linux installations download the release archive and verify its
+`checksums.txt` before replacing the executable.
+
+The legacy `dedalus update` command uses `scripts/install.sh` to migrate direct
+macOS and Linux installations to the current archive format. That compatibility
+URL preserves `DEDALUS_VERSION` and `DEDALUS_INSTALL_DIR`; keep it available when
+publishing future releases. After migration, use `dedalus upgrade`.
+
 <br />
 
 ## Image import

@@ -1,6 +1,7 @@
 /** Connect with an ephemeral key and the server's SSH certificate and host CA. */
 
-import { spawn } from 'node:child_process'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { rmSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -34,9 +35,23 @@ type SSHSession = {
 
 export const connectMachine = async (api: SSHAPI, machineID: string): Promise<void> => {
   const directory = await mkdtemp(join(tmpdir(), 'dedalus-ssh-'))
+  let child: ChildProcess | undefined
+  const trackChild = (active: ChildProcess | undefined): void => { child = active }
+  // Signal termination skips finally, so remove credentials before exiting.
+  const terminate = (signal: NodeJS.Signals, code: number): void => {
+    child?.kill(signal)
+    rmSync(directory, { recursive: true, force: true })
+    process.exit(code)
+  }
+  const interrupt = (): void => terminate('SIGINT', 130)
+  const stop = (): void => terminate('SIGTERM', 143)
+  const hangup = (): void => terminate('SIGHUP', 129)
+  process.on('SIGINT', interrupt)
+  process.on('SIGTERM', stop)
+  process.on('SIGHUP', hangup)
   try {
     const keyPath = join(directory, 'key')
-    await runProcess('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', '', '-f', keyPath], 'ignore')
+    await runProcess('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', '', '-f', keyPath], 'ignore', trackChild)
     const publicKey = (await readFile(`${keyPath}.pub`, 'utf8')).trim()
     if (!publicKey) throw new Error('ssh-keygen returned an empty public key')
 
@@ -60,10 +75,16 @@ export const connectMachine = async (api: SSHAPI, machineID: string): Promise<vo
       '-o', 'IdentitiesOnly=yes',
       '-p', String(connection.port),
       '--', `${connection.sshUsername}@${connection.endpoint}`,
-    ], 'inherit')
+    ], 'inherit', trackChild)
     if (code !== 0) process.exitCode = code
   } finally {
-    await rm(directory, { recursive: true, force: true })
+    try {
+      await rm(directory, { recursive: true, force: true })
+    } finally {
+      process.off('SIGINT', interrupt)
+      process.off('SIGTERM', stop)
+      process.off('SIGHUP', hangup)
+    }
   }
 }
 
@@ -172,12 +193,15 @@ const runProcess = (
   command: string,
   args: readonly string[],
   stdio: 'ignore' | 'inherit',
+  trackChild: (child: ChildProcess | undefined) => void,
 ): Promise<number> => new Promise((resolve, reject) => {
   const child = spawn(command, args, { stdio })
+  trackChild(child)
   child.once('error', (error) => {
     reject(new Error(`${command} is required but was not found in PATH`, { cause: error }))
   })
   child.once('close', (code, signal) => {
+    trackChild(undefined)
     if (signal) {
       reject(new Error(`${command} terminated by ${signal}`))
       return

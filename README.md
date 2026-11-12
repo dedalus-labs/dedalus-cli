@@ -46,6 +46,16 @@ sudo mv dedalus /usr/local/bin/
 # https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-windows-x64.zip
 ```
 
+### Upgrading
+
+Run `dedalus upgrade --check` to check for a release, then `dedalus upgrade` to
+install it. Package-manager installations use their owning manager. Standalone
+macOS and Linux installations download the release archive and verify its
+`checksums.txt` before replacing the executable.
+
+If your CLI does not recognize `dedalus upgrade`, reinstall it using one of the
+methods above. Older Go CLI versions do not support this command.
+
 <br />
 
 ## Image import

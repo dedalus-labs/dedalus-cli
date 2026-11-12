@@ -21,6 +21,8 @@ export type {
   MachineRebootParams,
   MachineResizeParams,
   MachineResizeResponse,
+  MachineWatchParams,
+  MachineWatchResponse,
   Image,
   ImageList,
   Source,

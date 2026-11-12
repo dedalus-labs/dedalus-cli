@@ -7250,6 +7250,105 @@
       "transport": "http"
     },
     {
+      "resource": "machines",
+      "publicResource": "machines",
+      "operation": "watch",
+      "publicOperation": "watch",
+      "deprecated": false,
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/status/stream",
+      "pathParams": [
+        "machine_id"
+      ],
+      "publicPathParams": [
+        "machine_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [
+        "Last-Event-ID"
+      ],
+      "publicHeaderParams": [
+        "Last-Event-ID"
+      ],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [
+        {
+          "name": "Last-Event-ID",
+          "required": false,
+          "style": "form",
+          "explode": true
+        }
+      ],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "MachineWatchParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "text/event-stream",
+        "encoding": "text",
+        "contents": [
+          {
+            "contentType": "text/event-stream",
+            "encoding": "text"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "machine_detail_response",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http",
+      "streaming": "sse"
+    },
+    {
       "resource": "machines.ssh",
       "publicResource": "machines.ssh",
       "operation": "list",

@@ -21,6 +21,8 @@ export type {
   MachineRebootParams,
   MachineResizeParams,
   MachineResizeResponse,
+  MachineWatchParams,
+  MachineWatchResponse,
 } from './machines/machines';
 export { Organization } from './organization/organization';
 export { Images } from './images/images';

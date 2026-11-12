@@ -1,6 +1,8 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
-import { APIPromise, defaultParseResponse, type APIResponseProps } from '../api-promise';
+import { defaultParseResponse } from '../internal/parse';
+import { APIPromise } from './api-promise';
+import { type APIResponseProps } from '../internal/parse';
 import type { Dedalus } from '../client';
 import { DedalusError } from './error';
 import type { FinalRequestOptions } from '../internal/request-options';

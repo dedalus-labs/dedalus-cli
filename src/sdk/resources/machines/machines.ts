@@ -3,7 +3,9 @@
 import { APIResource } from '../../resource';
 import { APIPromise } from '../../api-promise';
 import { CursorPage, type CursorPageParams, type PagePromise } from '../../core/pagination';
+import { Stream } from '../../core/streaming';
 import type { RequestOptions } from '../../internal/request-options';
+import { buildHeaders } from '../../internal/headers';
 import { path as __scalarPath } from '../../internal/utils/path';
 import type * as ImagesAPI from '../images/images';
 import * as SSHAPI from './ssh';
@@ -225,6 +227,39 @@ export class Machines extends APIResource {
   resize(params: MachineResizeParams, options?: RequestOptions): APIPromise<MachineResizeResponse> {
     const { machine_id, ...body } = params;
     return this._client.post(__scalarPath`/v1/machines/${machine_id}/resize`, { body, ...options });
+  }
+
+  /**
+   * Streams lifecycle changes as Server-Sent Events. Each `status` event carries the full machine, in the same shape as Get machine. The stream closes when the machine reaches its desired state, or after five minutes. A `bookmark` event moves the resume point without a change. An `error` event carries an error envelope, and the stream ends after it.
+   *
+   * @param {MachineWatchParams} params - The parameters to send with the request.
+   * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
+   * @returns {APIPromise<Stream<MachineWatchResponse>>} Server-Sent Events stream of machine status.
+   *
+   * @example
+   * ```ts
+   * const stream = await client.machines.watch({
+   *   machine_id: '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+   * });
+   *
+   * for await (const event of stream) {
+   *   console.log(event);
+   * }
+   * ```
+   */
+  watch(params: MachineWatchParams, options?: RequestOptions): APIPromise<Stream<MachineWatchResponse>> {
+    const { machine_id, 'Last-Event-ID': lastEventID } = params;
+    return this._client.get(__scalarPath`/v1/machines/${machine_id}/status/stream`, {
+      ...options,
+      headers: buildHeaders([
+        {
+          Accept: 'text/event-stream',
+          ...(lastEventID !== undefined ? { 'Last-Event-ID': lastEventID } : {}),
+        },
+        options?.headers,
+      ]),
+      stream: true,
+    });
   }
 }
 
@@ -630,6 +665,50 @@ export interface MachineResizeResponse {
    */
   vcpu: number;
 }
+
+export interface MachineWatchParams {
+  /**
+   * Path param: Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.
+   * @minLength 36
+   * @maxLength 39
+   * @pattern ^(dm-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+   */
+  machine_id: string;
+  /**
+   * Header param: The `id` of an event from an earlier stream. The stream resumes after that event instead of sending the current state first.
+   */
+  'Last-Event-ID'?: string;
+}
+
+export interface MachineWatchResponse {
+  /**
+   * Seconds of inactivity before autosleep. 0 disables autosleep.
+   * @format int64
+   * @minimum 0
+   * @maximum 9223372036
+   */
+  autosleep_seconds: number;
+  desired_state: 'running' | 'sleeping' | 'destroyed';
+  /**
+   * @format uuid
+   */
+  machine_id: string;
+  /**
+   * Memory in MiB.
+   * @format int64
+   */
+  memory_mib: number;
+  status: LifecycleStatus;
+  /**
+   * @format int64
+   */
+  storage_gib: number;
+  /**
+   * CPU in vCPUs.
+   * @format double
+   */
+  vcpu: number;
+}
 Machines.SSH = SSH;
 Machines.Executions = Executions;
 Machines.Autoresizing = Autoresizing;
@@ -646,6 +725,7 @@ export declare namespace Machines {
     type MachineListItemsCursorPage as MachineListItemsCursorPage,
     type MachineRetrieveResponse as MachineRetrieveResponse,
     type MachineResizeResponse as MachineResizeResponse,
+    type MachineWatchResponse as MachineWatchResponse,
     type MachineListParams as MachineListParams,
     type MachineCreateParams as MachineCreateParams,
     type MachineRetrieveParams as MachineRetrieveParams,
@@ -655,6 +735,7 @@ export declare namespace Machines {
     type MachineWakeParams as MachineWakeParams,
     type MachineRebootParams as MachineRebootParams,
     type MachineResizeParams as MachineResizeParams,
+    type MachineWatchParams as MachineWatchParams,
   };
 
   export {

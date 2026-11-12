@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.7.0...v0.8.0) (2026-11-12)
+
+
+### Features
+
+* **api:** share autoresizing switch type ([f51fb6f](https://github.com/dedalus-labs/dedalus-cli/commit/f51fb6f4c6e1b1ee2b5da5a2dba0dcf8f4384521))
+* **api:** share autoresizing switch type ([#124](https://github.com/dedalus-labs/dedalus-cli/issues/124)) ([b0171e6](https://github.com/dedalus-labs/dedalus-cli/commit/b0171e688fe890023b9b437668f3f5a231c3522b))
+
+
+### Bug Fixes
+
+* **cli:** restore legacy update compatibility ([#125](https://github.com/dedalus-labs/dedalus-cli/issues/125)) ([a0a9242](https://github.com/dedalus-labs/dedalus-cli/commit/a0a92422354ec903c7eea5b13b928cd3d267594d))
+* **release:** open protected homebrew updates as PRs ([#122](https://github.com/dedalus-labs/dedalus-cli/issues/122)) ([6eebce4](https://github.com/dedalus-labs/dedalus-cli/commit/6eebce471bbcfbf866b1fb1f6ac064a37c0f7939))
+* **release:** preserve published archives on retries ([9bda45c](https://github.com/dedalus-labs/dedalus-cli/commit/9bda45c07813c7c87b77fd1544208d82b6e4d25a))
+* **release:** submit homebrew updates through pull requests ([caecb64](https://github.com/dedalus-labs/dedalus-cli/commit/caecb64f1686be253a4595c1d3cd595b19588ca3))
+
 ## [0.7.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.6.0...v0.7.0) (2026-11-06)
 
 

@@ -1,6 +1,6 @@
 /** Connect with an ephemeral key and the server's SSH certificate and host CA. */
 
-import { spawn } from 'node:child_process';
+import { spawn, type StdioOptions } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -32,7 +32,7 @@ type SSHSession = {
   readonly status?: unknown;
 };
 
-export const connectMachine = async (api: SSHAPI, machineID: string): Promise<void> => {
+export const connectMachine = async (api: SSHAPI, machineID: string, input?: number): Promise<void> => {
   const directory = await mkdtemp(join(tmpdir(), 'dedalus-ssh-'));
   try {
     const keyPath = join(directory, 'key');
@@ -74,7 +74,7 @@ export const connectMachine = async (api: SSHAPI, machineID: string): Promise<vo
         '--',
         `${connection.sshUsername}@${connection.endpoint}`,
       ],
-      'inherit',
+      input === undefined ? 'inherit' : [input, 'inherit', 'inherit'],
     );
     if (code !== 0) process.exitCode = code;
   } finally {
@@ -183,7 +183,7 @@ const sleep = (milliseconds: number): Promise<void> =>
 // OpenSSH parses -o values as configuration text even when spawn receives an argv array.
 const quoteSSHPath = (path: string): string => `"${path.replace(/[\\"]/gu, '\\$&')}"`;
 
-const runProcess = (command: string, args: readonly string[], stdio: 'ignore' | 'inherit'): Promise<number> =>
+const runProcess = (command: string, args: readonly string[], stdio: StdioOptions): Promise<number> =>
   new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio });
     child.once('error', (error) => {

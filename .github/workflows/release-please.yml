@@ -51,18 +51,44 @@ jobs:
       # version bump and changelog must also land back on scalar-next, or the next
       # release PR would propose this release again. A real merge (never a plain
       # commit push) so a squash- or rebase-merged release PR syncs just as well; the
-      # non-conventional message keeps the sync commit out of future changelogs. Plain
-      # (non-force) push on purpose: losing a race against a concurrent regeneration
-      # push fails loudly here, and the platform's next sync re-converges.
+      # non-conventional message keeps the sync commit out of future changelogs.
+      #
+      # The Scalar platform merges main into scalar-next itself when the release
+      # PR merges, so this step routinely races it. The sync is done once the release commit
+      # is an ancestor of scalar-next, whoever merged it, so that is checked before every
+      # attempt. A rejected push retries from a fresh fetch rather than failing the release
+      # run. Plain (non-force) push on purpose: a concurrent regeneration push is never
+      # discarded, and a sync that still cannot land after the retries fails loudly.
       - name: Sync release back to scalar-next
         if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin scalar-next
-          git checkout -B scalar-next origin/scalar-next
-          git merge --no-edit -m "Sync release ${{ steps.release.outputs.tag_name }} back to scalar-next" "${{ steps.release.outputs.sha }}"
-          git push origin scalar-next
+          # Explicit `|| return 1`s because `set -e` does not apply inside a function called
+          # as a condition, and a failed merge must never fall through to a no-op push.
+          sync_release() {
+            git fetch origin scalar-next || return 1
+            if git merge-base --is-ancestor "$RELEASE_SHA" origin/scalar-next; then
+              echo "$RELEASE_TAG is already on scalar-next."
+              return 0
+            fi
+            git checkout -B scalar-next origin/scalar-next || return 1
+            if ! git merge --no-edit -m "Sync release $RELEASE_TAG back to scalar-next" "$RELEASE_SHA"; then
+              git merge --abort
+              return 1
+            fi
+            git push origin scalar-next
+          }
+          for attempt in 1 2 3; do
+            if sync_release; then exit 0; fi
+            echo "Attempt $attempt of 3 to sync $RELEASE_TAG back to scalar-next failed."
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 5)); fi
+          done
+          echo "::error::Could not sync $RELEASE_TAG back to scalar-next after 3 attempts."
+          exit 1
   publish:
     needs: release-please
     # `!cancelled()` keeps publishing even when the back-sync to the integration branch
@@ -121,34 +147,66 @@ jobs:
       # TypeScript directly, and going through `dist/` would only add the emitted ESM specifier
       # rewriting as a failure mode between the source and the shipped binary.
       #
+      # Each target compiles into its own `compile-out/<target>/` directory rather than straight
+      # into an archive, so anything that has to touch an executable can run as a step between this
+      # one and packaging — code signing, when it is configured — and the archive is always built
+      # from whatever those steps left behind.
+      - name: Compile standalone binaries
+        run: |
+          rm -rf compile-out
+          for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
+            mkdir -p "compile-out/${target}"
+            case "$target" in
+              windows-*)
+                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/${target}/dedalus.exe"
+                ;;
+              *)
+                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/${target}/dedalus"
+                ;;
+            esac
+          done
       # Asset names carry no version: the release tag in the download path already does, and a
       # stable file name is what makes `releases/latest/download/<name>` resolve, so install
       # instructions can point at "latest" without being rewritten every release.
-      - name: Compile standalone binaries
+      #
+      # Each tarball carries the generated man pages beside the executable, so Homebrew — and anyone
+      # unpacking the download — installs `man dedalus` too rather than only the npm package doing
+      # so. Windows has no `man`, so its zip stays the executable alone.
+      #
+      # They are copied in here rather than at compile time so that what any signing step above saw
+      # — and, when notarization is on, what was uploaded to Apple, which zips these directories
+      # whole — is the executables alone.
+      - name: Package release archives
         run: |
           ROOT="$PWD"
           mkdir -p release-binaries
           for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
-            rm -rf compile-out && mkdir -p compile-out
             case "$target" in
               windows-*)
-                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/dedalus.exe"
-                (cd compile-out && zip -q "$ROOT/release-binaries/dedalus-${target}.zip" "dedalus.exe")
+                (cd "compile-out/${target}" && zip -q "$ROOT/release-binaries/dedalus-${target}.zip" "dedalus.exe")
                 ;;
               *)
-                bun build src/bin.ts --compile --minify --target="bun-${target}" --outfile "compile-out/dedalus"
-                tar -czf "release-binaries/dedalus-${target}.tar.gz" -C compile-out "dedalus"
+                cp -R "man" "compile-out/${target}/man"
+                tar -czf "release-binaries/dedalus-${target}.tar.gz" -C "compile-out/${target}" "dedalus" "man"
                 ;;
             esac
           done
           rm -rf compile-out
+          cp install.sh release-binaries/install.sh
+          # One checksum file covering every archive, so anything that downloads one can verify what it
+          # fetched before running it — `upgrade` refuses to replace the executable without it. Run from
+          # inside the directory so each line names the bare asset file name, which is the name the
+          # download URL ends in, rather than `release-binaries/…`; the `sed` then strips the `./` that
+          # globbing leaves on each name. `checksums.txt` does not end up checksumming itself: the shell
+          # expands the `./*` glob before it performs the redirection that creates the file.
+          (cd release-binaries && sha256sum ./* > checksums.txt && sed -i 's| \./| |' checksums.txt)
       - name: Attach binaries to the release
         run: gh release upload "v${PKG_VERSION}" release-binaries/* --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update Homebrew tap
         env:
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN || secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
         run: |
           # Reads back the archives the preceding asset step just uploaded. That step runs
           # `gh release upload` on the ambient GITHUB_TOKEN, which can only write releases in
@@ -161,12 +219,15 @@ jobs:
           mkdir -p tap/Formula
           # Each archive holds a single `bun build --compile` executable with the Bun runtime and
           # every dependency embedded, so the formula declares no `depends_on` and installs the
-          # binary as-is — `brew install` no longer pulls Node in as a dependency.
+          # binary as-is — `brew install` no longer pulls Node in as a dependency. The archive's man
+          # pages go into `man1`, and completion scripts are generated from the installed binary
+          # itself, so both always match the version installed.
           #
           # The formula file is lowercase even when the command it installs is not: Homebrew resolves
           # `brew install <owner>/<tap>/<name>` to `Formula/<name>.rb`, and that lookup is case-sensitive
           # on Linux. The `bin.install` below still installs the command under its own spelling.
-          cat > "tap/Formula/dedalus.rb" <<'EOF'
+          PACKAGE="tap/Formula/dedalus.rb"
+          cat > "$PACKAGE" <<'EOF'
           class Dedalus < Formula
             desc "The official CLI for Dedalus."
             homepage "https://docs.dedaluslabs.ai"
@@ -196,14 +257,15 @@ jobs:
 
             def install
               bin.install "dedalus"
+              man1.install Dir["man/*.1"]
+              generate_completions_from_executable(bin/"dedalus", "completion")
             end
 
             test do
-              system "#{bin}/dedalus", "--help"
+              system bin/"dedalus", "--help"
             end
           end
           EOF
-          FORMULA="tap/Formula/dedalus.rb"
           # Homebrew resolves one url/sha256 pair per platform at install time, but the formula is a
           # single file, so every platform the tap supports has to be pinned on every release.
           for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
@@ -214,9 +276,9 @@ jobs:
             # pair, so the loop stays driven by the target list instead of a hand-written sed per
             # platform that can silently fall out of step with the formula above.
             TOKEN="$(echo "$target" | tr "a-z-" "A-Z_")"
-            sed -i -e "s|__URL_${TOKEN}__|$BASE_URL/$ASSET|" -e "s|__SHA_${TOKEN}__|$SHA256|" "$FORMULA"
+            sed -i -e "s|__URL_${TOKEN}__|$BASE_URL/$ASSET|" -e "s|__SHA_${TOKEN}__|$SHA256|" "$PACKAGE"
           done
-          sed -i -e "s|__VERSION__|$PKG_VERSION|" "$FORMULA"
+          sed -i -e "s|__VERSION__|$PKG_VERSION|" "$PACKAGE"
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

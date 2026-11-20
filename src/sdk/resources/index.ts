@@ -8,6 +8,7 @@ export type {
   CreateParams,
   UpdateParams,
   LifecycleStatus,
+  AutoresizingSwitch,
   MachineListParams,
   MachineListItemsCursorPage,
   MachineCreateParams,
@@ -18,5 +19,19 @@ export type {
   MachineSleepParams,
   MachineWakeParams,
   MachineRebootParams,
+  MachineResizeParams,
+  MachineResizeResponse,
 } from './machines/machines';
 export { Organization } from './organization/organization';
+export { Images } from './images/images';
+export type {
+  Image,
+  ImageList,
+  Source,
+  Error,
+  ImageListParams,
+  ImageCreateParams,
+  ImageRetrieveParams,
+  ImageUpdateParams,
+  ImageDeleteParams,
+} from './images/images';

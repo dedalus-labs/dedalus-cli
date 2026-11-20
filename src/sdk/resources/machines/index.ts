@@ -8,6 +8,7 @@ export type {
   CreateParams,
   UpdateParams,
   LifecycleStatus,
+  AutoresizingSwitch,
   MachineListParams,
   MachineListItemsCursorPage,
   MachineCreateParams,
@@ -18,6 +19,8 @@ export type {
   MachineSleepParams,
   MachineWakeParams,
   MachineRebootParams,
+  MachineResizeParams,
+  MachineResizeResponse,
 } from './machines';
 export { SSH } from './ssh';
 export type {
@@ -50,4 +53,4 @@ export type {
   ExecutionEventsCursorPage,
 } from './executions/executions';
 export { Autoresizing } from './autoresizing';
-export type { Settings, AutoresizingRetrieveParams, AutoresizingUpdateParams } from './autoresizing';
+export type { Policy, AutoresizingRetrieveParams, AutoresizingUpdateParams } from './autoresizing';

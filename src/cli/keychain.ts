@@ -1,6 +1,30 @@
 // File generated from our OpenAPI spec by Scalar. See README.md for details.
 
 import { spawnSync } from 'node:child_process';
+import { accessSync, constants as fsConstants, statSync } from 'node:fs';
+import { delimiter, isAbsolute, join } from 'node:path';
+
+/**
+ * The absolute path of the executable `name` on `PATH`, or `undefined` when there is none.
+ *
+ * Only absolute `PATH` entries are searched. An empty entry stands for the current directory and a
+ * relative one is resolved against it, so letting the system search them would let a checked-out
+ * repository supply a `secret-tool` of its own — which is then handed the profile's secret. The
+ * spawn gets the absolute path this returns, never the bare name.
+ */
+export const resolveOnPath = (name: string): string | undefined => {
+  for (const dir of (process.env['PATH'] ?? '').split(delimiter)) {
+    if (!dir || !isAbsolute(dir)) continue;
+    const candidate = join(dir, name);
+    try {
+      accessSync(candidate, fsConstants.X_OK);
+      if (statSync(candidate).isFile()) return candidate;
+    } catch {
+      // Not here, or not executable; the next entry may have it.
+    }
+  }
+  return undefined;
+};
 
 /**
  * One platform's credential helper, as the three commands this needs from it.
@@ -24,6 +48,29 @@ type KeychainHelper = {
    * has already taken standard input for the script.
    */
   readonly script?: (mode: 'lookup' | 'store' | 'clear') => string;
+  /**
+   * Builds the whole of standard input for a helper that reads its command there, secret included.
+   *
+   * `undefined` refuses the operation before anything is spawned. That is how a request that cannot
+   * be written onto the helper's command line exactly — too long, or carrying a character the line
+   * cannot hold — fails instead of reaching the helper garbled.
+   */
+  readonly input?: (
+    mode: 'lookup' | 'store' | 'clear',
+    service: string,
+    account: string,
+    secret?: string,
+  ) => string | undefined;
+  /** Turns what a lookup printed back into the secret, undoing whatever `input` encoded. */
+  readonly decode?: (stored: string) => string;
+  /**
+   * Whether a non-zero exit status is the helper answering "no such item".
+   *
+   * Without this, every non-zero exit is read that way. A helper that can tell a missing item from a
+   * store it could not open says which status is which, so a locked store is not mistaken for an
+   * empty one by a caller about to merge into what it read.
+   */
+  readonly notFound?: (status: number) => boolean;
 };
 
 /**
@@ -49,15 +96,16 @@ export const windowsPowerShell = (): string =>
  * goes through the environment instead, which on Windows one process cannot read from another
  * without debug privileges, unlike a command line.
  *
- * macOS is deliberately absent. `security add-generic-password` takes the password only as the
- * argument to `-w`; with no value there it is a usage error, and with a value the secret is in the
- * command line. It has no standard-input form and no interactive mode this can drive safely, so a
- * Mac gets the `0600` file — the same place the widely used CLIs that do not ship a native helper
- * binary keep theirs.
+ * macOS's `security add-generic-password` takes the password only as the argument to `-w`, so it is
+ * never run with one. `security -i` reads whole commands from standard input instead, and the store
+ * goes through that: the secret sits on a line of stdin rather than in any process's argv. See
+ * {@link securityStoreCommand} for what that line has to survive.
  */
 const HELPERS: Readonly<Record<string, KeychainHelper>> = {
   // Linux: the freedesktop Secret Service, which GNOME Keyring and KWallet both implement.
-  // A bare command name is safe here: only Windows resolves one against the working directory.
+  // Linux has no fixed place for it, so whatever comes first on `PATH` answers — but `run`
+  // resolves it to an absolute path through the absolute `PATH` entries alone (see
+  // {@link resolveOnPath}); Windows and macOS, which do have a fixed place, use it directly.
   linux: {
     file: 'secret-tool',
     lookup: (service, account) => ['lookup', 'service', service, 'account', account],
@@ -73,10 +121,90 @@ const HELPERS: Readonly<Record<string, KeychainHelper>> = {
     clear: () => ['-NoProfile', '-NonInteractive', '-Command', '-'],
     script: (mode) => windowsScript(mode),
   },
+  // macOS: the user's default keychain, through the `security` tool every Mac ships. Spawned by
+  // absolute path, unlike `secret-tool`: a Mac always has it at `/usr/bin/security`, where SIP keeps
+  // it Apple's, while a bare name resolves through `PATH` — and Homebrew's user-writable
+  // `/opt/homebrew/bin` or a project's `node_modules/.bin` usually sits ahead of `/usr/bin`, so a
+  // stray `security` there would be handed the whole profile. It is also the binary the items it
+  // writes trust, which is what lets every install read them without a prompt. Only the store runs
+  // interactively; a lookup and a clear carry nothing but the service and account, which are no more
+  // secret here than on Linux.
+  darwin: {
+    file: '/usr/bin/security',
+    lookup: (service, account) => ['find-generic-password', '-s', service, '-a', account, '-w'],
+    store: () => ['-i'],
+    clear: (service, account) => ['delete-generic-password', '-s', service, '-a', account],
+    input: (mode, service, account, secret) =>
+      mode === 'store' && secret !== undefined ? securityStoreCommand(service, account, secret) : '',
+    decode: (stored) =>
+      stored.startsWith(SECURITY_SECRET_PREFIX)
+        ? Buffer.from(stored.slice(SECURITY_SECRET_PREFIX.length), 'base64').toString('utf8')
+        : stored,
+    // `security` exits with the low byte of the OSStatus it hit, and errSecItemNotFound (-25300)
+    // comes out as 44. Anything else — a locked keychain over ssh is errSecInteractionNotAllowed,
+    // 36 — means the keychain could not be asked, not that it has nothing under this key.
+    notFound: (status) => status === 44,
+  },
 };
 
 /** Whether this platform has a credential helper the CLI can drive at all. */
 export const keychainSupported = (): boolean => HELPERS[process.platform] !== undefined;
+
+/**
+ * Marks a secret stored base64-encoded, so a lookup knows to decode it.
+ *
+ * `security find-generic-password -w` prints a password containing any byte that is not printable
+ * ASCII as hex instead, with nothing to say it did. A profile with one non-ASCII character in it
+ * would then come back as a hex string — not JSON, so the stored credential would be unreadable.
+ * Base64 is printable throughout, so it always comes back exactly as written.
+ */
+const SECURITY_SECRET_PREFIX = 'base64:';
+
+/**
+ * The longest command line `security -i` reads whole, newline included.
+ *
+ * It reads each line into a 4096-byte buffer, and a line that does not fit is not rejected: the
+ * rest is read as the *next* command. Staying well inside the buffer is the only safe answer, and a
+ * profile that cannot fit fails the store, which `auto` turns into the file.
+ */
+const SECURITY_LINE_LIMIT = 4000;
+
+/**
+ * Quotes one argument for `security -i`.
+ *
+ * Its line parser is not a shell. Inside double quotes a backslash escapes the next character and
+ * the closing quote ends the argument, and nothing else is special — no variables, no globbing, and
+ * no joining of adjacent quoted pieces, so the shell trick of `'...'"'"'...'` would split one
+ * argument into three. Escaping every backslash and double quote is therefore complete.
+ */
+const securityQuote = (value: string): string => '"' + value.replace(/[\\"]/gu, '\\$&') + '"';
+
+/**
+ * The single `add-generic-password` line that stores one secret through `security -i`.
+ *
+ * `-U` updates an existing item in place, so signing in again replaces the credential rather than
+ * failing on a duplicate. The service and account are quoted rather than encoded, so the item reads
+ * the same in Keychain Access as the lookup and clear that address it in argv. A control character
+ * in either is refused: a newline would end the command early and start another, and a NUL ends the
+ * argument where C reads it. The base URL key never carries one in practice; refusing it keeps a
+ * hostile `--base-url` from writing a second command.
+ */
+const securityStoreCommand = (service: string, account: string, secret: string): string | undefined => {
+  if (/[\u0000-\u001f\u007f]/u.test(service + account)) return undefined;
+  const encoded = SECURITY_SECRET_PREFIX + Buffer.from(secret, 'utf8').toString('base64');
+  const line =
+    [
+      'add-generic-password',
+      '-U',
+      '-s',
+      securityQuote(service),
+      '-a',
+      securityQuote(account),
+      '-w',
+      securityQuote(encoded),
+    ].join(' ') + '\n';
+  return Buffer.byteLength(line, 'utf8') <= SECURITY_LINE_LIMIT ? line : undefined;
+};
 
 /**
  * PowerShell for one Credential Manager operation.
@@ -134,8 +262,10 @@ export const keychainRead = (
   const result = run('lookup', service, account);
   // `secret-tool` terminates its output with a newline the stored value never had; `security`
   // does the same. Nothing this stores is meant to end in one, so a single trailing newline comes off.
-  if (result.ok) return { secret: result.stdout.replace(/\n$/u, ''), unavailable: false };
-  return { unavailable: result.unavailable };
+  if (!result.ok) return { unavailable: result.unavailable };
+  const stored = result.stdout.replace(/\n$/u, '');
+  const decode = HELPERS[process.platform]?.decode;
+  return { secret: decode ? decode(stored) : stored, unavailable: false };
 };
 
 /** Reads one secret back, or `undefined` when the helper has no such item (or cannot run). */
@@ -162,12 +292,18 @@ const run = (
 ): { readonly ok: boolean; readonly stdout: string; readonly unavailable: boolean } => {
   const helper = HELPERS[process.platform];
   if (!helper) return { ok: false, stdout: '', unavailable: true };
+  // Missing from every absolute `PATH` entry is the same as missing: the fallback, not a bare-name
+  // spawn that would search the relative entries this skipped.
+  const file = isAbsolute(helper.file) ? helper.file : resolveOnPath(helper.file);
+  if (!file) return { ok: false, stdout: '', unavailable: true };
   const script = helper.script?.(mode);
   // A scripted helper consumes the whole of standard input as its script, so its secret travels in
-  // the environment beside the service and account; a direct helper takes the secret on stdin.
-  const input = script ?? secret ?? '';
+  // the environment beside the service and account; a direct helper takes the secret on stdin, and
+  // an interactive one takes it inside the command it reads there.
+  const input = helper.input ? helper.input(mode, service, account, secret) : (script ?? secret ?? '');
+  if (input === undefined) return { ok: false, stdout: '', unavailable: false };
   try {
-    const result = spawnSync(helper.file, [...helper[mode](service, account)], {
+    const result = spawnSync(file, [...helper[mode](service, account)], {
       input,
       encoding: 'utf8',
       // A helper that blocks — a locked keychain putting up a dialog, a Secret Service with no
@@ -182,9 +318,13 @@ const run = (
     });
     // A spawn that reports an `error` never delivered the question — the helper is missing, or the
     // timeout above fired. A non-zero status is the helper answering, which for a lookup or a clear
-    // is how every implementation spells "no such item".
+    // is how every implementation spells "no such item" — and, for a helper that also has a status
+    // for "could not open the store", only that one status means it.
     if (result.error) return { ok: false, stdout: '', unavailable: true };
-    if (result.status !== 0) return { ok: false, stdout: '', unavailable: false };
+    if (result.status !== 0) {
+      const unavailable = helper.notFound !== undefined && !helper.notFound(result.status ?? -1);
+      return { ok: false, stdout: '', unavailable };
+    }
     return { ok: true, stdout: result.stdout ?? '', unavailable: false };
   } catch {
     // ENOENT for a helper this machine does not have is the common case, and it is not an error:

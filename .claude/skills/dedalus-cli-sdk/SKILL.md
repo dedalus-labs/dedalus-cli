@@ -10,6 +10,10 @@ Generated CLI client for Dedalus API, published as `dedalus-cli`. Use the genera
 ## Install
 
 ```sh
+# Install script — standalone binary for macOS and Linux, no Node.js required
+curl -fsSL https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/install.sh | bash
+# Installs into ~/.local/bin and puts it on PATH; set DEDALUS_INSTALL_DIR to choose another directory
+
 # npm (requires Node.js)
 npm install -g dedalus-cli
 
@@ -17,7 +21,7 @@ npm install -g dedalus-cli
 brew install dedalus-labs/tap/dedalus
 
 # Direct download — standalone binary, no Node.js required
-curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz
+curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz dedalus
 sudo mv dedalus /usr/local/bin/
 
 # Windows — download and extract dedalus-windows-x64.zip, then add it to PATH
@@ -28,8 +32,9 @@ sudo mv dedalus /usr/local/bin/
 
 Provide credentials using the options below. Environment variables are read automatically when the target runtime supports them:
 
-- `--api-key` (env: `DEDALUS_API_KEY`) — Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.
+- `--api-key` (env: `DEDALUS_API_KEY`) — Dedalus API key or short-lived delegated access token in `Authorization: Bearer <credential>`.
 - `--x-api-key` (env: `DEDALUS_X_API_KEY`) — Dedalus API key. Alternative to Bearer token.
+- `--browser-token` (env: `DEDALUS_BROWSER_TOKEN`) — Credential for the BrowserAuth scheme.
 
 ## Calling operations
 
@@ -37,7 +42,7 @@ Provide credentials using the options below. Environment variables are read auto
 dedalus [resource] [command] [flags]
 
 dedalus machines create \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --autosleep '300s' \
   --memory-mib '4096' \
   --storage-gib '10' \

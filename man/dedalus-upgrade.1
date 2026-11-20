@@ -1,0 +1,32 @@
+.\" File generated from our OpenAPI spec by Scalar. Do not edit.
+.TH "DEDALUS\-UPGRADE" "1" "" "dedalus" "Dedalus Manual"
+.SH "NAME"
+dedalus\-upgrade \- upgrade dedalus to the latest release
+.SH "SYNOPSIS"
+.B dedalus upgrade
+[\fB\-\-check\fR]
+.SH "DESCRIPTION"
+Replaces this dedalus executable with the latest published release, after verifying the download against the checksums published alongside it.
+.PP
+When dedalus was installed through a package manager (Homebrew or npm) nothing is replaced. That manager owns the installed files, and overwriting them leaves its database describing a file that is no longer there, so the command runs the manager's own upgrade command instead, with its output on this terminal.
+.PP
+dedalus also checks for a newer release at most once a day and mentions one on standard error. That check is skipped when either standard output or standard error is not a terminal, when CI is set, when running under sudo, and when NO_UPDATE_NOTIFIER or DEDALUS_NO_UPDATE_NOTIFIER is set in the environment.
+.SH "OPTIONS"
+.TP
+\fB\-\-check\fR
+Report the installed and latest versions and exit, without installing anything.
+.SH "EXIT STATUS"
+.TP
+\fB0\fR
+The command completed successfully.
+.TP
+\fB1\fR
+The command failed. The reason is reported on standard error.
+.TP
+\fB2\fR
+The command was invoked incorrectly (missing or invalid arguments).
+.PP
+When dedalus cannot perform the upgrade itself it prints what to run instead and exits 0, having changed nothing: a project dependency, a cache such as npx, an executable it does not own, or a package manager whose own program it cannot locate. A manager it does run exits 1 if it cannot be started or if it fails, and so does a Homebrew upgrade that leaves an older version installed than the latest release. Run dedalus upgrade \-\-check first to learn whether a newer release exists.
+.SH "SEE ALSO"
+.BR dedalus (1),
+.BR dedalus\-uninstall (1)

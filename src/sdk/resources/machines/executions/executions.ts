@@ -6,14 +6,7 @@ import { CursorPage, type CursorPageParams, type PagePromise } from '../../../co
 import type { RequestOptions } from '../../../internal/request-options';
 import { path as __scalarPath } from '../../../internal/utils/path';
 import * as LogsAPI from './logs';
-import {
-  Logs,
-  type Status,
-  type ReadToken,
-  type LogRetrieveParams,
-  type LogReauthorizeParams,
-  type LogCreateTokenParams,
-} from './logs';
+import { Logs, type Status, type ReadToken, type LogRetrieveParams, type LogCreateTokenParams } from './logs';
 
 export class Executions extends APIResource {
   logs: LogsAPI.Logs = new LogsAPI.Logs(this._client);
@@ -424,7 +417,6 @@ export declare namespace Executions {
     type Status as Status,
     type ReadToken as ReadToken,
     type LogRetrieveParams as LogRetrieveParams,
-    type LogReauthorizeParams as LogReauthorizeParams,
     type LogCreateTokenParams as LogCreateTokenParams,
   };
 }

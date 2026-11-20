@@ -10,6 +10,7 @@ import {
 } from '../cli/runtime';
 import { completions } from '../cli/completions';
 import type { CliAuthDefinition } from '../cli/login';
+import { addUpgradeCommands, notifyIfOutdated } from '../cli/upgrade';
 
 const clientOptions = [
   {
@@ -19,8 +20,9 @@ const clientOptions = [
     optionKey: 'apiKey',
     env: 'DEDALUS_API_KEY',
     description:
-      'Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>.',
+      'Dedalus API key or short-lived delegated access token in `Authorization: Bearer <credential>`.',
     auth: true,
+    authLocation: 'header:authorization',
   },
   {
     clientKey: 'xAPIKey',
@@ -30,6 +32,16 @@ const clientOptions = [
     env: 'DEDALUS_X_API_KEY',
     description: 'Dedalus API key. Alternative to Bearer token.',
     auth: true,
+    authLocation: 'header:x-api-key',
+  },
+  {
+    clientKey: 'browserToken',
+    sdkKey: 'browserToken',
+    name: 'browser-token',
+    optionKey: 'browserToken',
+    env: 'DEDALUS_BROWSER_TOKEN',
+    auth: true,
+    authLocation: 'header:authorization',
   },
   {
     clientKey: 'dedalusOrgID',
@@ -52,7 +64,7 @@ const commands = [
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -81,7 +93,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'body',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -92,6 +104,15 @@ const commands = [
         required: false,
         description:
           'Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.',
+        valueKind: 'string',
+      },
+      {
+        name: 'image-id',
+        optionKey: 'imageId',
+        paramKey: 'image_id',
+        location: 'body',
+        required: false,
+        description: 'Organization-owned ready custom image ID. Requires Pro. Omit for the platform default.',
         valueKind: 'string',
       },
       {
@@ -131,7 +152,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -150,10 +171,11 @@ const commands = [
     commandPath: ['machines', 'update'],
     methodName: 'update',
     summary: 'Update machine',
+    description: 'Changes settings such as autosleep.',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -171,18 +193,7 @@ const commands = [
         paramKey: 'autosleep',
         location: 'body',
         required: false,
-        description:
-          'Idle window before autosleep. Accepts fixed duration units like 30s, 30m, 2h, 7d3h4s, or 1w3d, raw seconds ("1800"), or never to disable.',
         valueKind: 'string',
-      },
-      {
-        name: 'memory-mib',
-        optionKey: 'memoryMib',
-        paramKey: 'memory_mib',
-        location: 'body',
-        required: false,
-        description: 'Memory in MiB.',
-        valueKind: 'integer',
       },
       {
         name: 'storage-gib',
@@ -190,17 +201,7 @@ const commands = [
         paramKey: 'storage_gib',
         location: 'body',
         required: false,
-        description: 'Storage in GiB.',
         valueKind: 'integer',
-      },
-      {
-        name: 'vcpu',
-        optionKey: 'vcpu',
-        paramKey: 'vcpu',
-        location: 'body',
-        required: false,
-        description: 'CPU in vCPUs.',
-        valueKind: 'number',
       },
     ],
   },
@@ -212,7 +213,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -224,6 +225,16 @@ const commands = [
         description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
         valueKind: 'string',
       },
+      {
+        name: 'force',
+        optionKey: 'force',
+        paramKey: 'force',
+        location: 'query',
+        required: false,
+        description:
+          "Destroy from the last published filesystem checkpoint without publishing the Machine's remaining writes, whether the Machine is running or failed. Unpublished file writes are lost. The default publishes them first, and waits while it cannot.",
+        valueKind: 'boolean',
+      },
     ],
   },
   {
@@ -234,7 +245,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -256,7 +267,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -280,7 +291,7 @@ const commands = [
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -305,14 +316,56 @@ const commands = [
     ],
   },
   {
+    resourcePath: ['machines'],
+    commandPath: ['machines', 'resize'],
+    methodName: 'resize',
+    summary: 'Resize machine',
+    description:
+      'Wakes a sleeping Machine, then waits up to 30 seconds for the host to confirm CPU and RAM. Returns the Machine with its confirmed size. After RESIZE_TIMEOUT, repeat the same request and Idempotency-Key to wait again.',
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'machine-id',
+        optionKey: 'machineId',
+        paramKey: 'machine_id',
+        location: 'path',
+        required: true,
+        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
+        valueKind: 'string',
+      },
+      {
+        name: 'memory-mib',
+        optionKey: 'memoryMib',
+        paramKey: 'memory_mib',
+        location: 'body',
+        required: false,
+        description: 'RAM in MiB.',
+        valueKind: 'integer',
+      },
+      {
+        name: 'vcpu',
+        optionKey: 'vcpu',
+        paramKey: 'vcpu',
+        location: 'body',
+        required: false,
+        description: 'CPU in 0.25-vCPU steps.',
+        valueKind: 'number',
+      },
+    ],
+  },
+  {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'list'],
+    commandPath: ['machines', 'ssh', 'list'],
     methodName: 'list',
     summary: 'List SSH sessions',
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -344,13 +397,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'create'],
+    commandPath: ['machines', 'ssh', 'create'],
     methodName: 'create',
     summary: 'Create SSH session',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -374,13 +427,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'retrieve'],
+    commandPath: ['machines', 'ssh', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Get SSH session',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -404,13 +457,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'ssh'],
-    commandPath: ['machines:ssh', 'delete'],
+    commandPath: ['machines', 'ssh', 'delete'],
     methodName: 'delete',
     summary: 'Delete SSH session',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -434,13 +487,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'list'],
+    commandPath: ['machines', 'executions', 'list'],
     methodName: 'list',
     summary: 'List executions',
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -472,13 +525,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'create'],
+    commandPath: ['machines', 'executions', 'create'],
     methodName: 'create',
     summary: 'Create execution',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -534,13 +587,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'retrieve'],
+    commandPath: ['machines', 'executions', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Get execution',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -564,13 +617,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'delete'],
+    commandPath: ['machines', 'executions', 'delete'],
     methodName: 'delete',
     summary: 'Delete execution',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -594,13 +647,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'output'],
+    commandPath: ['machines', 'executions', 'output'],
     methodName: 'output',
     summary: 'Get execution output',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -624,13 +677,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions'],
-    commandPath: ['machines:executions', 'events'],
+    commandPath: ['machines', 'executions', 'events'],
     methodName: 'events',
     summary: 'List execution events',
     transport: 'http',
     iterable: true,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -670,13 +723,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions', 'logs'],
-    commandPath: ['machines:executions:logs', 'retrieve'],
+    commandPath: ['machines', 'executions', 'logs', 'retrieve'],
     methodName: 'retrieve',
     summary: 'Get execution log status',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -700,43 +753,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'executions', 'logs'],
-    commandPath: ['machines:executions:logs', 'reauthorize'],
-    methodName: 'reauthorize',
-    summary: 'Reauthorize execution log publication',
-    transport: 'http',
-    iterable: false,
-    callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
-    positional: [],
-    flags: [
-      {
-        name: 'machine-id',
-        optionKey: 'machineId',
-        paramKey: 'machine_id',
-        location: 'path',
-        required: true,
-        description: 'Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged.',
-        valueKind: 'string',
-      },
-      {
-        name: 'execution-id',
-        optionKey: 'executionId',
-        paramKey: 'execution_id',
-        location: 'path',
-        required: true,
-        valueKind: 'string',
-      },
-    ],
-  },
-  {
-    resourcePath: ['machines', 'executions', 'logs'],
-    commandPath: ['machines:executions:logs', 'create-token'],
+    commandPath: ['machines', 'executions', 'logs', 'create-token'],
     methodName: 'createToken',
     summary: 'Create execution log read token',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -760,13 +783,13 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'autoresizing'],
-    commandPath: ['machines:autoresizing', 'retrieve'],
+    commandPath: ['machines', 'autoresizing', 'retrieve'],
     methodName: 'retrieve',
-    summary: "Read this machine's RAM autoresizing settings",
+    summary: "Read this machine's autoresizing settings",
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -782,13 +805,14 @@ const commands = [
   },
   {
     resourcePath: ['machines', 'autoresizing'],
-    commandPath: ['machines:autoresizing', 'update'],
+    commandPath: ['machines', 'autoresizing', 'update'],
     methodName: 'update',
-    summary: "Set this machine's RAM autoresizing settings",
+    summary: "Set this machine's autoresizing settings",
+    description: 'Changes RAM, CPU or both for this machine. An absent resource keeps its setting.',
     transport: 'http',
     iterable: false,
     callShape: 'params',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
@@ -801,47 +825,323 @@ const commands = [
         valueKind: 'string',
       },
       {
-        name: 'enabled',
-        optionKey: 'enabled',
-        paramKey: 'enabled',
+        name: 'cpu',
+        optionKey: 'cpu',
+        paramKey: 'cpu',
         location: 'body',
-        required: true,
-        valueKind: 'boolean',
+        required: false,
+        valueKind: 'string',
+      },
+      {
+        name: 'cpu-max-vcpu',
+        optionKey: 'cpuMaxVcpu',
+        paramKey: 'cpu_max_vcpu',
+        location: 'body',
+        required: false,
+        valueKind: 'number',
+      },
+      {
+        name: 'memory',
+        optionKey: 'memory',
+        paramKey: 'memory',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+      },
+      {
+        name: 'memory-max-mib',
+        optionKey: 'memoryMaxMib',
+        paramKey: 'memory_max_mib',
+        location: 'body',
+        required: false,
+        valueKind: 'integer',
       },
     ],
   },
   {
     resourcePath: ['organization', 'autoresizing'],
-    commandPath: ['organization:autoresizing', 'retrieve'],
+    commandPath: ['organization', 'autoresizing', 'retrieve'],
     methodName: 'retrieve',
-    summary: 'Read organization RAM autoresizing policy',
+    summary: 'Read organization autoresizing policy',
     transport: 'http',
     iterable: false,
     callShape: 'options',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [],
   },
   {
     resourcePath: ['organization', 'autoresizing'],
-    commandPath: ['organization:autoresizing', 'update'],
+    commandPath: ['organization', 'autoresizing', 'update'],
     methodName: 'update',
-    summary: 'Set organization RAM autoresizing policy',
+    summary: 'Set organization autoresizing policy',
+    description: 'Changes defaults copied to new Machines. Existing Machines retain their own policy.',
     transport: 'http',
     iterable: false,
     callShape: 'body',
-    authClientKeyRequirements: [['xAPIKey'], ['apiKey']],
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
     positional: [],
     flags: [
       {
-        name: 'enabled',
-        optionKey: 'enabled',
-        paramKey: 'enabled',
+        name: 'cpu',
+        optionKey: 'cpu',
+        paramKey: 'cpu',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+      },
+      {
+        name: 'cpu-max-vcpu',
+        optionKey: 'cpuMaxVcpu',
+        paramKey: 'cpu_max_vcpu',
+        location: 'body',
+        required: false,
+        valueKind: 'number',
+      },
+      {
+        name: 'memory',
+        optionKey: 'memory',
+        paramKey: 'memory',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+      },
+      {
+        name: 'memory-max-mib',
+        optionKey: 'memoryMaxMib',
+        paramKey: 'memory_max_mib',
+        location: 'body',
+        required: false,
+        valueKind: 'integer',
+      },
+    ],
+  },
+  {
+    resourcePath: ['images'],
+    commandPath: ['images', 'list'],
+    methodName: 'list',
+    summary: 'List image IDs owned by the authenticated organization',
+    description:
+      "Pages through the organization's images in ID order. A deleted image is left out; it still reads by ID.",
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'limit',
+        optionKey: 'limit',
+        paramKey: 'limit',
+        location: 'query',
+        required: false,
+        valueKind: 'integer',
+      },
+      {
+        name: 'cursor',
+        optionKey: 'cursor',
+        paramKey: 'cursor',
+        location: 'query',
+        required: false,
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['images'],
+    commandPath: ['images', 'create'],
+    methodName: 'create',
+    summary: 'Register an immutable OCI image for preparation',
+    description:
+      'Requires an entitled organization and linux/amd64 on the current fleet. Acceptance queues preparation; only a ready image can launch a machine. Private registry credentials are not yet supported.',
+    transport: 'http',
+    iterable: false,
+    callShape: 'body',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'credential-ref',
+        optionKey: 'credentialRef',
+        paramKey: 'credential_ref',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+      },
+      {
+        name: 'name',
+        optionKey: 'name',
+        paramKey: 'name',
+        location: 'body',
+        required: false,
+        description: 'A label people use to tell images apart. Programs use the image ID.',
+        valueKind: 'string',
+      },
+      {
+        name: 'platform',
+        optionKey: 'platform',
+        paramKey: 'platform',
         location: 'body',
         required: true,
-        description:
-          'Allow automatic RAM increases for all organization machines. Disabling preserves applied RAM and already admitted resizes.',
-        valueKind: 'boolean',
+        valueKind: 'string',
+      },
+      {
+        name: 'source',
+        optionKey: 'source',
+        paramKey: 'source',
+        location: 'body',
+        required: true,
+        valueKind: 'object',
+      },
+      {
+        name: 'source.kind',
+        optionKey: 'source.kind',
+        paramKey: 'source',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+        objectPath: ['kind'],
+      },
+      {
+        name: 'source.reference',
+        optionKey: 'source.reference',
+        paramKey: 'source',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+        objectPath: ['reference'],
+      },
+      {
+        name: 'source.sha256',
+        optionKey: 'source.sha256',
+        paramKey: 'source',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+        objectPath: ['sha256'],
+      },
+      {
+        name: 'source.upload-id',
+        optionKey: 'source.uploadId',
+        paramKey: 'source',
+        location: 'body',
+        required: false,
+        valueKind: 'string',
+        objectPath: ['upload_id'],
+      },
+    ],
+  },
+  {
+    resourcePath: ['images'],
+    commandPath: ['images', 'retrieve'],
+    methodName: 'retrieve',
+    summary: 'Read preparation status for an organization-owned image',
+    description:
+      "A preparing image reports its stage, the worker's last step and an estimated percent of the whole preparation. A failed image names the cause: IMAGE_OS_UNSUPPORTED, IMAGE_SOURCE_INVALID, IMAGE_SOURCE_NOT_FOUND and IMAGE_SOURCE_UNAUTHORIZED describe the image or its reference and are final; IMAGE_SOURCE_UNAVAILABLE, IMAGE_REGISTRY_UNREACHABLE, IMAGE_REGISTRY_RATE_LIMITED, IMAGE_ARCHIVE_UNAVAILABLE and IMAGE_EXECUTION_FAILED describe this attempt and are retryable with a new idempotency key.",
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'image-id',
+        optionKey: 'imageId',
+        paramKey: 'image_id',
+        location: 'path',
+        required: true,
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['images'],
+    commandPath: ['images', 'update'],
+    methodName: 'update',
+    summary: 'Rename an organization-owned image',
+    description: "Changes only the name. The image's source, platform and state are immutable.",
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'image-id',
+        optionKey: 'imageId',
+        paramKey: 'image_id',
+        location: 'path',
+        required: true,
+        valueKind: 'string',
+      },
+      {
+        name: 'name',
+        optionKey: 'name',
+        paramKey: 'name',
+        location: 'body',
+        required: true,
+        description: 'The new label, or null to clear it. No other field can change.',
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['images'],
+    commandPath: ['images', 'delete'],
+    methodName: 'delete',
+    summary: 'Delete an organization-owned image',
+    description:
+      "The image can create no new Machine and no longer counts against the organization's image limit. Machines already running from it keep working. The image stays readable, and deleting it again returns the same image.",
+    transport: 'http',
+    iterable: false,
+    callShape: 'params',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'image-id',
+        optionKey: 'imageId',
+        paramKey: 'image_id',
+        location: 'path',
+        required: true,
+        valueKind: 'string',
+      },
+    ],
+  },
+  {
+    resourcePath: ['images', 'uploads'],
+    commandPath: ['images', 'uploads', 'create'],
+    methodName: 'create',
+    summary: 'Reserve an immutable Docker image archive upload',
+    transport: 'http',
+    iterable: false,
+    callShape: 'body',
+    authClientKeyRequirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
+    positional: [],
+    flags: [
+      {
+        name: 'platform',
+        optionKey: 'platform',
+        paramKey: 'platform',
+        location: 'body',
+        required: true,
+        valueKind: 'string',
+      },
+      {
+        name: 'sha256',
+        optionKey: 'sha256',
+        paramKey: 'sha256',
+        location: 'body',
+        required: true,
+        valueKind: 'string',
+      },
+      {
+        name: 'size-bytes',
+        optionKey: 'sizeBytes',
+        paramKey: 'size_bytes',
+        location: 'body',
+        required: true,
+        valueKind: 'integer',
       },
     ],
   },
@@ -858,10 +1158,11 @@ const auth = {
   baseUrlEnv: 'DEDALUS_BASE_URL',
   backend: 'auto',
   defaultBaseUrl: 'https://dcs.dedaluslabs.ai',
-  requirements: [['xAPIKey'], ['apiKey']],
+  requirements: [['browserToken'], ['apiKey'], ['xAPIKey']],
   envByKey: {
     apiKey: 'DEDALUS_API_KEY',
     xAPIKey: 'DEDALUS_X_API_KEY',
+    browserToken: 'DEDALUS_BROWSER_TOKEN',
   },
   methods: [
     {
@@ -878,6 +1179,22 @@ const auth = {
       clientKey: 'xAPIKey',
       prompt: 'API key: ',
     },
+    {
+      name: 'oauth-browser',
+      label: 'Sign in with a browser (OAuth authorization code)',
+      kind: 'oauth',
+      grant: 'authorizationCode',
+      clientKey: 'browserToken',
+      tokenUrl: 'https://clerk.dedaluslabs.ai/oauth/token',
+      refreshUrl: 'https://clerk.dedaluslabs.ai/oauth/token',
+      authorizationUrl: 'https://clerk.dedaluslabs.ai/oauth/authorize',
+      scopes: ['offline_access', 'user:org:read'],
+      clientId: 'j7A9ArTlXXvR2ocG',
+      redirectPort: 0,
+      revocationUrl: 'https://clerk.dedaluslabs.ai/oauth/token/revoke',
+      resource: ['https://dcs.dedaluslabs.ai'],
+      issuer: 'https://clerk.dedaluslabs.ai',
+    },
   ],
 } as const satisfies CliAuthDefinition;
 
@@ -885,13 +1202,17 @@ export const getProgram = (): Command =>
   createProgram({
     SDK,
     binaryName: 'dedalus',
-    version: '0.6.0', // x-release-please-version
+    version: '0.1.0', // x-release-please-version
     description: 'CLI for Dedalus',
-    defaultFormat: 'auto',
-    defaultErrorFormat: 'auto',
+    defaultFormat: 'json',
+    defaultErrorFormat: 'json',
     clientOptions,
     commands,
     groups,
     completions,
     auth,
+    addUpgradeCommands,
   });
+
+/** Runs the daily update check. Called by `run()` only, so building the program makes no request. */
+export const checkForUpdates = (argv: readonly string[]): void => notifyIfOutdated('dedalus', '0.1.0', argv); // x-release-please-version

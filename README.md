@@ -14,6 +14,7 @@ The full API of this library can be found in [api.md](./api.md).
 - [Signing In](#signing-in)
 - [File Arguments](#file-arguments)
 - [Shell Completion](#shell-completion)
+- [Upgrading](#upgrading)
 - [Manual Pages](#manual-pages)
 - [Authentication](#authentication)
 - [Errors](#errors)
@@ -29,6 +30,10 @@ The full API of this library can be found in [api.md](./api.md).
 ## Installation
 
 ```sh
+# Install script — standalone binary for macOS and Linux, no Node.js required
+curl -fsSL https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/install.sh | bash
+# Installs into ~/.local/bin and puts it on PATH; set DEDALUS_INSTALL_DIR to choose another directory
+
 # npm (requires Node.js)
 npm install -g dedalus-cli
 
@@ -36,7 +41,7 @@ npm install -g dedalus-cli
 brew install dedalus-labs/tap/dedalus
 
 # Direct download — standalone binary, no Node.js required
-curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz
+curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz dedalus
 sudo mv dedalus /usr/local/bin/
 
 # Windows — download and extract dedalus-windows-x64.zip, then add it to PATH
@@ -51,7 +56,7 @@ sudo mv dedalus /usr/local/bin/
 dedalus [resource] [command] [flags]
 
 dedalus machines create \
-  --x-api-key "$DEDALUS_X_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --autosleep '300s' \
   --memory-mib '4096' \
   --storage-gib '10' \
@@ -66,7 +71,7 @@ See the [API reference](./api.md) for every available operation.
 
 ## Signing In
 
-`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. On macOS it is always that file, because the system's own tool accepts a password only on its command line, where other processes could read it. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key. Pass `--flow <name>` to pick one without being asked.
+`dedalus login` signs you in and saves the credential for later commands, so it does not have to be passed every time. It goes into your operating system's credential store — the Keychain on macOS, the system keyring on Linux, Credential Manager on Windows — and falls back to a file in your state directory, readable only by you, when no such store is available. Either way it is filed under the base URL it was captured for, so a credential saved for one host is never sent to another. `dedalus logout` forgets it. It also asks the provider to revoke a saved OAuth token when a revocation endpoint is known. The local copy is removed first, so if the provider cannot be reached the credential is still gone from this machine; the failure is printed as a warning and the command still succeeds. A credential passed with a flag, or set in the environment, still takes precedence over a saved one. Sign-in methods: api-key, x-api-key, oauth-browser. Pass `--flow <name>` to pick one without being asked.
 
 ```sh
 dedalus login
@@ -107,6 +112,20 @@ dedalus completion fish | source
 
 <br />
 
+## Upgrading
+
+`dedalus upgrade` installs the latest release. When dedalus was installed through a package manager — Homebrew or npm — it runs that manager's own upgrade instead of replacing files the manager owns. An install made by the install script is replaced in place, with no `sudo`; running the script again does the same. `dedalus upgrade --check` reports the latest version without installing it, and `dedalus uninstall` says how to remove this installation. dedalus also checks for a newer release at most once a day, and mentions it on stderr when one exists. The check is skipped entirely when output is redirected, when `CI` is set, and under `sudo`; set `DEDALUS_NO_UPDATE_NOTIFIER` or `NO_UPDATE_NOTIFIER` to turn it off everywhere.
+
+```sh
+dedalus upgrade --check
+dedalus upgrade
+
+# Never contact GitHub to check for a newer release
+export DEDALUS_NO_UPDATE_NOTIFIER=1
+```
+
+<br />
+
 ## Manual Pages
 
 Installing the package globally also installs man pages. `man dedalus` lists every command, and each command has its own page named after the command with spaces and `:` replaced by `-`.
@@ -124,13 +143,15 @@ Pass credentials to the generated client constructor. Environment variables are 
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--api-key` | `string \| provider` | - | Dedalus API key or short-lived delegated access token in Authorization: Bearer <credential>. Defaults to DEDALUS_API_KEY. |
-| `--x-api-key` | `string \| provider` | - | Dedalus API key. Alternative to Bearer token. Defaults to DEDALUS_X_API_KEY. |
+| `--api-key` | `<value>` | - | Dedalus API key or short-lived delegated access token in `Authorization: Bearer <credential>`. Defaults to DEDALUS_API_KEY. |
+| `--x-api-key` | `<value>` | - | Dedalus API key. Alternative to Bearer token. Defaults to DEDALUS_X_API_KEY. |
+| `--browser-token` | `<value>` | - | Credential for the BrowserAuth scheme. Defaults to DEDALUS_BROWSER_TOKEN. |
 
 Declared schemes:
 
 - `ApiKeyAuth` API key in header `x-api-key`
 - `BearerAuth` bearer token
+- `BrowserAuth` OAuth2/OpenID Connect
 
 <br />
 
@@ -138,7 +159,7 @@ Declared schemes:
 
 Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
-Documented error statuses: `401`, `403`, `409`, `429`, `503`, `default`.
+Documented error statuses: `400`, `401`, `402`, `403`, `404`, `409`, `422`, `429`, `500`, `503`, `504`, `default`.
 
 <br />
 

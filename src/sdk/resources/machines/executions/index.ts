@@ -18,10 +18,4 @@ export type {
   ExecutionEventsCursorPage,
 } from './executions';
 export { Logs } from './logs';
-export type {
-  Status,
-  ReadToken,
-  LogRetrieveParams,
-  LogReauthorizeParams,
-  LogCreateTokenParams,
-} from './logs';
+export type { Status, ReadToken, LogRetrieveParams, LogCreateTokenParams } from './logs';

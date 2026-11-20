@@ -48,11 +48,33 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     operation: 'create',
     method: 'POST',
     path: '/v1/machines',
+    label: 'required params',
     args: [
       'machines',
       'create',
       '--autosleep',
       '300s',
+      '--memory-mib',
+      '4096',
+      '--storage-gib',
+      '10',
+      '--vcpu',
+      '1',
+    ],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/machines',
+    label: 'all params',
+    args: [
+      'machines',
+      'create',
+      '--autosleep',
+      '300s',
+      '--image-id',
+      'x',
       '--memory-mib',
       '4096',
       '--storage-gib',
@@ -89,11 +111,7 @@ const cases: { operation: string; method: string; path: string; label?: string; 
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
       '--autosleep',
       '',
-      '--memory-mib',
-      '0',
       '--storage-gib',
-      '0',
-      '--vcpu',
       '0',
     ],
   },
@@ -102,7 +120,16 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     operation: 'delete',
     method: 'DELETE',
     path: '/v1/machines/{machine_id}',
+    label: 'required params',
     args: ['machines', 'delete', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/machines/{machine_id}',
+    label: 'all params',
+    args: ['machines', 'delete', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f', '--force'],
   },
 
   {
@@ -136,11 +163,37 @@ const cases: { operation: string; method: string; path: string; label?: string; 
   },
 
   {
+    operation: 'resize',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/resize',
+    label: 'required params',
+    args: ['machines', 'resize', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+  },
+
+  {
+    operation: 'resize',
+    method: 'POST',
+    path: '/v1/machines/{machine_id}/resize',
+    label: 'all params',
+    args: [
+      'machines',
+      'resize',
+      '--machine-id',
+      '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
+      '--memory-mib',
+      '0',
+      '--vcpu',
+      '0',
+    ],
+  },
+
+  {
     operation: 'list',
     method: 'GET',
     path: '/v1/machines/{machine_id}/ssh',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'list',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -154,7 +207,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'POST',
     path: '/v1/machines/{machine_id}/ssh',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'create',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -168,7 +222,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/ssh/{session_id}',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'retrieve',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -182,7 +237,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'DELETE',
     path: '/v1/machines/{machine_id}/ssh/{session_id}',
     args: [
-      'machines:ssh',
+      'machines',
+      'ssh',
       'delete',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -196,7 +252,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'list',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -211,7 +268,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     path: '/v1/machines/{machine_id}/executions',
     label: 'required params',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'create',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -226,7 +284,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     path: '/v1/machines/{machine_id}/executions',
     label: 'all params',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'create',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -248,7 +307,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'retrieve',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -262,7 +322,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'DELETE',
     path: '/v1/machines/{machine_id}/executions/{execution_id}',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'delete',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -276,7 +337,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/output',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'output',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -290,7 +352,8 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/events',
     args: [
-      'machines:executions',
+      'machines',
+      'executions',
       'events',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -306,22 +369,10 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'GET',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/logs',
     args: [
-      'machines:executions:logs',
+      'machines',
+      'executions',
+      'logs',
       'retrieve',
-      '--machine-id',
-      '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
-      '--execution-id',
-      'execution_id',
-    ],
-  },
-
-  {
-    operation: 'reauthorize',
-    method: 'POST',
-    path: '/v1/machines/{machine_id}/executions/{execution_id}/logs/reauthorize',
-    args: [
-      'machines:executions:logs',
-      'reauthorize',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
       '--execution-id',
@@ -334,7 +385,9 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     method: 'POST',
     path: '/v1/machines/{machine_id}/executions/{execution_id}/logs/token',
     args: [
-      'machines:executions:logs',
+      'machines',
+      'executions',
+      'logs',
       'create-token',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
@@ -347,19 +400,36 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     operation: 'retrieve',
     method: 'GET',
     path: '/v1/machines/{machine_id}/autoresizing',
-    args: ['machines:autoresizing', 'retrieve', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+    args: ['machines', 'autoresizing', 'retrieve', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
   },
 
   {
     operation: 'update',
-    method: 'PUT',
+    method: 'PATCH',
     path: '/v1/machines/{machine_id}/autoresizing',
+    label: 'required params',
+    args: ['machines', 'autoresizing', 'update', '--machine-id', '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PATCH',
+    path: '/v1/machines/{machine_id}/autoresizing',
+    label: 'all params',
     args: [
-      'machines:autoresizing',
+      'machines',
+      'autoresizing',
       'update',
       '--machine-id',
       '017f22e2-79b0-7cc3-98c4-dc0c0c07398f',
-      '--enabled',
+      '--cpu',
+      'on',
+      '--cpu-max-vcpu',
+      '0.25',
+      '--memory',
+      'on',
+      '--memory-max-mib',
+      '256',
     ],
   },
 
@@ -367,14 +437,106 @@ const cases: { operation: string; method: string; path: string; label?: string; 
     operation: 'retrieve',
     method: 'GET',
     path: '/v1/organization/autoresizing',
-    args: ['organization:autoresizing', 'retrieve'],
+    args: ['organization', 'autoresizing', 'retrieve'],
   },
 
   {
     operation: 'update',
-    method: 'PUT',
+    method: 'PATCH',
     path: '/v1/organization/autoresizing',
-    args: ['organization:autoresizing', 'update', '--enabled'],
+    label: 'required params',
+    args: ['organization', 'autoresizing', 'update'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PATCH',
+    path: '/v1/organization/autoresizing',
+    label: 'all params',
+    args: [
+      'organization',
+      'autoresizing',
+      'update',
+      '--cpu',
+      'on',
+      '--cpu-max-vcpu',
+      '0.25',
+      '--memory',
+      'on',
+      '--memory-max-mib',
+      '256',
+    ],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/images',
+    label: 'required params',
+    args: ['images', 'list', '--limit', '100'],
+  },
+
+  {
+    operation: 'list',
+    method: 'GET',
+    path: '/v1/images',
+    label: 'all params',
+    args: ['images', 'list', '--limit', '100', '--cursor', 'cursor'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/images',
+    label: 'required params',
+    args: ['images', 'create', '--platform', 'linux/amd64', '--source', '{"kind":""}'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/images',
+    label: 'all params',
+    args: [
+      'images',
+      'create',
+      '--credential-ref',
+      '',
+      '--name',
+      '',
+      '--platform',
+      'linux/amd64',
+      '--source',
+      '{"kind":"","reference":"","sha256":"","upload_id":""}',
+    ],
+  },
+
+  {
+    operation: 'retrieve',
+    method: 'GET',
+    path: '/v1/images/{image_id}',
+    args: ['images', 'retrieve', '--image-id', 'image_id'],
+  },
+
+  {
+    operation: 'update',
+    method: 'PATCH',
+    path: '/v1/images/{image_id}',
+    args: ['images', 'update', '--image-id', 'image_id', '--name', ''],
+  },
+
+  {
+    operation: 'delete',
+    method: 'DELETE',
+    path: '/v1/images/{image_id}',
+    args: ['images', 'delete', '--image-id', 'image_id'],
+  },
+
+  {
+    operation: 'create',
+    method: 'POST',
+    path: '/v1/images/uploads',
+    args: ['images', 'uploads', 'create', '--platform', '', '--sha256', '', '--size-bytes', '0'],
   },
 ];
 

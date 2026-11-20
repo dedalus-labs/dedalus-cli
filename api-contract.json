@@ -1,0 +1,206 @@
+{
+  "source_sha": "33b1723ceb008dfddf66ed9939c1c69aef73fd91",
+  "spec_sha256": "bb5bd464c8160621397668abdcd19834cbae34629865d4fd98c588f3c083d122",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/v1/images",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/images",
+      "bodyParams": ["credential_ref", "name", "platform", "source"]
+    },
+    {
+      "method": "POST",
+      "path": "/v1/images/uploads",
+      "bodyParams": ["platform", "sha256", "size_bytes"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/images/{image_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/images/{image_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/images/{image_id}",
+      "bodyParams": ["name"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines",
+      "bodyParams": ["autosleep", "image_id", "memory_mib", "storage_gib", "vcpu"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}",
+      "bodyParams": ["autosleep", "storage_gib"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/autoresizing",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}/autoresizing",
+      "bodyParams": ["cpu", "cpu_max_vcpu", "memory", "memory_max_mib"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/executions",
+      "bodyParams": ["command", "cwd", "env", "stdin", "timeout_ms"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/events",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/logs/token",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/executions/{execution_id}/output",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports",
+      "bodyParams": ["expires", "port", "protocol", "visibility"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "bodyParams": ["visibility"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys",
+      "bodyParams": ["expires_in"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys/{access_key_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys/{access_key_id}/rotate",
+      "bodyParams": ["expires_in"]
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/reboot",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/resize",
+      "bodyParams": ["memory_mib", "vcpu"]
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/sleep",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ssh",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ssh",
+      "bodyParams": ["public_key"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ssh/{session_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ssh/{session_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/wake",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/organization/autoresizing",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/organization/autoresizing",
+      "bodyParams": ["cpu", "cpu_max_vcpu", "memory", "memory_max_mib"]
+    }
+  ]
+}

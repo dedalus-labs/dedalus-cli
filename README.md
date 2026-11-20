@@ -10,6 +10,7 @@ The full API of this library can be found in [api.md](./api.md).
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Image import](#image-import)
 - [Feedback](#feedback)
 - [Staging package testing](#staging-package-testing)
 - [API Reference](./api.md)
@@ -45,7 +46,53 @@ sudo mv dedalus /usr/local/bin/
 # https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-windows-x64.zip
 ```
 
+### Upgrading
+
+Run `dedalus upgrade --check` to check for a release, then `dedalus upgrade` to
+install it. Package-manager installations use their owning manager. Standalone
+macOS and Linux installations download the release archive and verify its
+`checksums.txt` before replacing the executable.
+
+If your CLI does not recognize `dedalus upgrade`, reinstall it using one of the
+methods above. Older Go CLI versions do not support this command.
+
 <br />
+
+## Image import
+
+Save a Docker image as an archive, then import it:
+
+```sh
+docker save my-app:latest -o my-app.tar
+dedalus images import my-app.tar --name my-app --platform linux/amd64
+```
+
+Import hashes and streams the file to signed storage, registers the image, then
+polls until it is ready. Progress goes to stderr; stdout contains one final image
+object. A failed, rejected, or revoked image makes the command exit nonzero.
+
+Use `--no-wait` to return after upload and registration while preparation continues:
+
+```sh
+dedalus images import my-app.tar --name my-app --no-wait
+```
+
+`--wait` is accepted explicitly but is already the default. `--wait-timeout 3600`
+sets the total import budget in seconds; the global `--timeout` remains a per-request
+limit in milliseconds. Timing out or pressing Ctrl-C stops the client and does not
+cancel accepted preparation. Keep the image ID from progress output to check its
+status later. Use `--idempotency-key <key>` to reuse the same import identity when
+retrying the same archive and options.
+
+Archives must be regular, nonempty `docker save` files of at most 5 GiB. This command
+requires the image API to be deployed and enabled for your organization; it does not
+bypass access controls. Shell completion for this custom command is not yet included.
+
+Custom image imports currently require an Ubuntu 24.04 `linux/amd64` Docker-save
+archive. On Apple silicon, build or pull with `--platform linux/amd64` before
+saving the archive. The image provides the filesystem; container entrypoint,
+CMD, environment, working directory, and user settings are not applied. Start
+processes using Machine exec or SSH after the Machine reaches running.
 
 ## Usage
 
@@ -196,7 +243,7 @@ Declared schemes:
 
 ## Errors
 
-Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
+Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. When the API answered with a JSON error payload, its parsed form is under `body`, so structured details such as an API-specific error code or field errors can be read without parsing `message`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 Documented error statuses: `401`, `403`, `409`, `429`, `503`, `default`.
 
@@ -235,6 +282,7 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 - `--transform <path>` and `--transform-error <path>` — dot-path transform for data/error output.
 - `--raw-output`, `-r` — print transformed string values without JSON quotes.
 - `--max-items <count>` — bound iterator, streaming, and WebSocket command output.
+- `--no-input` — never prompt: a command that would ask fails instead, the same as it does without a terminal.
 - Errors carry a stable `code` and an actionable `hint` beside the API's own message, and each failure class exits with its own status: `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 <br />

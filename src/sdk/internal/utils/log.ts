@@ -115,6 +115,88 @@ const REDACTED_HEADERS: ReadonlySet<string> = new Set([
 const REDACTED_QUERY_PARAMS: readonly string[] = [];
 
 /**
+ * A byte's percent-encoded spelling at any depth and in either hex case, as a pattern: `%3F`,
+ * `%3f`, `%253F`. Each extra round of encoding turns the `%` into `%25` and leaves the hex alone,
+ * and encoders disagree on which case they write the hex in.
+ */
+const encodedBytePattern = (byte: number): string =>
+  '%(?:25)*' +
+  [...byte.toString(16).padStart(2, '0')]
+    .map((digit) => (/[a-f]/u.test(digit) ? `[${digit}${digit.toUpperCase()}]` : digit))
+    .join('');
+
+/**
+ * The UTF-8 bytes of one code point, worked out from `encodeURIComponent` rather than a
+ * `TextEncoder`: this runs while the module loads, and a runtime without `TextEncoder` (older React
+ * Native engines) must still be able to import the client. A lone surrogate, which has no UTF-8
+ * spelling, yields no bytes, and `namePattern` then matches that character only as written.
+ */
+const utf8Bytes = (char: string): number[] => {
+  const code = char.charCodeAt(0);
+  if (char.length === 1 && code < 0x80) return [code];
+  try {
+    return encodeURIComponent(char)
+      .split('%')
+      .slice(1)
+      .map((hex) => parseInt(hex, 16));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * A pattern matching one credential query name in every spelling a URL can carry it in: each
+ * character as written or percent-encoded (its UTF-8 bytes, at any depth and in either hex case),
+ * and a space also as `+`. `redactUrl` decodes a top-level name before it compares, so this keeps
+ * a nested name, which nothing decodes, from slipping past with one of its bytes escaped
+ * (`api%5Fkey`). Only the hex ignores case, not the name.
+ */
+const namePattern = (name: string): string =>
+  [...name]
+    .map((char) => {
+      // Only syntax characters: the pattern is compiled with the `u` flag, under which escaping
+      // anything else (`\-`) is a syntax error rather than a no-op.
+      const escaped = char.replace(/[.*+?^${}()|[\]\\/]/gu, '\\$&');
+      const encoded = utf8Bytes(char).map(encodedBytePattern).join('');
+      // A lone surrogate has no bytes to encode; an empty alternative would make it optional.
+      if (encoded === '') return `(?:${escaped})`;
+      return `(?:${escaped}|${encoded}${char === ' ' ? '|\\+' : ''})`;
+    })
+    .join('');
+
+/**
+ * Matches a credential query parameter wherever text carries one, nested or not, with the name,
+ * separator and `=` in group 1 and the value after it. `undefined` when this SDK places no
+ * credential in the query.
+ *
+ * A name counts after a separator, `?`, `&` or `;`, either literal or percent-encoded any number of
+ * times over (`%3F`, `%253F`): a server can echo a whole URL encoded inside another parameter's
+ * value, as a login redirect's `return_to` does, and splitting the outer query on `&` never looks
+ * inside it. `;` also counts because an HTML-escaped `&` reads `&amp;`. The `=` after the name can
+ * be encoded the same way. The value then runs to the next literal `&`, `#` or whitespace: an
+ * encoded `%26` may end a nested value, but stopping there would leak the rest of one a sloppy
+ * encoder left half-encoded, and masking too much is harmless. `<`, `>` and `"` end it too, since
+ * no valid URL carries them unencoded, so a `Link` header's `<url>` or a quoted URL keeps its
+ * closing delimiter. `'` does not: a query value can hold it raw. No quantifier nests inside
+ * another, so matching stays linear on hostile input.
+ */
+const QUERY_CREDENTIAL: RegExp | undefined = (() => {
+  // An empty name would build a pattern that masks every `?=`.
+  const names = REDACTED_QUERY_PARAMS.filter((name) => name !== '').map(namePattern);
+  if (names.length === 0) return undefined;
+  // `\u0026` is `&` as a JSON string escapes it, which Go's `encoding/json` does by default, so a
+  // URL quoted in JSON text (a header value, a non-JSON error body quoting one) carries its
+  // separators that way.
+  const separator = `(?:[?&;]|\\\\u0026|${[0x3f, 0x26, 0x3b].map(encodedBytePattern).join('|')})`;
+  const equals = `(?:=|${encodedBytePattern(0x3d)})`;
+  return new RegExp(`(${separator}(?:${names.join('|')})${equals})[^&#\\s<>"]*`, 'gu');
+})();
+
+/** Masks the value of every credential query parameter in `text`, nested and encoded ones included. */
+const redactQueryCredentials = (text: string): string =>
+  QUERY_CREDENTIAL === undefined ? text : text.replace(QUERY_CREDENTIAL, `$1${REDACTED}`);
+
+/**
  * Blanks the userinfo of a URL, which is a credential wherever it appears.
  *
  * A `--base-url` carries whatever the caller typed, and this repo already treats userinfo as secret
@@ -161,7 +243,9 @@ export const redactUrl = (url: string): string => {
   const url_ = redactUserinfo(url);
   if (REDACTED_QUERY_PARAMS.length === 0) return url_;
   const mark = url_.indexOf('?');
-  if (mark === -1) return url_;
+  // A path can nest an encoded URL too (`/proxy/https%3A%2F%2Fh%2Fv1%3Fapi_key%3D…`), and so can a
+  // fragment, so the text outside the query is scanned for a nested credential as well.
+  if (mark === -1) return redactQueryCredentials(url_);
   // A fragment is not part of the query, so splitting it off keeps it out of the rewrite.
   const fragment = url_.indexOf('#', mark);
   const end = fragment === -1 ? url_.length : fragment;
@@ -175,13 +259,18 @@ export const redactUrl = (url: string): string => {
     .split('&')
     .map((pair) => {
       const equals = pair.indexOf('=');
-      // A parameter with no `=` carries no value, so there is nothing in it to redact.
-      if (equals === -1) return pair;
+      // A parameter with no `=` carries no value of its own, but it can still be a whole encoded URL
+      // (`?%2Fv1%3Fapi_key%3D…`), so it is scanned for a nested credential like any other value.
+      if (equals === -1) return redactQueryCredentials(pair);
       const name = pair.slice(0, equals);
-      return REDACTED_QUERY_PARAMS.includes(decodeQueryName(name)) ? name + '=' + REDACTED : pair;
+      // Any other value still goes through `redactQueryCredentials`: it can nest a whole encoded URL
+      // that carries a credential, as a redirect target echoing the request in `return_to` does.
+      return REDACTED_QUERY_PARAMS.includes(decodeQueryName(name))
+        ? name + '=' + REDACTED
+        : redactQueryCredentials(pair);
     })
     .join('&');
-  return url_.slice(0, mark + 1) + query + url_.slice(end);
+  return redactQueryCredentials(url_.slice(0, mark)) + '?' + query + redactQueryCredentials(url_.slice(end));
 };
 
 /**
@@ -192,35 +281,53 @@ export const redactUrl = (url: string): string => {
  */
 const redactQuery = (query: object): object => {
   const redacted: Record<string, unknown> = { ...(query as Record<string, unknown>) };
+  for (const [name, value] of Object.entries(redacted)) {
+    // Every other string value is cleaned as text: an operation parameter such as `return_to` can
+    // hold a URL that carries the credential, and the URL logged beside this masks it there.
+    if (typeof value === 'string') redacted[name] = redactText(value);
+    else if (Array.isArray(value)) {
+      redacted[name] = value.map((item: unknown) => (typeof item === 'string' ? redactText(item) : item));
+    }
+  }
   for (const name of REDACTED_QUERY_PARAMS) {
     if (hasOwn(redacted, name)) redacted[name] = REDACTED;
   }
   return redacted;
 };
 
-/** Replaces the value of every credential-bearing header, for a `Headers` or a plain record alike. */
+/**
+ * Replaces the value of every credential-bearing header, for a `Headers` or a plain record alike.
+ *
+ * Every other value is cleaned as free text: a response can echo the request URL back, in a
+ * `Location` or a `Link`, either as written or nested and encoded in a `return_to`, and a header's
+ * name says nothing about whether its value quotes a credential.
+ */
 export const redactHeaders = (headers: Headers | Record<string, string>): Record<string, string> =>
   Object.fromEntries(
     (headers instanceof Headers ? [...headers] : Object.entries(headers)).map(([name, value]) => [
       name,
-      REDACTED_HEADERS.has(name.toLowerCase()) ? REDACTED : value,
+      REDACTED_HEADERS.has(name.toLowerCase()) ? REDACTED : redactText(value),
     ]),
   );
 
-/** URL-shaped runs inside free text. Whitespace and quotes end one; see {@link TRAILING_PUNCTUATION}. */
+/**
+ * URL-shaped runs inside free text, for their userinfo. Whitespace, quotes, `<` and `>` end one, so
+ * two quoted URLs side by side stay two matches, each with its own userinfo masked, and an `@`
+ * further on in the text is not taken for one.
+ */
 const URL_IN_TEXT = /\bhttps?:\/\/[^\s"'<>]+/gu;
 
 /**
- * Punctuation that ends a sentence or closes a bracket rather than belonging to the URL.
- *
- * Trimmed back after the match instead of being excluded from it, because an IPv6 host carries its
- * own `]` (`http://[::1]:8080/p?api_key=…`). Excluding the character cut the match short at the
- * host and left the query — credential included — in the text.
+ * Text that cannot hold a URL credential: no query separator (literal, encoded or JSON-escaped), no
+ * `%` escape, no scheme.
  */
-const TRAILING_PUNCTUATION = /[.,;:!?)\]}]+$/u;
+const NO_URL_CREDENTIAL = /^[^?&;%:\\]*$/u;
 
 /**
- * Redacts every URL quoted inside free text, leaving the rest of the text alone.
+ * Redacts free text that may quote a URL anywhere in it: the userinfo of every absolute URL, then
+ * every credential query parameter anywhere in the text, which covers an absolute URL's own query,
+ * a relative URL (a `Location` of `/login?api_key=…`) and one nested, encoded, inside another
+ * parameter's value alike.
  *
  * Runs for every SDK, not only those with a query credential: Node's `fetch` rejects a URL carrying
  * userinfo with a message that quotes the whole URL back (`Request cannot be constructed from a URL
@@ -228,15 +335,49 @@ const TRAILING_PUNCTUATION = /[.,;:!?)\]}]+$/u;
  * this on the query list left the password in the log for every SDK whose document happens not to
  * put a credential in the query.
  *
- * Only the matched URL is rewritten, never the whole string: a message is not a query string, and
- * handing one to `URLSearchParams` wholesale would swallow everything after the first parameter and
- * take the diagnostic with it.
+ * Only the userinfo and the credential values are rewritten, never the whole string: a message is
+ * not a query string, and handing one to `URLSearchParams` wholesale would swallow everything after
+ * the first parameter and take the diagnostic with it. The query scan runs over the whole text in one
+ * pass rather than URL by URL, because where a URL ends in prose is a guess and a credential value
+ * can hold a raw `'` or end in punctuation: a masked value runs to the next whitespace, `&`, `#`,
+ * `<`, `>` or `"`, so punctuation right after it (`(https://h/v1?api_key=***): error`) goes with it.
+ * Text with none of the characters a credential needs is returned as is, since header values pass
+ * through here on every request whether or not anything logs them.
  */
-const redactUrlsInText = (text: string): string =>
-  text.replace(URL_IN_TEXT, (match) => {
-    const trailing = match.match(TRAILING_PUNCTUATION)?.[0] ?? '';
-    return redactUrl(match.slice(0, match.length - trailing.length)) + trailing;
-  });
+const redactText = (text: string): string =>
+  NO_URL_CREDENTIAL.test(text) ? text : redactQueryCredentials(text.replace(URL_IN_TEXT, redactUserinfo));
+
+/**
+ * What a log line says about a request or response body: its kind and size, never its content.
+ *
+ * A body is the data an API exists to move — a token endpoint's answer, a customer's records — and
+ * no list of field names can tell which parts of it are secret, while a debug log ends up in CI
+ * output and support tickets. The response's `content-type` is logged with its headers beside this.
+ */
+const describeBody = (body: unknown): string => {
+  if (body === null) return '[empty body]';
+  if (typeof body === 'string') return `[text body: ${body.length} characters]`;
+  if (body instanceof ArrayBuffer) return `[binary body: ${body.byteLength} bytes]`;
+  if (ArrayBuffer.isView(body)) return `[binary body: ${body.byteLength} bytes]`;
+  const BlobClass = (globalThis as { Blob?: new () => { size: number; type: string } }).Blob;
+  if (BlobClass && body instanceof BlobClass) {
+    return `[binary body: ${body.size} bytes${body.type ? `, ${body.type}` : ''}]`;
+  }
+  if (typeof body === 'object') {
+    // Plain data first: a parsed JSON body is a plain object or array, and its own `constructor` key
+    // is server text, so the class name is read only off an object that is neither.
+    const proto = Object.getPrototypeOf(body);
+    if (!Array.isArray(body) && proto !== Object.prototype && proto !== null) {
+      const name = proto.constructor?.name;
+      return typeof name === 'string' && name ? `[${name} body]` : '[object body]';
+    }
+    // Its shape rather than its serialized length: this runs on every parsed response whether or
+    // not debug logging is on, and serializing a large body just to measure it would cost each call.
+    if (Array.isArray(body)) return `[JSON body: array of ${body.length} items]`;
+    return `[JSON body: object with ${Object.keys(body).length} keys]`;
+  }
+  return `[${typeof body} body]`;
+};
 
 export const formatRequestDetails = (details: {
   options?: RequestOptions | undefined;
@@ -269,6 +410,7 @@ export const formatRequestDetails = (details: {
     }
     const query = options['query'];
     if (query && typeof query === 'object') options['query'] = redactQuery(query);
+    if (options['body'] !== undefined) options['body'] = describeBody(options['body']);
     // These three are URL strings, not route fragments: `buildURL` takes an absolute `path` whole --
     // userinfo, query string and all -- while `defaultBaseURL` and the Speakeasy profile's
     // `serverURL` each replace the base URL outright. The caller-supplied escape hatches therefore
@@ -282,6 +424,9 @@ export const formatRequestDetails = (details: {
     }
     details.options = options as RequestOptions;
   }
+  if (details.body !== undefined) {
+    details.body = describeBody(details.body);
+  }
   if (details.url) {
     details.url = redactUrl(details.url);
   }
@@ -292,7 +437,7 @@ export const formatRequestDetails = (details: {
   // request URL inside their text (see the note at the `connection failed` call sites), so a query
   // credential rides along in a field none of the checks above look at.
   if (typeof details.message === 'string') {
-    details.message = redactUrlsInText(details.message);
+    details.message = redactText(details.message);
   }
   if ('retryOfRequestLogID' in details) {
     if (details.retryOfRequestLogID) {

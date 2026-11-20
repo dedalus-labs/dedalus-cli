@@ -1,0 +1,23 @@
+.\" File generated from our OpenAPI spec by Scalar. Do not edit.
+.TH "DEDALUS\-UNINSTALL" "1" "" "dedalus" "Dedalus Manual"
+.SH "NAME"
+dedalus\-uninstall \- report how to remove this dedalus installation
+.SH "SYNOPSIS"
+.B dedalus uninstall
+.SH "DESCRIPTION"
+Prints how to remove this installation of dedalus, chosen from how the running executable was installed: the owning package manager's own removal command where one owns it, and the path to delete otherwise.
+.PP
+Deliberately reports rather than removes. Deleting files a package manager owns leaves that manager's database inconsistent, and a command that deletes its own executable cannot report what happened if the deletion half\-succeeds.
+.SH "EXIT STATUS"
+.TP
+\fB0\fR
+The command completed successfully.
+.TP
+\fB1\fR
+The command failed. The reason is reported on standard error.
+.TP
+\fB2\fR
+The command was invoked incorrectly (missing or invalid arguments).
+.SH "SEE ALSO"
+.BR dedalus (1),
+.BR dedalus\-upgrade (1)

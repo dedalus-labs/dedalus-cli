@@ -72,9 +72,7 @@ export const buildFeedbackBundle = (
   try {
     selection = selectDiagnostics(scope, directory);
   } catch {
-    process.stderr.write(
-      'Recent local diagnostics could not be read; no saved logs will be attached.\n',
-    );
+    process.stderr.write('Recent local diagnostics could not be read; no saved logs will be attached.\n');
     selection = { events: [] };
   }
   if (mode === 'false') return { selection: { ...selection, events: [] }, attachments: [] };

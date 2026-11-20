@@ -10,9 +10,11 @@ export type PageRequestOptions = Pick<FinalRequestOptions, 'query' | 'headers' |
 
 export abstract class AbstractPage<Item> implements AsyncIterable<Item> {
   protected readonly client: Dedalus;
-  protected readonly options: FinalRequestOptions;
-  protected readonly response: Response;
-  protected readonly body: unknown;
+  // Writable so a subclass can rewrite what it parsed or the options the next page is built from;
+  // a subclass that only reads them is unaffected.
+  protected options: FinalRequestOptions;
+  protected response: Response;
+  protected body: unknown;
 
   constructor(client: Dedalus, response: Response, body: unknown, options: FinalRequestOptions) {
     this.client = client;
@@ -25,7 +27,8 @@ export abstract class AbstractPage<Item> implements AsyncIterable<Item> {
   }
 
   abstract nextPageRequestOptions(): PageRequestOptions | null;
-  abstract getPaginatedItems(): readonly Item[];
+  // A plain array, not `readonly`, so a caller can keep a page's items in an `Item[]` it owns.
+  abstract getPaginatedItems(): Item[];
 
   hasNextPage(): boolean {
     const items = this.getPaginatedItems();

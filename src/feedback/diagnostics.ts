@@ -127,8 +127,7 @@ export const pruneDiagnostics = (directory = debugDirectory(), now = Date.now())
 const parseEvent = (value: unknown): DiagnosticEvent | undefined => {
   if (!value || typeof value !== 'object') return undefined;
   const row = value as Record<string, unknown>;
-  if (typeof row['kind'] !== 'string' || !kinds.some((kind) => kind === row['kind']))
-    return undefined;
+  if (typeof row['kind'] !== 'string' || !kinds.some((kind) => kind === row['kind'])) return undefined;
   if (typeof row['command'] !== 'string' || !/^dedalus(?: [a-z-]+){1,5}$/.test(row['command']))
     return undefined;
   if (row['command'].split(' ').some((word) => !commandWords.has(word))) return undefined;
@@ -138,10 +137,7 @@ const parseEvent = (value: unknown): DiagnosticEvent | undefined => {
     kind: row['kind'] as DiagnosticEvent['kind'],
     command: row['command'],
   };
-  if (
-    typeof row['route'] === 'string' &&
-    /^\/v1(?:\/(?:[a-z-]+|\{[a-z_]+\})){1,9}$/.test(row['route'])
-  )
+  if (typeof row['route'] === 'string' && /^\/v1(?:\/(?:[a-z-]+|\{[a-z_]+\})){1,9}$/.test(row['route']))
     result.route = row['route'];
   if (typeof row['request_id'] === 'string' && receiptPattern.test(row['request_id']))
     result.request_id = row['request_id'];
@@ -182,9 +178,7 @@ const routeTemplate = (input: RequestInfo | URL): string => {
   if (
     parts
       .slice(6)
-      .some(
-        (part) => !['events', 'logs', 'output', 'token', 'reauthorize', 'stream'].includes(part),
-      )
+      .some((part) => !['events', 'logs', 'output', 'token', 'reauthorize', 'stream'].includes(part))
   )
     return '/v1/machines/{machine_id}/{resource}';
   return parts.join('/');
@@ -200,11 +194,9 @@ export const createDiagnostics = (command: string, scope: string, directory = de
       const safe = parseEvent({ ...event, command, ts: new Date().toISOString() });
       if (!safe) throw new Error('invalid diagnostic event');
       mkdirSync(directory, { recursive: true, mode: 0o700 });
-      if (lstatSync(directory).isSymbolicLink())
-        throw new Error('diagnostic directory is a symlink');
+      if (lstatSync(directory).isSymbolicLink()) throw new Error('diagnostic directory is a symlink');
       const line = JSON.stringify(safe) + '\n';
-      if (existsSync(path) && statSync(path).size + Buffer.byteLength(line) > partitionLimit)
-        return;
+      if (existsSync(path) && statSync(path).size + Buffer.byteLength(line) > partitionLimit) return;
       const fd = openSync(
         path,
         constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW,
@@ -258,9 +250,7 @@ export const selectDiagnostics = (
   const candidates = files(directory)
     .filter(
       (file) =>
-        file.name.startsWith(scope + '.') &&
-        file.time >= now - recentMS &&
-        file.size <= partitionLimit,
+        file.name.startsWith(scope + '.') && file.time >= now - recentMS && file.size <= partitionLimit,
     )
     .sort((a, b) => b.time - a.time);
   for (const file of candidates) {
@@ -278,9 +268,7 @@ export const selectDiagnostics = (
       .flatMap((line) => {
         try {
           const event = parseEvent(JSON.parse(line));
-          return event &&
-            event.command !== 'dedalus feedback' &&
-            Date.parse(event.ts) >= now - recentMS
+          return event && event.command !== 'dedalus feedback' && Date.parse(event.ts) >= now - recentMS
             ? [event]
             : [];
         } catch {

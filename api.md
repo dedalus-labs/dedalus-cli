@@ -13,6 +13,7 @@ Complete reference of every operation, grouped by resource. See [the README](./R
   - [Sleep a running machine](#sleep-a-running-machine)
   - [Wake a sleeping machine](#wake-a-sleeping-machine)
   - [Reboot a machine with fresh memory](#reboot-a-machine-with-fresh-memory)
+  - [Resize machine](#resize-machine)
   - [`Machines Ssh`](#machines-ssh)
     - [List SSH sessions](#list-ssh-sessions)
     - [Create SSH session](#create-ssh-session)
@@ -27,29 +28,47 @@ Complete reference of every operation, grouped by resource. See [the README](./R
     - [List execution events](#list-execution-events)
     - [`Machines Executions Logs`](#machines-executions-logs)
       - [Get execution log status](#get-execution-log-status)
-      - [Reauthorize execution log publication](#reauthorize-execution-log-publication)
       - [Create execution log read token](#create-execution-log-read-token)
   - [`Machines Autoresizing`](#machines-autoresizing)
-    - [Read this machine's RAM autoresizing settings](#read-this-machines-ram-autoresizing-settings)
-    - [Set this machine's RAM autoresizing settings](#set-this-machines-ram-autoresizing-settings)
+    - [Read this machine's autoresizing settings](#read-this-machines-autoresizing-settings)
+    - [Set this machine's autoresizing settings](#set-this-machines-autoresizing-settings)
+  - [`Machines Ports`](#machines-ports)
+    - [List ports](#list-ports)
+    - [Create port](#create-port)
+    - [Get port](#get-port)
+    - [Update port](#update-port)
+    - [Delete port](#delete-port)
+    - [`Machines Ports AccessKeys`](#machines-ports-accesskeys)
+      - [List port access keys](#list-port-access-keys)
+      - [Mint port access key](#mint-port-access-key)
+      - [Revoke port access key](#revoke-port-access-key)
+      - [Rotate port access key](#rotate-port-access-key)
 - [`Organization`](#organization)
   - [`Organization Autoresizing`](#organization-autoresizing)
-    - [Read organization RAM autoresizing policy](#read-organization-ram-autoresizing-policy)
-    - [Set organization RAM autoresizing policy](#set-organization-ram-autoresizing-policy)
+    - [Read organization autoresizing policy](#read-organization-autoresizing-policy)
+    - [Set organization autoresizing policy](#set-organization-autoresizing-policy)
+- [`Images`](#images)
+  - [List images owned by the authenticated organization](#list-images-owned-by-the-authenticated-organization)
+  - [Register an immutable OCI image for preparation](#register-an-immutable-oci-image-for-preparation)
+  - [Read preparation status for an organization-owned image](#read-preparation-status-for-an-organization-owned-image)
+  - [Rename an organization-owned image](#rename-an-organization-owned-image)
+  - [Delete an organization-owned image](#delete-an-organization-owned-image)
+  - [`Images Uploads`](#images-uploads)
+    - [Reserve an immutable Docker image archive upload](#reserve-an-immutable-docker-image-archive-upload)
 
 ## `Machines`
 
 ### List machines
 
 ```sh
-dedalus machines list --api-key "$DEDALUS_API_KEY" --max-items 10
+dedalus machines list --browser-token "$DEDALUS_BROWSER_TOKEN" --max-items 10
 ```
 
 ### Create machine
 
 ```sh
 dedalus machines create \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --autosleep '300s' \
   --memory-mib '4096' \
   --storage-gib '10' \
@@ -60,15 +79,17 @@ dedalus machines create \
 
 ```sh
 dedalus machines retrieve \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
 ### Update machine
 
+Changes settings such as autosleep.
+
 ```sh
 dedalus machines update \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -76,7 +97,7 @@ dedalus machines update \
 
 ```sh
 dedalus machines delete \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -84,7 +105,7 @@ dedalus machines delete \
 
 ```sh
 dedalus machines sleep \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -92,7 +113,7 @@ dedalus machines sleep \
 
 ```sh
 dedalus machines wake \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -102,7 +123,17 @@ Checkpoints files and replaces the runtime. The machine ID and filesystem are pr
 
 ```sh
 dedalus machines reboot \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
+```
+
+### Resize machine
+
+Wakes a sleeping Machine, then waits up to 30 seconds for the host to confirm CPU and RAM. Returns the Machine with its confirmed size. After RESIZE_TIMEOUT, repeat the same request and Idempotency-Key to wait again.
+
+```sh
+dedalus machines resize \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
@@ -112,7 +143,7 @@ dedalus machines reboot \
 
 ```sh
 dedalus machines ssh list \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --max-items 10
 ```
@@ -121,7 +152,7 @@ dedalus machines ssh list \
 
 ```sh
 dedalus machines ssh create \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --public-key ''
 ```
@@ -130,7 +161,7 @@ dedalus machines ssh create \
 
 ```sh
 dedalus machines ssh retrieve \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --session-id 'session_id'
 ```
@@ -139,7 +170,7 @@ dedalus machines ssh retrieve \
 
 ```sh
 dedalus machines ssh delete \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --session-id 'session_id'
 ```
@@ -150,7 +181,7 @@ dedalus machines ssh delete \
 
 ```sh
 dedalus machines executions list \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --max-items 10
 ```
@@ -159,7 +190,7 @@ dedalus machines executions list \
 
 ```sh
 dedalus machines executions create \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --command '[""]'
 ```
@@ -168,7 +199,7 @@ dedalus machines executions create \
 
 ```sh
 dedalus machines executions retrieve \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -177,7 +208,7 @@ dedalus machines executions retrieve \
 
 ```sh
 dedalus machines executions delete \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -186,7 +217,7 @@ dedalus machines executions delete \
 
 ```sh
 dedalus machines executions output \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -195,7 +226,7 @@ dedalus machines executions output \
 
 ```sh
 dedalus machines executions events \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id' \
   --max-items 10
@@ -207,16 +238,7 @@ dedalus machines executions events \
 
 ```sh
 dedalus machines executions logs retrieve \
-  --api-key "$DEDALUS_API_KEY" \
-  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
-  --execution-id 'execution_id'
-```
-
-##### Reauthorize execution log publication
-
-```sh
-dedalus machines executions logs reauthorize \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
@@ -225,42 +247,197 @@ dedalus machines executions logs reauthorize \
 
 ```sh
 dedalus machines executions logs create-token \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
   --execution-id 'execution_id'
 ```
 
 ### `Machines Autoresizing`
 
-#### Read this machine's RAM autoresizing settings
+#### Read this machine's autoresizing settings
 
 ```sh
 dedalus machines autoresizing retrieve \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
-#### Set this machine's RAM autoresizing settings
+#### Set this machine's autoresizing settings
+
+Changes RAM, CPU or both for this machine. An absent resource keeps its setting.
 
 ```sh
 dedalus machines autoresizing update \
-  --api-key "$DEDALUS_API_KEY" \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
+```
+
+### `Machines Ports`
+
+#### List ports
+
+```sh
+dedalus machines ports list \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
-  --enabled
+  --max-items 10
+```
+
+#### Create port
+
+```sh
+dedalus machines ports create \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port '0' \
+  --protocol 'http' \
+  --visibility 'private'
+```
+
+#### Get port
+
+```sh
+dedalus machines ports retrieve \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id'
+```
+
+#### Update port
+
+```sh
+dedalus machines ports update \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --visibility 'public'
+```
+
+#### Delete port
+
+```sh
+dedalus machines ports delete \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id'
+```
+
+#### `Machines Ports AccessKeys`
+
+##### List port access keys
+
+```sh
+dedalus machines ports access-keys list \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id'
+```
+
+##### Mint port access key
+
+```sh
+dedalus machines ports access-keys mint \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --expires-in '1'
+```
+
+##### Revoke port access key
+
+```sh
+dedalus machines ports access-keys revoke \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --access-key-id 'access_key_id'
+```
+
+##### Rotate port access key
+
+```sh
+dedalus machines ports access-keys rotate \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --access-key-id 'access_key_id' \
+  --expires-in '1'
 ```
 
 ## `Organization`
 
 ### `Organization Autoresizing`
 
-#### Read organization RAM autoresizing policy
+#### Read organization autoresizing policy
 
 ```sh
-dedalus organization autoresizing retrieve --api-key "$DEDALUS_API_KEY"
+dedalus organization autoresizing retrieve --browser-token "$DEDALUS_BROWSER_TOKEN"
 ```
 
-#### Set organization RAM autoresizing policy
+#### Set organization autoresizing policy
+
+Changes defaults copied to new Machines. Existing Machines retain their own policy.
 
 ```sh
-dedalus organization autoresizing update --api-key "$DEDALUS_API_KEY" --enabled
+dedalus organization autoresizing update --browser-token "$DEDALUS_BROWSER_TOKEN"
+```
+
+## `Images`
+
+### List images owned by the authenticated organization
+
+Pages through the organization's images in ID order. Each item has the same shape as a single image read. A deleted image is left out; it still reads by ID.
+
+```sh
+dedalus images list --browser-token "$DEDALUS_BROWSER_TOKEN" --limit '100'
+```
+
+### Register an immutable OCI image for preparation
+
+Requires an entitled organization and linux/amd64 on the current fleet. Acceptance queues preparation; only a ready image can launch a machine. Private registry credentials are not yet supported.
+
+```sh
+dedalus images create \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --platform 'linux/amd64' \
+  --source '{"kind":""}'
+```
+
+### Read preparation status for an organization-owned image
+
+A preparing image reports its stage, the worker's last step and an estimated percent of the whole preparation. A failed image names the cause: IMAGE_OS_UNSUPPORTED, IMAGE_SOURCE_INVALID, IMAGE_SOURCE_NOT_FOUND and IMAGE_SOURCE_UNAUTHORIZED describe the image or its reference and are final; IMAGE_SOURCE_UNAVAILABLE, IMAGE_REGISTRY_UNREACHABLE, IMAGE_REGISTRY_RATE_LIMITED, IMAGE_ARCHIVE_UNAVAILABLE and IMAGE_EXECUTION_FAILED describe this attempt and are retryable with a new idempotency key.
+
+```sh
+dedalus images retrieve --browser-token "$DEDALUS_BROWSER_TOKEN" --image-id 'image_id'
+```
+
+### Rename an organization-owned image
+
+Changes only the name. The image's source, platform and state are immutable.
+
+```sh
+dedalus images update \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --image-id 'image_id' \
+  --name ''
+```
+
+### Delete an organization-owned image
+
+The image can create no new Machine and no longer counts against the organization's image limit. Machines already running from it keep working. The image stays readable, and deleting it again returns the same image.
+
+```sh
+dedalus images delete --browser-token "$DEDALUS_BROWSER_TOKEN" --image-id 'image_id'
+```
+
+### `Images Uploads`
+
+#### Reserve an immutable Docker image archive upload
+
+```sh
+dedalus images uploads create \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --platform '' \
+  --sha256 '' \
+  --size-bytes '0'
 ```

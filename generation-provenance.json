@@ -1,0 +1,14 @@
+{
+  "source_spec_sha": "33b1723ceb008dfddf66ed9939c1c69aef73fd91",
+  "source_spec_sha256": "bb5bd464c8160621397668abdcd19834cbae34629865d4fd98c588f3c083d122",
+  "generator_version": "0.45.0",
+  "build_version": "1.1795132129.103696082",
+  "configuration_sha256": "7b27a7b3a3cb4b0b6f0aa88c80ed3fadac01bfc9075e05095456e986d4430de4",
+  "operation_count": 40,
+  "generated_commit": null,
+  "download_sha256": "3c3790a85dbb5ecc8a7e9beecb1a0c24726dfab34414f80c3e0d587df1d248b2",
+  "integration_base": "scalar-next",
+  "published_package": false,
+  "build_id": "e5rUcpIZesILtTifEy6SC",
+  "custom_code_ref": "753d33130bf5b02e4265ad1f2df503d4941b46ae"
+}

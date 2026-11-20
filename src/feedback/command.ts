@@ -70,9 +70,7 @@ export const registerFeedbackCommands = (
         source: 'cli',
         ...(bundle.selection.command ? { command: bundle.selection.command } : {}),
         ...(bundle.selection.receipt ? { reported_request_id: bundle.selection.receipt } : {}),
-        ...(bundle.selection.failure
-          ? { diagnostics: { last_api_failure: bundle.selection.failure } }
-          : {}),
+        ...(bundle.selection.failure ? { diagnostics: { last_api_failure: bundle.selection.failure } } : {}),
         client: { name: 'dedalus-cli', version: VERSION },
         debug: {
           included: bundle.attachments.length > 0,

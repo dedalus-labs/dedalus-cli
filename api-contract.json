@@ -1,6 +1,6 @@
 {
-  "source_sha": "9f8d54f123e81b8bc7252f855c52ecbf7cc8ae42",
-  "spec_sha256": "c0b2db893e3017c5c83c14375e6085581584641f617ee7ea1305ab80e9b50421",
+  "source_sha": "33b1723ceb008dfddf66ed9939c1c69aef73fd91",
+  "spec_sha256": "bb5bd464c8160621397668abdcd19834cbae34629865d4fd98c588f3c083d122",
   "operations": [
     {
       "method": "GET",
@@ -106,6 +106,51 @@
       "method": "GET",
       "path": "/v1/machines/{machine_id}/executions/{execution_id}/output",
       "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports",
+      "bodyParams": ["expires", "port", "protocol", "visibility"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "bodyParams": ["visibility"]
+    },
+    {
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys",
+      "bodyParams": ["expires_in"]
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys/{access_key_id}",
+      "bodyParams": []
+    },
+    {
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys/{access_key_id}/rotate",
+      "bodyParams": ["expires_in"]
     },
     {
       "method": "POST",

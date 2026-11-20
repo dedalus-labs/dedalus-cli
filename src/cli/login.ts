@@ -3,7 +3,6 @@
 import { spawn } from 'node:child_process';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
-import { createInterface } from 'node:readline';
 import { stderr as processStderr, stdin as processStdin } from 'node:process';
 
 import {
@@ -22,6 +21,7 @@ import {
 } from './credentials';
 import { windowsPowerShell } from './keychain';
 import { clip, listRow } from './list';
+import { inputDisabled, promptLine } from './prompt';
 
 /** Which API an OAuth token is for. Mirrors the emitter's `CliOauthTargetDefinition`. */
 export type CliOauthTargetDefinition = {
@@ -705,7 +705,7 @@ const captureCredentials = async (
     return { credentials: { [method.clientKey]: value } };
   }
   if (method.kind === 'basic') {
-    const username = await promptLine('Username: ');
+    const username = await promptLoginLine('Username: ');
     if (!username) throw new UsageError('No username entered; nothing was saved.');
     const password = await promptSecret('Password: ');
     if (!password) throw new UsageError('No password entered; nothing was saved.');
@@ -842,7 +842,7 @@ const runTokenGrant = async (
   }
   if (method.grant === 'deviceAuthorization') return deviceAuthorizationFlow(method, baseUrl);
   if (method.grant === 'clientCredentials') {
-    const clientId = method.clientId ?? (await promptLine('Client id: '));
+    const clientId = method.clientId ?? (await promptLoginLine('Client id: '));
     if (!clientId) throw new UsageError('No client id entered; nothing was saved.');
     const clientSecret = await promptSecret('Client secret: ');
     if (!clientSecret) throw new UsageError('No client secret entered; nothing was saved.');
@@ -860,8 +860,8 @@ const runTokenGrant = async (
   // having to be baked into the generated source. It stays optional, unlike there: RFC 6749 lets a
   // client that authenticates some other way leave it out, so a blank answer omits the parameter
   // rather than sending an empty one, and the prompt says which it is.
-  const clientId = method.clientId ?? (await promptLine('Client id (optional): '));
-  const username = await promptLine('Username: ');
+  const clientId = method.clientId ?? (await promptLoginLine('Client id (optional): '));
+  const username = await promptLoginLine('Username: ');
   if (!username) throw new UsageError('No username entered; nothing was saved.');
   const password = await promptSecret('Password: ');
   if (!password) throw new UsageError('No password entered; nothing was saved.');
@@ -969,7 +969,7 @@ const deviceAuthorizationFlow = async (
   // Discovered before the client id is asked for, so a provider that cannot run this grant fails
   // the sign-in before the user has been asked to type anything.
   const endpoints = 'metadataUrl' in method ? await discoverDeviceEndpoints(method, baseUrl) : method;
-  const clientId = method.clientId ?? (await promptLine('Client id: '));
+  const clientId = method.clientId ?? (await promptLoginLine('Client id: '));
   if (!clientId) throw new UsageError('No client id entered; nothing was saved.');
   const device = await requestDeviceAuthorization(endpoints.deviceAuthorizationUrl, baseUrl, {
     client_id: clientId,
@@ -1830,7 +1830,8 @@ type HeldRedirect = {
  * caller answers it through `respond` once the rest of the sign-in has succeeded or failed.
  *
  * Anything that is not the redirect — a browser probing `/favicon.ico`, a stray request to the
- * port — is answered 404 and ignored, so it cannot resolve or reject the wait. The `state` is
+ * port — is answered 404 and ignored, so it cannot resolve or reject the wait. A redirect that
+ * repeats a parameter it reads is rejected first (see {@link repeatedRedirectParameter}). The `state` is
  * compared in constant time and rejected on mismatch, which is what ties the redirect back to the
  * request this process started; the `iss` is then held to `issuer` (see {@link redirectIssuerProblem}).
  */
@@ -1887,7 +1888,7 @@ const awaitRedirect = (
       settled = true;
       // scalar-sdk-generator:custom-code oauth-callback-singletons:start
       // Reject ambiguous callbacks before selecting any security-sensitive value.
-      if (['state', 'iss', 'code', 'error'].some((name) => params.getAll(name).length > 1)) {
+      if (repeatedRedirectParameter(params) !== undefined) {
         finish(
           400,
           'Sign-in could not be verified',
@@ -1962,6 +1963,24 @@ const awaitRedirect = (
     });
     server.on('error', reject);
   });
+
+/** The redirect parameters this handler reads, each of which a provider sends at most once. */
+const SINGLE_REDIRECT_PARAMETERS = ['state', 'code', 'iss', 'error'] as const;
+
+/**
+ * The first parameter the redirect carries more than once, of those the handler reads, or
+ * `undefined` when each appears at most once.
+ *
+ * RFC 6749 §3.1 says request and response parameters must not be included more than once. The
+ * check matters because `URLSearchParams.get` returns the first value and silently drops the rest:
+ * `?state=<good>&state=<other>` would pass the `state` check on a value the provider may never
+ * have meant as the only one, and `?code=a&code=b` would exchange whichever code came first while
+ * anything else that sees the callback URL — a local proxy or logger, browser history, an extension —
+ * may read the other. A redirect that two readers can disagree about is refused before any of it is
+ * trusted.
+ */
+const repeatedRedirectParameter = (params: URLSearchParams): string | undefined =>
+  SINGLE_REDIRECT_PARAMETERS.find((name) => params.getAll(name).length > 1);
 
 /** The issuer a browser redirect is held to, and whether it must name one at all. */
 type RedirectIssuer = { readonly expected: string | undefined; readonly required: boolean };
@@ -2289,6 +2308,15 @@ export class UsageError extends Error {}
 const NO_TERMINAL =
   'Sign-in needs an interactive terminal. Run it from a terminal, pick a flow that needs no prompt with --flow <name> (see --help), or set the credential through its flag or environment variable instead.';
 
+const NO_INPUT =
+  'Sign-in would prompt, and --no-input turns prompting off. Pick a flow that needs no prompt with --flow <name> (see --help), or set the credential through its flag or environment variable instead.';
+
+/**
+ * Why a sign-in prompt cannot run: `--no-input` when it was passed, since telling a user at a
+ * terminal to run the command from one would send them in a circle, and otherwise no terminal.
+ */
+const promptRefused = (): UsageError => new UsageError(inputDisabled() ? NO_INPUT : NO_TERMINAL);
+
 /** Puts the terminal cursor back, for the picker's own exit paths and for a signal that skips them. */
 const restoreCursor = (): void => {
   processStderr.write('\u001b[?25h');
@@ -2316,8 +2344,8 @@ type Choice = {
  * Drawn on stderr, like every other prompt, so stdout stays machine-readable.
  */
 const promptChoice = async (heading: string, choices: readonly Choice[]): Promise<number> => {
-  if (!processStdin.isTTY || typeof processStdin.setRawMode !== 'function') {
-    throw new UsageError(NO_TERMINAL);
+  if (!processStdin.isTTY || inputDisabled() || typeof processStdin.setRawMode !== 'function') {
+    throw promptRefused();
   }
   return new Promise<number>((resolve, reject) => {
     let active = 0;
@@ -2452,26 +2480,19 @@ const promptChoice = async (heading: string, choices: readonly Choice[]): Promis
   });
 };
 
-/** Reads one visible line from the terminal. Prompts go to stderr so stdout stays machine-readable. */
-const promptLine = (label: string): Promise<string> =>
-  new Promise<string>((resolve, reject) => {
-    if (!processStdin.isTTY) {
-      reject(new UsageError(NO_TERMINAL));
-      return;
-    }
-    const rl = createInterface({ input: processStdin, output: processStderr });
-    let answered = false;
-    // Closing the interface emits 'close' synchronously, so the guard is what keeps the end-of-input
-    // fallback from resolving ahead of the answer that was just typed.
-    rl.on('close', () => {
-      if (!answered) resolve('');
-    });
-    rl.question(label, (answer) => {
-      answered = true;
-      resolve(answer.trim());
-      rl.close();
-    });
-  });
+/**
+ * Reads one visible line for sign-in, through the reader every prompt in the CLI shares.
+ *
+ * Sign-in gates on stdin (and `--no-input`) as its other prompts do, rather than on `canPrompt`,
+ * so a redirected stderr still lets a user type their username. End of input still reads as an empty answer (each caller reports what was not
+ * entered), while Ctrl-C cancels like it does in the picker and the secret prompt.
+ */
+const promptLoginLine = async (label: string): Promise<string> => {
+  if (!processStdin.isTTY || inputDisabled()) throw promptRefused();
+  const answer = await promptLine(label);
+  if (answer === undefined) throw new UsageError('Cancelled.');
+  return answer;
+};
 
 /**
  * Reads one secret from the terminal without echoing it.
@@ -2483,8 +2504,8 @@ const promptLine = (label: string): Promise<string> =>
  */
 const promptSecret = (label: string): Promise<string> =>
   new Promise<string>((resolve, reject) => {
-    if (!processStdin.isTTY || typeof processStdin.setRawMode !== 'function') {
-      reject(new UsageError(NO_TERMINAL));
+    if (!processStdin.isTTY || inputDisabled() || typeof processStdin.setRawMode !== 'function') {
+      reject(promptRefused());
       return;
     }
     processStderr.write(label);

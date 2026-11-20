@@ -7,7 +7,8 @@ const API = 'https://dcs.dedaluslabs.ai';
 /** Names the API-key credential that competes with a browser token, so the user knows what to unset. */
 const competingAPIKey = (options: Record<string, unknown>): string | undefined => {
   if (options['apiKey'] || process.env['DEDALUS_API_KEY']?.trim()) return '--api-key or DEDALUS_API_KEY';
-  if (options['xAPIKey'] || process.env['DEDALUS_X_API_KEY']?.trim()) return '--x-api-key or DEDALUS_X_API_KEY';
+  if (options['xAPIKey'] || process.env['DEDALUS_X_API_KEY']?.trim())
+    return '--x-api-key or DEDALUS_X_API_KEY';
   return undefined;
 };
 
@@ -26,9 +27,7 @@ const competingHeader = (): string | undefined =>
     .find((name) => CREDENTIAL_HEADERS.has(name));
 
 /** Keeps browser tokens on their production API and rejects competing credentials. */
-export const routeBrowserCredential = (
-  options: Record<string, unknown>,
-): Record<string, unknown> => {
+export const routeBrowserCredential = (options: Record<string, unknown>): Record<string, unknown> => {
   const browserToken = options['browserToken'] ?? process.env['DEDALUS_BROWSER_TOKEN']?.trim();
   if (!browserToken) return options;
   const apiKey = competingAPIKey(options);

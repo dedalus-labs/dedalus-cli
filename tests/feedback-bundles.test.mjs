@@ -45,8 +45,7 @@ test('invariant auto selects only recent failures for the same credential and ho
   log.record({ kind: 'transport_failure', route: '/v1/machines', duration_ms: 3 });
   log.record({ kind: 'command_failure' });
   assert.ok(
-    buildFeedbackBundle('auto', scope, 'https://staging.invalid', '1.0.0', dir).attachments.length >
-      0,
+    buildFeedbackBundle('auto', scope, 'https://staging.invalid', '1.0.0', dir).attachments.length > 0,
   );
   assert.equal(selectDiagnostics(diagnosticScope({ apiKey: 'other-key' }), dir).events.length, 0);
   assert.equal(selectDiagnostics(scope, dir, Date.now() + 16 * 60 * 1000).events.length, 0);
@@ -80,8 +79,7 @@ test('invariant attachments contain only allowlisted fields and exact byte hashe
   for (const file of bundle.attachments) {
     assert.equal(file.manifest.sha256, createHash('sha256').update(file.bytes).digest('hex'));
     assert.equal(file.manifest.size_bytes, file.bytes.length);
-    const content =
-      file.manifest.format === 'application/gzip' ? gunzipSync(file.bytes) : file.bytes;
+    const content = file.manifest.format === 'application/gzip' ? gunzipSync(file.bytes) : file.bytes;
     assert.doesNotMatch(
       Buffer.from(content).toString(),
       /super-secret|secret-password|private workspace|user:password|token=secret/,

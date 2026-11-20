@@ -11,7 +11,7 @@ export class Images extends APIResource {
   uploads: UploadsAPI.Uploads = new UploadsAPI.Uploads(this._client);
 
   /**
-   * Pages through the organization's images in ID order. A deleted image is left out; it still reads by ID.
+   * Pages through the organization's images in ID order. Each item has the same shape as a single image read. A deleted image is left out; it still reads by ID.
    *
    * @param {ImageListParams} [query] - The parameters to send with the request.
    * @param {RequestOptions} [options] - Options to apply to the request, such as headers and an abort signal.
@@ -19,7 +19,7 @@ export class Images extends APIResource {
    *
    * @example
    * ```ts
-   * const imageList = await client.images.list({
+   * const images = await client.images.list({
    *   limit: 100,
    * });
    * ```
@@ -149,7 +149,7 @@ export namespace Image {
 }
 
 export interface ImageList {
-  image_ids: Array<string> | null;
+  items: Array<Image> | null;
   next_cursor?: string;
 }
 

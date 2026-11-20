@@ -8,7 +8,6 @@ export type {
   CreateParams,
   UpdateParams,
   LifecycleStatus,
-  AutoresizingSwitch,
   MachineListParams,
   MachineListItemsCursorPage,
   MachineCreateParams,
@@ -54,3 +53,14 @@ export type {
 } from './executions/executions';
 export { Autoresizing } from './autoresizing';
 export type { Policy, AutoresizingRetrieveParams, AutoresizingUpdateParams } from './autoresizing';
+export { Ports } from './ports/ports';
+export type {
+  PortCreateParams,
+  PortUpdateParams,
+  Port,
+  PortList,
+  PortListParams,
+  PortsCursorPage,
+  PortRetrieveParams,
+  PortDeleteParams,
+} from './ports/ports';

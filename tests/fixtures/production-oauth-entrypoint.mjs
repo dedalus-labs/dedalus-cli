@@ -15,14 +15,20 @@ childProcess.spawnSync = (file, ...args) => {
 };
 syncBuiltinESMExports();
 
-const json = (value, status = 200) => new Response(JSON.stringify(value), {
-  status, headers: { 'content-type': 'application/json' },
-});
+const json = (value, status = 200) =>
+  new Response(JSON.stringify(value), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 globalThis.fetch = async (input, init) => {
   const request = new Request(input, init);
   const form = new URLSearchParams(await request.clone().text());
-  const record = { url: request.url, method: request.method,
-    authorization: request.headers.get('authorization'), form: Object.fromEntries(form) };
+  const record = {
+    url: request.url,
+    method: request.method,
+    authorization: request.headers.get('authorization'),
+    form: Object.fromEntries(form),
+  };
   appendFileSync(process.env.TEST_REQUESTS, JSON.stringify(record) + '\n');
   if (request.url === 'https://clerk.dedaluslabs.ai/oauth/token') {
     assert.equal(request.method, 'POST');
@@ -33,9 +39,12 @@ globalThis.fetch = async (input, init) => {
     assert.equal(form.get('grant_type'), refresh ? 'refresh_token' : 'authorization_code');
     if (refresh) assert.equal(form.get('refresh_token'), 'fixture-refresh');
     else assert.equal(form.get('code'), 'fixture-code');
-    return json({ access_token: refresh ? 'fixture-renewed' : 'fixture-access',
+    return json({
+      access_token: refresh ? 'fixture-renewed' : 'fixture-access',
       refresh_token: refresh ? 'fixture-rotated' : 'fixture-refresh',
-      token_type: 'Bearer', expires_in: 3600 });
+      token_type: 'Bearer',
+      expires_in: 3600,
+    });
   }
   if (request.url === 'https://clerk.dedaluslabs.ai/oauth/token/revoke') {
     assert.equal(request.method, 'POST');

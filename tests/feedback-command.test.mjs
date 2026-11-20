@@ -120,43 +120,40 @@ for (const [status, exitCode] of [
   [429, 12],
   [422, 13],
 ]) {
-  test(
-    'invariant installed CLI reports HTTP ' + status + ' without claiming acceptance',
-    async (t) => {
-      const envelope = {
-        error_code: status === 429 ? 'RATE_LIMITED' : 'INVALID_REQUEST',
-        message: 'fixture rejection',
-        retryable: status === 429,
-        ...(status === 429 ? { retry_after_ms: 1000, details: { rate_limit_scope: 'organization' } } : {}),
-      };
-      const server = createServer((req, res) => {
-        req.resume();
-        res.writeHead(status, { 'content-type': 'application/json' });
-        res.end(JSON.stringify(envelope));
-      });
-      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-      t.after(() => server.close());
-      const result = await runCLI([
-        'feedback',
-        'rejection check',
-        '--include-logs=false',
-        '--api-key',
-        'test-key',
-        '--base-url',
-        'http://127.0.0.1:' + server.address().port,
-        '--max-retries',
-        '0',
-        '--format',
-        'json',
-      ]);
-      assert.equal(result.code, exitCode, result.stderr);
-      assert.equal(result.stdout, '');
-      assert.match(result.stderr, /fixture rejection/);
-      const error = JSON.parse(result.stderr);
-      assert.equal(error.status, status);
-      assert.deepEqual(error.body, envelope);
-    },
-  );
+  test('invariant installed CLI reports HTTP ' + status + ' without claiming acceptance', async (t) => {
+    const envelope = {
+      error_code: status === 429 ? 'RATE_LIMITED' : 'INVALID_REQUEST',
+      message: 'fixture rejection',
+      retryable: status === 429,
+      ...(status === 429 ? { retry_after_ms: 1000, details: { rate_limit_scope: 'organization' } } : {}),
+    };
+    const server = createServer((req, res) => {
+      req.resume();
+      res.writeHead(status, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(envelope));
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    t.after(() => server.close());
+    const result = await runCLI([
+      'feedback',
+      'rejection check',
+      '--include-logs=false',
+      '--api-key',
+      'test-key',
+      '--base-url',
+      'http://127.0.0.1:' + server.address().port,
+      '--max-retries',
+      '0',
+      '--format',
+      'json',
+    ]);
+    assert.equal(result.code, exitCode, result.stderr);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /fixture rejection/);
+    const error = JSON.parse(result.stderr);
+    assert.equal(error.status, status);
+    assert.deepEqual(error.body, envelope);
+  });
 }
 
 test('invariant installed CLI retries one submission with the same idempotency key', async (t) => {
@@ -211,51 +208,58 @@ test('invariant invalid include-logs values fail before submission', async () =>
 });
 
 for (const failsDecoding of [false, true]) {
-  test('invariant feedback follows the terminal command outcome after HTTP responses: ' + (failsDecoding ? 'decoding failure' : 'recovered retry'), async (t) => {
-    const home = mkdtempSync(join(tmpdir(), 'dedalus-command-outcome-'));
-    t.after(() => rmSync(home, { recursive: true, force: true }));
-    let attempts = 0;
-    let report;
-    const server = createServer(async (req, res) => {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      if (req.url === '/v1/feedback') {
-        const wire = new Request('http://fixture/v1/feedback', {
-          method: 'POST', headers: req.headers, body: Buffer.concat(chunks),
-        });
-        report = req.headers['content-type'].startsWith('multipart/')
-          ? JSON.parse((await wire.formData()).get('metadata'))
-          : await wire.json();
-        res.writeHead(201, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ id: receipt, source: 'cli', debug: report.debug }));
-        return;
-      }
-      attempts++;
-      res.setHeader('content-type', 'application/json');
-      res.setHeader('x-request-id', receipt);
-      if (!failsDecoding && attempts === 1) {
-        res.writeHead(503, { 'retry-after-ms': '1' });
-        res.end('{"message":"retry fixture"}');
-      } else {
-        res.writeHead(200);
-        res.end(failsDecoding ? '{' : '{"data":[]}');
-      }
-    });
-    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-    t.after(() => server.close());
-    const options = ['--api-key', 'test-key', '--base-url', 'http://127.0.0.1:' + server.address().port];
-    const command = await runCLI(['machines', 'list', ...options], { HOME: home });
-    assert.equal(command.code, failsDecoding ? 1 : 0, command.stderr);
-    assert.equal(attempts, failsDecoding ? 1 : 2);
-    const feedback = await runCLI([
-      'feedback', 'command outcome', '--include-logs=' + (failsDecoding ? 'false' : 'auto'), ...options,
-    ], { HOME: home });
-    assert.equal(feedback.code, 0, feedback.stderr);
-    assert.equal(report.debug.included, false);
-    assert.deepEqual(report.debug.files, []);
-    assert.equal(report.reported_request_id, failsDecoding ? receipt : undefined);
-    assert.equal(report.diagnostics, undefined);
-  });
+  test(
+    'invariant feedback follows the terminal command outcome after HTTP responses: ' +
+      (failsDecoding ? 'decoding failure' : 'recovered retry'),
+    async (t) => {
+      const home = mkdtempSync(join(tmpdir(), 'dedalus-command-outcome-'));
+      t.after(() => rmSync(home, { recursive: true, force: true }));
+      let attempts = 0;
+      let report;
+      const server = createServer(async (req, res) => {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        if (req.url === '/v1/feedback') {
+          const wire = new Request('http://fixture/v1/feedback', {
+            method: 'POST',
+            headers: req.headers,
+            body: Buffer.concat(chunks),
+          });
+          report = req.headers['content-type'].startsWith('multipart/')
+            ? JSON.parse((await wire.formData()).get('metadata'))
+            : await wire.json();
+          res.writeHead(201, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ id: receipt, source: 'cli', debug: report.debug }));
+          return;
+        }
+        attempts++;
+        res.setHeader('content-type', 'application/json');
+        res.setHeader('x-request-id', receipt);
+        if (!failsDecoding && attempts === 1) {
+          res.writeHead(503, { 'retry-after-ms': '1' });
+          res.end('{"message":"retry fixture"}');
+        } else {
+          res.writeHead(200);
+          res.end(failsDecoding ? '{' : '{"data":[]}');
+        }
+      });
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      t.after(() => server.close());
+      const options = ['--api-key', 'test-key', '--base-url', 'http://127.0.0.1:' + server.address().port];
+      const command = await runCLI(['machines', 'list', ...options], { HOME: home });
+      assert.equal(command.code, failsDecoding ? 1 : 0, command.stderr);
+      assert.equal(attempts, failsDecoding ? 1 : 2);
+      const feedback = await runCLI(
+        ['feedback', 'command outcome', '--include-logs=' + (failsDecoding ? 'false' : 'auto'), ...options],
+        { HOME: home },
+      );
+      assert.equal(feedback.code, 0, feedback.stderr);
+      assert.equal(report.debug.included, false);
+      assert.deepEqual(report.debug.files, []);
+      assert.equal(report.reported_request_id, failsDecoding ? receipt : undefined);
+      assert.equal(report.diagnostics, undefined);
+    },
+  );
 }
 
 test('invariant generated and custom commands share scoped stored credentials and request headers', async (t) => {
@@ -272,12 +276,22 @@ test('invariant generated and custom commands share scoped stored credentials an
   t.after(() => server.close());
   const baseURL = 'http://127.0.0.1:' + server.address().port;
   const store = join(directory, 'credentials.json');
-  writeFileSync(store, JSON.stringify({ version: 1, profiles: {
-    [baseURL]: { backend: 'file', credentials: { apiKey: 'stored-key' } },
-    'https://other.invalid': { backend: 'file', credentials: { apiKey: 'other-host-key' } },
-  } }), { mode: 0o600 });
-  const env = { HOME: directory, DEDALUS_CREDENTIALS_FILE: store,
-    DEDALUS_CUSTOM_HEADERS: 'x-request-id: ' + receipt };
+  writeFileSync(
+    store,
+    JSON.stringify({
+      version: 1,
+      profiles: {
+        [baseURL]: { backend: 'file', credentials: { apiKey: 'stored-key' } },
+        'https://other.invalid': { backend: 'file', credentials: { apiKey: 'other-host-key' } },
+      },
+    }),
+    { mode: 0o600 },
+  );
+  const env = {
+    HOME: directory,
+    DEDALUS_CREDENTIALS_FILE: store,
+    DEDALUS_CUSTOM_HEADERS: 'x-request-id: ' + receipt,
+  };
   for (const args of [
     ['machines', 'list'],
     ['feedback', 'stored credential', '--include-logs=false'],
@@ -292,8 +306,18 @@ test('invariant generated and custom commands share scoped stored credentials an
     assert.match(headers['user-agent'], /^Dedalus\/CLI /);
     assert.ok(headers['x-dedalus-cli-command'].startsWith('dedalus '));
   }
-  const explicit = await runCLI(['feedback', 'explicit credential', '--include-logs=false',
-    '--base-url', baseURL, '--api-key', 'explicit-key'], env);
+  const explicit = await runCLI(
+    [
+      'feedback',
+      'explicit credential',
+      '--include-logs=false',
+      '--base-url',
+      baseURL,
+      '--api-key',
+      'explicit-key',
+    ],
+    env,
+  );
   assert.equal(explicit.code, 0, explicit.stderr);
   assert.equal(requests.at(-1).headers.authorization, 'Bearer explicit-key');
 });

@@ -100,7 +100,9 @@ export async function toFile(
 
   if (isResponseLike(value)) {
     const blob = await value.blob();
-    name ||= new URL(value.url).pathname.split(/[\\/]/).pop();
+    // A Response a caller built (`new Response(bytes)`) has an empty `url`, which `new URL` throws on;
+    // it has no name to offer, so the file falls back to the default one.
+    name ||= value.url ? new URL(value.url).pathname.split(/[\\/]/).pop() : undefined;
 
     return makeFile(await getBytes(blob), name, options);
   }

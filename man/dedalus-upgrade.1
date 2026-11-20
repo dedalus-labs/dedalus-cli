@@ -10,7 +10,9 @@ Replaces this dedalus executable with the latest published release, after verify
 .PP
 When dedalus was installed through a package manager (Homebrew or npm) nothing is replaced. That manager owns the installed files, and overwriting them leaves its database describing a file that is no longer there, so the command runs the manager's own upgrade command instead, with its output on this terminal.
 .PP
-dedalus also checks for a newer release at most once a day and mentions one on standard error. That check is skipped when either standard output or standard error is not a terminal, when CI is set, when running under sudo, and when NO_UPDATE_NOTIFIER or DEDALUS_NO_UPDATE_NOTIFIER is set in the environment.
+dedalus also checks the npm registry for an npm install, and GitHub Releases for a standalone executable for a newer release at most once a day and mentions one on standard error. That check is skipped when either standard output or standard error is not a terminal, when CI is set, when running under sudo, and when NO_UPDATE_NOTIFIER or DEDALUS_NO_UPDATE_NOTIFIER is set in the environment.
+.PP
+An npm install is compared against the registry named by npm_config_registry (or NPM_CONFIG_REGISTRY), or https://registry.npmjs.org when neither is set (.npmrc is not read, so set one of these for a mirror), under the dist\-tag it was published on, and under the stable tag too for a prerelease. A run through npx, bunx or pnpm dlx has nothing installed to upgrade, and says so.
 .SH "OPTIONS"
 .TP
 \fB\-\-check\fR

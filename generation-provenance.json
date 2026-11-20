@@ -1,12 +1,14 @@
 {
-  "source_spec_sha": "f5b640b324aafb001a8da6facd807f13197630bb",
-  "source_spec_sha256": "a717ed108ea8bbb6b9c0b70255a07da7e9a01224c6941546089084e02097a632",
-  "generator_version": "0.38.0",
-  "build_version": "0.1.19",
-  "configuration_sha256": "477d944077da8e1163423c505fe3f773cce14eda953aa934fe91582d04e4e915",
-  "operation_count": 31,
+  "source_spec_sha": "33b1723ceb008dfddf66ed9939c1c69aef73fd91",
+  "source_spec_sha256": "bb5bd464c8160621397668abdcd19834cbae34629865d4fd98c588f3c083d122",
+  "generator_version": "0.45.0",
+  "build_version": "1.1795132129.103696082",
+  "configuration_sha256": "7b27a7b3a3cb4b0b6f0aa88c80ed3fadac01bfc9075e05095456e986d4430de4",
+  "operation_count": 40,
   "generated_commit": null,
-  "download_sha256": "449d6baf322f0f55edb97085298e4d72238dc8da19749e2f578505ae19c0a239",
+  "download_sha256": "3c3790a85dbb5ecc8a7e9beecb1a0c24726dfab34414f80c3e0d587df1d248b2",
   "integration_base": "scalar-next",
-  "published_package": false
+  "published_package": false,
+  "build_id": "e5rUcpIZesILtTifEy6SC",
+  "custom_code_ref": "753d33130bf5b02e4265ad1f2df503d4941b46ae"
 }

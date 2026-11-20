@@ -45,11 +45,24 @@ import {
   type AutoresizingRetrieveParams,
   type AutoresizingUpdateParams,
 } from './autoresizing';
+import * as PortsAPI from './ports/ports';
+import {
+  Ports,
+  type PortCreateParams,
+  type PortUpdateParams,
+  type Port,
+  type PortList,
+  type PortsCursorPage,
+  type PortListParams,
+  type PortRetrieveParams,
+  type PortDeleteParams,
+} from './ports/ports';
 
 export class Machines extends APIResource {
   ssh: SSHAPI.SSH = new SSHAPI.SSH(this._client);
   executions: ExecutionsAPI.Executions = new ExecutionsAPI.Executions(this._client);
   autoresizing: AutoresizingAPI.Autoresizing = new AutoresizingAPI.Autoresizing(this._client);
+  ports: PortsAPI.Ports = new PortsAPI.Ports(this._client);
 
   /**
    * List machines
@@ -433,8 +446,6 @@ export namespace LifecycleStatus {
   }
 }
 
-export type AutoresizingSwitch = 'on' | 'off';
-
 export interface MachineListParams extends CursorPageParams {}
 
 export type MachineListItemsCursorPage = CursorPage<MachineListItem>;
@@ -633,6 +644,7 @@ export interface MachineResizeResponse {
 Machines.SSH = SSH;
 Machines.Executions = Executions;
 Machines.Autoresizing = Autoresizing;
+Machines.Ports = Ports;
 
 export declare namespace Machines {
   export {
@@ -642,7 +654,6 @@ export declare namespace Machines {
     type CreateParams as CreateParams,
     type UpdateParams as UpdateParams,
     type LifecycleStatus as LifecycleStatus,
-    type AutoresizingSwitch as AutoresizingSwitch,
     type MachineListItemsCursorPage as MachineListItemsCursorPage,
     type MachineRetrieveResponse as MachineRetrieveResponse,
     type MachineResizeResponse as MachineResizeResponse,
@@ -694,5 +705,17 @@ export declare namespace Machines {
     type Policy as Policy,
     type AutoresizingRetrieveParams as AutoresizingRetrieveParams,
     type AutoresizingUpdateParams as AutoresizingUpdateParams,
+  };
+
+  export {
+    Ports as Ports,
+    type PortCreateParams as PortCreateParams,
+    type PortUpdateParams as PortUpdateParams,
+    type Port as Port,
+    type PortList as PortList,
+    type PortsCursorPage as PortsCursorPage,
+    type PortListParams as PortListParams,
+    type PortRetrieveParams as PortRetrieveParams,
+    type PortDeleteParams as PortDeleteParams,
   };
 }

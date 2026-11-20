@@ -243,7 +243,7 @@ Declared schemes:
 
 ## Errors
 
-Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
+Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. When the API answered with a JSON error payload, its parsed form is under `body`, so structured details such as an API-specific error code or field errors can be read without parsing `message`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 Documented error statuses: `401`, `403`, `409`, `429`, `503`, `default`.
 
@@ -282,6 +282,7 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 - `--transform <path>` and `--transform-error <path>` — dot-path transform for data/error output.
 - `--raw-output`, `-r` — print transformed string values without JSON quotes.
 - `--max-items <count>` — bound iterator, streaming, and WebSocket command output.
+- `--no-input` — never prompt: a command that would ask fails instead, the same as it does without a terminal.
 - Errors carry a stable `code` and an actionable `hint` beside the API's own message, and each failure class exits with its own status: `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 <br />

@@ -13,7 +13,7 @@ Create execution
 Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.
 .TP
 \fB\-\-command\fR \fI<json>\fR
-The command body parameter. Required.
+Program and its arguments as an array of strings, such as ["ls", "\-la"]. A single string is not split into arguments. To run a shell command line, pass ["sh", "\-c", "<command line>"]. Required.
 .TP
 \fB\-\-cwd\fR \fI<value>\fR
 The cwd body parameter.
@@ -53,6 +53,9 @@ Print transformed string values without JSON quotes.
 .TP
 \fB\-\-debug\fR
 Enable SDK debug logging on standard error.
+.TP
+\fB\-\-no\-input\fR
+Never prompt; a command that would ask fails instead.
 .TP
 \fB\-\-api\-key\fR \fI<value>\fR
 Dedalus API key or short\-lived delegated access token in `Authorization: Bearer <credential>`. Can also be set with the DEDALUS_API_KEY environment variable.

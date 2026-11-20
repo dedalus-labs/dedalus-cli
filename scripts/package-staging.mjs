@@ -48,8 +48,7 @@ try {
     const source = join(root, name);
     if (existsSync(source)) cpSync(source, join(staging, name), { recursive: true });
   }
-  if (!existsSync(join(staging, 'dist/esm/bin.js')))
-    throw new Error('build the CLI before packaging');
+  if (!existsSync(join(staging, 'dist/esm/bin.js'))) throw new Error('build the CLI before packaging');
   patchBuild(join(staging, 'dist'));
   manifest.version = version;
   manifest.private = true;

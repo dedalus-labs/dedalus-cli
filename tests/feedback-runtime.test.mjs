@@ -10,7 +10,10 @@ const { default: SDK } = await import(pathToFileURL(join(root, 'dist/esm/sdk/ind
 
 test('invariant error formatting preserves errors with an explicit response body', async (t) => {
   let output = '';
-  t.mock.method(process.stderr, 'write', (chunk) => { output += chunk; return true; });
+  t.mock.method(process.stderr, 'write', (chunk) => {
+    output += chunk;
+    return true;
+  });
   const body = { error_code: 'INVALID_REQUEST', message: 'fixture rejection', retryable: false };
   await writeError({ message: body.message, status: 422, body }, { format: 'json' }, [], SDK);
   assert.deepEqual(JSON.parse(output).body, body);
@@ -24,9 +27,16 @@ test('invariant SDK requests preserve organization scope without forwarding rece
     else process.env.DEDALUS_CUSTOM_HEADERS = previous;
   });
   const command = new Command('dedalus').version('1.0.0').command('machines').command('create');
-  const options = await sdkClientOptions({
-    baseUrl: 'https://staging.invalid', apiKey: 'test-key', xDedalusOrgId: 'org-current',
-  }, command, [{ name: 'api-key', optionKey: 'apiKey', sdkKey: 'apiKey' }], undefined);
+  const options = await sdkClientOptions(
+    {
+      baseUrl: 'https://staging.invalid',
+      apiKey: 'test-key',
+      xDedalusOrgId: 'org-current',
+    },
+    command,
+    [{ name: 'api-key', optionKey: 'apiKey', sdkKey: 'apiKey' }],
+    undefined,
+  );
   let headers;
   const client = new SDK({
     ...options,

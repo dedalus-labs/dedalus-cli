@@ -32,12 +32,23 @@ Complete reference of every operation, grouped by resource. See [the README](./R
   - [`Machines Autoresizing`](#machines-autoresizing)
     - [Read this machine's autoresizing settings](#read-this-machines-autoresizing-settings)
     - [Set this machine's autoresizing settings](#set-this-machines-autoresizing-settings)
+  - [`Machines Ports`](#machines-ports)
+    - [List ports](#list-ports)
+    - [Create port](#create-port)
+    - [Get port](#get-port)
+    - [Update port](#update-port)
+    - [Delete port](#delete-port)
+    - [`Machines Ports AccessKeys`](#machines-ports-accesskeys)
+      - [List port access keys](#list-port-access-keys)
+      - [Mint port access key](#mint-port-access-key)
+      - [Revoke port access key](#revoke-port-access-key)
+      - [Rotate port access key](#rotate-port-access-key)
 - [`Organization`](#organization)
   - [`Organization Autoresizing`](#organization-autoresizing)
     - [Read organization autoresizing policy](#read-organization-autoresizing-policy)
     - [Set organization autoresizing policy](#set-organization-autoresizing-policy)
 - [`Images`](#images)
-  - [List image IDs owned by the authenticated organization](#list-image-ids-owned-by-the-authenticated-organization)
+  - [List images owned by the authenticated organization](#list-images-owned-by-the-authenticated-organization)
   - [Register an immutable OCI image for preparation](#register-an-immutable-oci-image-for-preparation)
   - [Read preparation status for an organization-owned image](#read-preparation-status-for-an-organization-owned-image)
   - [Rename an organization-owned image](#rename-an-organization-owned-image)
@@ -261,6 +272,98 @@ dedalus machines autoresizing update \
   --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f'
 ```
 
+### `Machines Ports`
+
+#### List ports
+
+```sh
+dedalus machines ports list \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --max-items 10
+```
+
+#### Create port
+
+```sh
+dedalus machines ports create \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port '0' \
+  --protocol 'http' \
+  --visibility 'private'
+```
+
+#### Get port
+
+```sh
+dedalus machines ports retrieve \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id'
+```
+
+#### Update port
+
+```sh
+dedalus machines ports update \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --visibility 'public'
+```
+
+#### Delete port
+
+```sh
+dedalus machines ports delete \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id'
+```
+
+#### `Machines Ports AccessKeys`
+
+##### List port access keys
+
+```sh
+dedalus machines ports access-keys list \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id'
+```
+
+##### Mint port access key
+
+```sh
+dedalus machines ports access-keys mint \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --expires-in '1'
+```
+
+##### Revoke port access key
+
+```sh
+dedalus machines ports access-keys revoke \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --access-key-id 'access_key_id'
+```
+
+##### Rotate port access key
+
+```sh
+dedalus machines ports access-keys rotate \
+  --browser-token "$DEDALUS_BROWSER_TOKEN" \
+  --machine-id '017f22e2-79b0-7cc3-98c4-dc0c0c07398f' \
+  --port-id 'port_id' \
+  --access-key-id 'access_key_id' \
+  --expires-in '1'
+```
+
 ## `Organization`
 
 ### `Organization Autoresizing`
@@ -281,9 +384,9 @@ dedalus organization autoresizing update --browser-token "$DEDALUS_BROWSER_TOKEN
 
 ## `Images`
 
-### List image IDs owned by the authenticated organization
+### List images owned by the authenticated organization
 
-Pages through the organization's images in ID order. A deleted image is left out; it still reads by ID.
+Pages through the organization's images in ID order. Each item has the same shape as a single image read. A deleted image is left out; it still reads by ID.
 
 ```sh
 dedalus images list --browser-token "$DEDALUS_BROWSER_TOKEN" --limit '100'

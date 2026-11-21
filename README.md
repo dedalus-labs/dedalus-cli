@@ -126,6 +126,7 @@ Piped JSON can supply machine options while SSH reads from the controlling
 terminal. A missing controlling terminal is reported before creating a machine.
 
 The reconnect command retains the selected API endpoint and organization.
+On Windows, run the printed command in PowerShell, not Command Prompt.
 Credential flags use environment-variable references. Set each variable to the
 credential used for creation before running the command. Credential file
 references are retained. Environment credentials and saved login remain in use.

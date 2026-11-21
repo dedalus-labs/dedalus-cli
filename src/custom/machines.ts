@@ -134,12 +134,23 @@ export const handleMachineResult: NonNullable<CreateProgramOptions['handleResult
   ) {
     throw new Error('create machine: server returned no machine_id');
   }
-  process.stderr.write(reconnectHint(client, command, result.machine_id));
+  process.stderr.write(reconnectHint(client, command, result.machine_id, process.platform));
   await connectMachine(createMachineAPI(client), result.machine_id, terminalInputs.get(command));
   return true;
 };
 
-const reconnectHint = (client: SDK, command: Command, machineID: string): string => {
+export const reconnectHint = (
+  client: SDK,
+  command: Command,
+  machineID: string,
+  platform: NodeJS.Platform,
+): string => {
+  const powershell = platform === 'win32';
+  const environmentReference = (name: string): string => (powershell ? `"$env:${name}"` : `"$${name}"`);
+  const shellQuote = (value: string): string => {
+    if (/^[\w./:@=-]+$/u.test(value) && !(powershell && value.startsWith('@'))) return value;
+    return "'" + value.replaceAll("'", powershell ? "''" : "'\"'\"'") + "'";
+  };
   const settings = ['dedalus', 'ssh', shellQuote(machineID), '--base-url'];
   const instructions: string[] = [];
   const endpoint = new URL(client.baseURL);
@@ -165,19 +176,14 @@ const reconnectHint = (client: SDK, command: Command, machineID: string): string
       instructions.push(`Set ${variable} to the same credential supplied with ${flag}.`);
     }
   }
-  instructions.push('Reuse the environment credentials or saved login from the same shell.');
-  return `Created machine ${machineID}. Reconnect with: ${settings.join(' ')}\n${instructions.join('\n')}\n`;
+  instructions.push(
+    powershell
+      ? 'Use the same environment credentials or saved login in PowerShell.'
+      : 'Reuse the environment credentials or saved login from the same shell.',
+  );
+  const label = powershell ? 'Reconnect in PowerShell (not Command Prompt):' : 'Reconnect with:';
+  return `Created machine ${machineID}. ${label} ${settings.join(' ')}\n${instructions.join('\n')}\n`;
 };
-
-const shellQuote = (value: string): string => {
-  if (/^[\w./:@=-]+$/u.test(value)) return value;
-  const escaped =
-    process.platform === 'win32' ? value.replaceAll("'", "''") : value.replaceAll("'", "'\"'\"'");
-  return `'${escaped}'`;
-};
-
-const environmentReference = (name: string): string =>
-  process.platform === 'win32' ? `"$env:${name}"` : `"$${name}"`;
 
 const aliasCommand = (program: Command, name: string): Command => {
   if (program.commands.some((command) => command.name() === name)) {

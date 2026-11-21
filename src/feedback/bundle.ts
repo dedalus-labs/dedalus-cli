@@ -26,7 +26,10 @@ export const doctorReport = (baseURL: string, version: string) => ({
   runtime: { os: platform(), arch: arch(), node: process.versions.node },
   api_origin: new URL(baseURL).origin,
   auth_mode: 'api_key',
-  install_method: 'node-package',
+  // A compiled Bun entry point lives in its embedded filesystem, even if the binary is renamed.
+  install_method: /^(?:\/\$bunfs\/|[A-Za-z]:[\\/]~BUN[\\/])/u.test(process.argv[1] ?? '')
+    ? 'standalone'
+    : 'node-package',
   proxy_environment: [
     'HTTPS_PROXY',
     'HTTP_PROXY',

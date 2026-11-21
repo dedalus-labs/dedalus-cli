@@ -10,6 +10,8 @@ const root = resolve(process.env.FEEDBACK_PACKAGE_ROOT ?? '.');
 const load = (name) => import(pathToFileURL(join(root, 'dist/esm/feedback', name + '.js')));
 const { createDiagnostics, diagnosticScope, selectDiagnostics } = await load('diagnostics');
 const { buildFeedbackBundle } = await load('bundle');
+const { getProgram } = await import(pathToFileURL(join(root, 'dist/esm/commands/index.js')));
+getProgram();
 const scope = diagnosticScope({ apiKey: 'test-key', baseURL: 'https://staging.invalid' });
 const receipt = '01973f7b7cf6726a9a9f4f37d4b47a21';
 const directory = (t) => {

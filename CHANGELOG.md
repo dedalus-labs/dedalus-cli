@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/dedalus-labs/dedalus-cli/compare/v0.9.0...v0.9.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* **feedback:** restore CLI diagnostics ([ee6f9ac](https://github.com/dedalus-labs/dedalus-cli/commit/ee6f9acc35a7c6df5ac3e4bc657a9d57e09d670c))
+* **feedback:** restore CLI diagnostics ([#130](https://github.com/dedalus-labs/dedalus-cli/issues/130)) ([24d78d5](https://github.com/dedalus-labs/dedalus-cli/commit/24d78d58129c710c2ad77aee3e43f4f965027d71))
+
 ## [0.9.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.8.0...v0.9.0) (2026-11-21)
 
 

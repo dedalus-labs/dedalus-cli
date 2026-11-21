@@ -6,6 +6,7 @@ import { randomBytes } from 'node:crypto';
 import { Command, Option } from 'commander';
 
 import SDK from '../sdk/index.js';
+import { commandMetadata } from '../cli/context.js';
 import type { CliAuthDefinition } from '../cli/login.js';
 import { VERSION } from '../sdk/version.js';
 import {
@@ -17,7 +18,7 @@ import {
   type GlobalOptions,
 } from '../cli/runtime.js';
 import { buildFeedbackBundle, doctorReport, type IncludeLogs } from './bundle.js';
-import { debugDirectory, diagnosticScope } from './diagnostics.js';
+import { debugDirectory, diagnosticScope, registerDiagnosticCommand } from './diagnostics.js';
 
 export const feedbackIdempotencyKey = (): string => {
   // UUIDv7: bytes 0..5 hold Unix milliseconds; byte 6 holds version 7;
@@ -35,6 +36,14 @@ export const registerFeedbackCommands = (
   auth: CliAuthDefinition | undefined,
   directory = debugDirectory(),
 ): Command => {
+  const registerPaths = (parent: Command, path: string): void => {
+    for (const child of parent.commands) {
+      const command = path + ' ' + child.name();
+      if (commandMetadata(child)?.source === 'generated') registerDiagnosticCommand(command);
+      registerPaths(child, command);
+    }
+  };
+  registerPaths(program, program.name());
   const feedback = program
     .command('feedback <message>')
     .description('Send feedback with optional scrubbed CLI diagnostics')

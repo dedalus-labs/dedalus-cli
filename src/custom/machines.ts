@@ -181,7 +181,7 @@ export const reconnectHint = (
       ? 'Use the same environment credentials or saved login in PowerShell.'
       : 'Reuse the environment credentials or saved login from the same shell.',
   );
-  const label = powershell ? 'Reconnect in PowerShell (not Command Prompt):' : 'Reconnect with:';
+  const label = powershell ? 'Reconnect in PowerShell:' : 'Reconnect with:';
   return `Created machine ${machineID}. ${label} ${settings.join(' ')}\n${instructions.join('\n')}\n`;
 };
 

@@ -318,7 +318,7 @@ test('invariant_windows_reconnect_hint_labels_the_shell_that_expands_the_credent
   const hint = reconnectHint(client, command, 'machine', 'win32');
   assert.equal(
     hint.split('\n')[0],
-    `Created machine machine. Reconnect in PowerShell (not Command Prompt): dedalus ssh machine --base-url https://example.test --dedalus-org-id 'Dev''s Team' --api-key "$env:DEDALUS_API_KEY"`,
+    `Created machine machine. Reconnect in PowerShell: dedalus ssh machine --base-url https://example.test --dedalus-org-id 'Dev''s Team' --api-key "$env:DEDALUS_API_KEY"`,
   );
   assert.doesNotMatch(hint, /secret-not-for-output/u);
   command.setOptionValue('apiKey', '@credential');

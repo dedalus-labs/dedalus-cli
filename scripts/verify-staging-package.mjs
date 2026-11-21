@@ -26,6 +26,7 @@ try {
   const cleanEnv = { PATH: process.env.PATH };
   assert.equal(run(process.execPath, [binary, '--version'], { env: cleanEnv }).trim(), version);
   const doctor = JSON.parse(run(process.execPath, [binary, 'doctor', '--json'], { env: cleanEnv }));
+  assert.equal(doctor.install_method, 'node-package');
   assert.equal(doctor.api_origin, 'https://dcs.dedaluslabs.ai');
   const sdkModule = JSON.stringify(pathToFileURL(join(installed, 'dist/esm/sdk/index.js')).href);
   const sdkOrigin = run(

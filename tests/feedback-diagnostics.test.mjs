@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, utimesSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, utimesSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -9,6 +9,9 @@ const root = resolve(process.env.FEEDBACK_PACKAGE_ROOT ?? '.');
 const { createDiagnostics, diagnosticScope, selectDiagnostics, pruneDiagnostics } = await import(
   pathToFileURL(join(root, 'dist/esm/feedback/diagnostics.js'))
 );
+const { getProgram } = await import(pathToFileURL(join(root, 'dist/esm/commands/index.js')));
+const { buildCliContext, runnableCommands } = await import(pathToFileURL(join(root, 'dist/esm/cli/context.js')));
+const generated = runnableCommands(buildCliContext(getProgram()).commands).filter((c) => c.source === 'generated');
 const scope = diagnosticScope({ apiKey: 'test-key', baseURL: 'https://staging.invalid' });
 const receipt = '01973f7b7cf6726a9a9f4f37d4b47a21';
 const directory = (t) => {
@@ -168,4 +171,24 @@ test('invariant client processing failures retain the latest valid response rece
   assert.equal(selection.receipt, latestReceipt);
   assert.equal(selection.command, 'dedalus machines list');
   assert.equal(selection.failure, undefined);
+});
+
+test('every generated command can record a failure for feedback', (t) => {
+  assert.ok(generated.some((c) => c.command === 'dedalus machines ports access-keys rotate'));
+  for (const { command } of generated) {
+    const dir = directory(t);
+    createDiagnostics(command, scope, dir).record({ kind: 'command_failure' });
+    assert.equal(selectDiagnostics(scope, dir).command, command);
+  }
+});
+
+test('unregistered paths in a local diagnostic file do not enter feedback', (t) => {
+  const dir = directory(t);
+  const log = createDiagnostics('dedalus images list', scope, dir);
+  log.record({ kind: 'command_failure' });
+  const file = join(dir, readdirSync(dir)[0]);
+  for (const command of ['dedalus images list secret-value', 'dedalus machines machines']) {
+    appendFileSync(file, JSON.stringify({ ts: new Date().toISOString(), command, kind: 'command_failure' }) + '\n');
+  }
+  assert.ok(selectDiagnostics(scope, dir).events.every((e) => e.command === 'dedalus images list'));
 });

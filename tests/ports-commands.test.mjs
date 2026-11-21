@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { resolve } from 'node:path';
+import { mkdtempSync, rmSync, readFileSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
 
@@ -51,7 +53,9 @@ for (const [command, flags, method, suffix, body] of cases) {
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
     t.after(() => new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve()))));
-    await run(
+    const home = mkdtempSync(join(tmpdir(), 'dedalus-ports-'));
+    t.after(() => rmSync(home, { recursive: true, force: true }));
+    const { stderr } = await run(
       process.execPath,
       [
         bin,
@@ -68,8 +72,15 @@ for (const [command, flags, method, suffix, body] of cases) {
         machine,
         ...flags,
       ],
-      { timeout: 10000 },
+      { timeout: 10000, env: { HOME: home, USERPROFILE: home, PATH: process.env.PATH } },
     );
+    assert.equal(stderr, '');
+    const debug = join(home, '.dedalus', 'debug');
+    const files = readdirSync(debug);
+    assert.equal(files.length, 1);
+    const events = readFileSync(join(debug, files[0]), 'utf8').trim().split('\n').map((s) => JSON.parse(s));
+    assert.equal(events.at(-1).kind, 'command_complete');
+    assert.ok(events.every((e) => e.command === 'dedalus machines ports ' + command));
     assert.deepEqual(requests, [
       { method, path: '/v1/machines/' + machine + '/ports' + suffix, auth: 'Bearer fixture', body },
     ]);

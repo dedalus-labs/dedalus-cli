@@ -33,35 +33,11 @@ const kinds = [
   'command_failure',
   'command_complete',
 ] as const;
-const commandWords = new Set([
-  'dedalus',
-  'machines',
-  'networks',
-  'usage',
-  'list',
-  'create',
-  'retrieve',
-  'update',
-  'delete',
-  'watch',
-  'sleep',
-  'wake',
-  'network',
-  'artifacts',
-  'ports',
-  'ssh',
-  'executions',
-  'events',
-  'output',
-  'logs',
-  'token',
-  'reauthorize',
-  'terminals',
-  'connect',
-  'machine-compute',
-  'machine-storage',
-  'feedback',
-]);
+// Only canonical paths from the command registry may enter diagnostics, never argv.
+const diagnosticCommands = new Set(['dedalus ssh', 'dedalus feedback']);
+export const registerDiagnosticCommand = (command: string): void => {
+  diagnosticCommands.add(command);
+};
 
 export type DiagnosticEvent = {
   ts: string;
@@ -128,9 +104,7 @@ const parseEvent = (value: unknown): DiagnosticEvent | undefined => {
   if (!value || typeof value !== 'object') return undefined;
   const row = value as Record<string, unknown>;
   if (typeof row['kind'] !== 'string' || !kinds.some((kind) => kind === row['kind'])) return undefined;
-  if (typeof row['command'] !== 'string' || !/^dedalus(?: [a-z-]+){1,5}$/.test(row['command']))
-    return undefined;
-  if (row['command'].split(' ').some((word) => !commandWords.has(word))) return undefined;
+  if (typeof row['command'] !== 'string' || !diagnosticCommands.has(row['command'])) return undefined;
   if (typeof row['ts'] !== 'string' || !Number.isFinite(Date.parse(row['ts']))) return undefined;
   const result: DiagnosticEvent = {
     ts: new Date(row['ts']).toISOString(),

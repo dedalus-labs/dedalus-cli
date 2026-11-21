@@ -9,7 +9,7 @@ const root = resolve(process.env.CLI_PACKAGE_ROOT ?? '.');
 const load = (path) => import(pathToFileURL(join(root, 'dist/esm', path)));
 const { default: SDK } = await load('sdk/index.js');
 const { getProgram } = await load('index.js');
-const { addMachineAliases, createMachineAPI } = await load('custom/machines.js');
+const { addMachineAliases, createMachineAPI, reconnectHint } = await load('custom/machines.js');
 const { loadMachineChoices, matchingMachines, renderPicker, updatePicker } =
   await load('custom/ssh-picker.js');
 const { awaitSSHSession } = await load('custom/ssh.js');
@@ -309,4 +309,18 @@ test('SSH refuses to poll without a canonical ID', async () => {
     ),
     /omitted machine_id/u,
   );
+});
+
+test('invariant_windows_reconnect_hint_labels_the_shell_that_expands_the_credential', () => {
+  const client = new SDK({ baseURL: 'https://example.test', dedalusOrgID: "Dev's Team" });
+  const command = new Command().option('--api-key <value>');
+  command.setOptionValue('apiKey', 'secret-not-for-output');
+  const hint = reconnectHint(client, command, 'machine', 'win32');
+  assert.equal(
+    hint.split('\n')[0],
+    `Created machine machine. Reconnect in PowerShell: dedalus ssh machine --base-url https://example.test --dedalus-org-id 'Dev''s Team' --api-key "$env:DEDALUS_API_KEY"`,
+  );
+  assert.doesNotMatch(hint, /secret-not-for-output/u);
+  command.setOptionValue('apiKey', '@credential');
+  assert.ok(reconnectHint(client, command, 'machine', 'win32').includes("--api-key '@credential'"));
 });

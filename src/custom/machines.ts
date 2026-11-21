@@ -1,10 +1,12 @@
 /** SSH selection that shares the CLI's authentication and error settings. */
 
 import { Command, Option } from 'commander';
+import { closeSync, openSync } from 'node:fs';
 import SDK from '../sdk/index.js';
 import type { CliAuthDefinition } from '../cli/login.js';
 import {
   type CliClientOptionDefinition,
+  type CreateProgramOptions,
   type GlobalOptions,
   sdkClientOptions,
   writeError,
@@ -26,6 +28,8 @@ type AliasOptions = {
   readonly pick?: (api: MachineAPI) => Promise<string | undefined>;
   readonly interactive?: () => boolean;
 };
+
+const terminalInputs = new WeakMap<Command, number>();
 
 export const createMachineAPI = (client: SDK): MachineAPI => ({
   listMachines: (cursor, signal) =>
@@ -50,6 +54,27 @@ export const addMachineAliases = (
   clientOptions: readonly CliClientOptionDefinition[],
   options: AliasOptions = {},
 ): Command => {
+  const create = program.commands
+    .find((command) => command.name() === 'machines')
+    ?.commands.find((command) => command.name() === 'create');
+  create
+    ?.option('--ssh', 'Open an interactive SSH shell after creating the machine')
+    .hook('preAction', (command) => {
+      if (!command.opts<{ ssh?: boolean }>().ssh || process.stdin.isTTY) return;
+      try {
+        terminalInputs.set(command, openSync(process.platform === 'win32' ? 'CONIN$' : '/dev/tty', 'r'));
+      } catch {
+        command.error(
+          '--ssh requires a controlling terminal; run create without --ssh for noninteractive use',
+          { exitCode: 2 },
+        );
+      }
+    })
+    .hook('postAction', (command) => {
+      const input = terminalInputs.get(command);
+      if (input !== undefined) closeSync(input);
+      terminalInputs.delete(command);
+    });
   const makeAPI = options.api ?? createMachineAPI;
   const connect = options.connect ?? connectMachine;
   const pick = options.pick ?? pickSSHMachine;
@@ -85,6 +110,79 @@ export const addMachineAliases = (
     });
   program.addCommand(ssh);
   return program;
+};
+
+export const handleMachineResult: NonNullable<CreateProgramOptions['handleResult']> = async (
+  result,
+  client,
+  command,
+) => {
+  if (
+    command.parent?.name() !== 'machines' ||
+    command.name() !== 'create' ||
+    !command.opts<{ ssh?: boolean }>().ssh
+  ) {
+    return false;
+  }
+  if (!(client instanceof SDK)) throw new Error('machine SSH requires the generated SDK client');
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    !('machine_id' in result) ||
+    typeof result.machine_id !== 'string' ||
+    !result.machine_id
+  ) {
+    throw new Error('create machine: server returned no machine_id');
+  }
+  process.stderr.write(reconnectHint(client, command, result.machine_id, process.platform));
+  await connectMachine(createMachineAPI(client), result.machine_id, terminalInputs.get(command));
+  return true;
+};
+
+export const reconnectHint = (
+  client: SDK,
+  command: Command,
+  machineID: string,
+  platform: NodeJS.Platform,
+): string => {
+  const powershell = platform === 'win32';
+  const environmentReference = (name: string): string => (powershell ? `"$env:${name}"` : `"$${name}"`);
+  const shellQuote = (value: string): string => {
+    if (/^[\w./:@=-]+$/u.test(value) && !(powershell && value.startsWith('@'))) return value;
+    return "'" + value.replaceAll("'", powershell ? "''" : "'\"'\"'") + "'";
+  };
+  const settings = ['dedalus', 'ssh', shellQuote(machineID), '--base-url'];
+  const instructions: string[] = [];
+  const endpoint = new URL(client.baseURL);
+  if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
+    settings.push(environmentReference('DEDALUS_BASE_URL'));
+    instructions.push('Set DEDALUS_BASE_URL to the same endpoint used for creation.');
+  } else {
+    settings.push(shellQuote(client.baseURL));
+  }
+  if (client.dedalusOrgID) settings.push('--dedalus-org-id', shellQuote(client.dedalusOrgID));
+  const flags = command.optsWithGlobals<Record<string, unknown>>();
+  for (const [key, flag, variable] of [
+    ['apiKey', '--api-key', 'DEDALUS_API_KEY'],
+    ['xApiKey', '--x-api-key', 'DEDALUS_X_API_KEY'],
+    ['browserToken', '--browser-token', 'DEDALUS_BROWSER_TOKEN'],
+  ] as const) {
+    const value = flags[key];
+    if (typeof value !== 'string') continue;
+    if (value.startsWith('@')) {
+      settings.push(flag, shellQuote(value));
+    } else {
+      settings.push(flag, environmentReference(variable));
+      instructions.push(`Set ${variable} to the same credential supplied with ${flag}.`);
+    }
+  }
+  instructions.push(
+    powershell
+      ? 'Use the same environment credentials or saved login in PowerShell.'
+      : 'Reuse the environment credentials or saved login from the same shell.',
+  );
+  const label = powershell ? 'Reconnect in PowerShell:' : 'Reconnect with:';
+  return `Created machine ${machineID}. ${label} ${settings.join(' ')}\n${instructions.join('\n')}\n`;
 };
 
 const aliasCommand = (program: Command, name: string): Command => {

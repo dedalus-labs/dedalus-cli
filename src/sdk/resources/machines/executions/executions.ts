@@ -146,6 +146,9 @@ export class Executions extends APIResource {
 }
 
 export interface ExecutionCreateParams {
+  /**
+   * Program and its arguments as an array of strings, such as ["ls", "-la"]. A single string is not split into arguments. To run a shell command line, pass ["sh", "-c", "<command line>"].
+   */
   command: Array<string> | null;
   cwd?: string;
   env?: Record<string, string>;
@@ -305,7 +308,7 @@ export interface ExecutionCreateParams {
    */
   machine_id: string;
   /**
-   * Body param
+   * Body param: Program and its arguments as an array of strings, such as ["ls", "-la"]. A single string is not split into arguments. To run a shell command line, pass ["sh", "-c", "<command line>"].
    */
   command: Array<string> | null;
   /**

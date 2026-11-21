@@ -109,6 +109,28 @@ dedalus machines create \
 
 Every command accepts the global flags below, so the examples that follow show only what is specific to them.
 
+Create a machine with API defaults and open an interactive SSH shell:
+
+```sh
+dedalus machines create --ssh
+```
+
+`--ssh` reuses the connection flow from `dedalus ssh <machine-id>`, including
+the selected API endpoint, credentials, and organization. OpenSSH (`ssh` and
+`ssh-keygen`) must be in PATH. SSH owns the terminal output and exit status.
+Without `--ssh`, creation prints the usual response in the selected format.
+If SSH fails or is cancelled, the machine remains available. The CLI prints
+its ID and a reconnect command on stderr before opening the session.
+
+Piped JSON can supply machine options while SSH reads from the controlling
+terminal. A missing controlling terminal is reported before creating a machine.
+
+The reconnect command retains the selected API endpoint and organization.
+On Windows, run the printed command in PowerShell, not Command Prompt.
+Credential flags use environment-variable references. Set each variable to the
+credential used for creation before running the command. Credential file
+references are retained. Environment credentials and saved login remain in use.
+
 See the [API reference](./api.md) for every available operation.
 
 <br />
@@ -243,7 +265,7 @@ Declared schemes:
 
 ## Errors
 
-Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
+Failed requests print a structured error to standard error and exit with a status that identifies the failure class. The error body carries the API's own `message` plus a stable `code`, the HTTP `status`, the `requestId`, and — where one applies — an actionable `hint`. When the API answered with a JSON error payload, its parsed form is under `body`, so structured details such as an API-specific error code or field errors can be read without parsing `message`. Usage errors (exit `2`) are reported as a plain message instead, since no request was made. Exit statuses: `0` success, `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 Documented error statuses: `401`, `403`, `409`, `429`, `503`, `default`.
 
@@ -282,6 +304,7 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 - `--transform <path>` and `--transform-error <path>` — dot-path transform for data/error output.
 - `--raw-output`, `-r` — print transformed string values without JSON quotes.
 - `--max-items <count>` — bound iterator, streaming, and WebSocket command output.
+- `--no-input` — never prompt: a command that would ask fails instead, the same as it does without a terminal.
 - Errors carry a stable `code` and an actionable `hint` beside the API's own message, and each failure class exits with its own status: `1` `error`, `2` `usage`, `10` `auth-failed`, `11` `not-found`, `12` `rate-limited`, `13` `client-error`, `14` `server-error`, `15` `connection-error`.
 
 <br />

@@ -6,8 +6,9 @@ import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
 const root = resolve(process.env.FEEDBACK_PACKAGE_ROOT ?? '.');
-const { createDiagnostics, diagnosticScope, selectDiagnostics, pruneDiagnostics } =
-  await import(pathToFileURL(join(root, 'dist/esm/feedback/diagnostics.js')));
+const { createDiagnostics, diagnosticScope, selectDiagnostics, pruneDiagnostics } = await import(
+  pathToFileURL(join(root, 'dist/esm/feedback/diagnostics.js'))
+);
 const scope = diagnosticScope({ apiKey: 'test-key', baseURL: 'https://staging.invalid' });
 const receipt = '01973f7b7cf6726a9a9f4f37d4b47a21';
 const directory = (t) => {
@@ -35,9 +36,14 @@ test('invariant recording drops fields outside the diagnostic contract', (t) => 
   const dir = directory(t);
   const log = createDiagnostics('dedalus machines create', scope, dir);
   log.record({
-    kind: 'response', status_code: 500, route: '/v1/machines', request_id: receipt,
-    duration_ms: 7, authorization: 'Bearer super-secret',
-    body: { password: 'secret-password' }, error: 'private workspace content',
+    kind: 'response',
+    status_code: 500,
+    route: '/v1/machines',
+    request_id: receipt,
+    duration_ms: 7,
+    authorization: 'Bearer super-secret',
+    body: { password: 'secret-password' },
+    error: 'private workspace content',
   });
   const raw = readFileSync(join(dir, readdirSync(dir)[0]), 'utf8');
   assert.doesNotMatch(raw, /super-secret|secret-password|private workspace/);
@@ -58,8 +64,13 @@ test('invariant feedback logs and symlinked files cannot be selected', (t) => {
 test('invariant local SSH failure retains the last session API receipt', (t) => {
   const dir = directory(t);
   const log = createDiagnostics('dedalus ssh', scope, dir);
-  log.record({ kind: 'response', route: '/v1/machines/{machine_id}/ssh',
-    status_code: 200, duration_ms: 10, request_id: receipt });
+  log.record({
+    kind: 'response',
+    route: '/v1/machines/{machine_id}/ssh',
+    status_code: 200,
+    duration_ms: 10,
+    request_id: receipt,
+  });
   log.record({ kind: 'command_failure' });
   const selection = selectDiagnostics(scope, dir);
   assert.equal(selection.receipt, receipt);
@@ -70,10 +81,19 @@ test('invariant local SSH failure retains the last session API receipt', (t) => 
 test('invariant a later response without a receipt does not reuse an older receipt', (t) => {
   const dir = directory(t);
   const log = createDiagnostics('dedalus ssh', scope, dir);
-  log.record({ kind: 'response', route: '/v1/machines/{machine_id}/ssh',
-    status_code: 500, duration_ms: 10, request_id: receipt });
-  log.record({ kind: 'response', route: '/v1/machines/{machine_id}/ssh/{resource_id}',
-    status_code: 200, duration_ms: 5 });
+  log.record({
+    kind: 'response',
+    route: '/v1/machines/{machine_id}/ssh',
+    status_code: 500,
+    duration_ms: 10,
+    request_id: receipt,
+  });
+  log.record({
+    kind: 'response',
+    route: '/v1/machines/{machine_id}/ssh/{resource_id}',
+    status_code: 200,
+    duration_ms: 5,
+  });
   log.record({ kind: 'command_failure' });
   const selection = selectDiagnostics(scope, dir);
   assert.equal(selection.receipt, undefined);
@@ -94,9 +114,15 @@ test('invariant partitions are capped and expired logs are pruned', (t) => {
 
 test('invariant transport capture preserves receipts without request data', async (t) => {
   const dir = directory(t);
-  t.mock.method(globalThis, 'fetch', async () => new Response('private response body', {
-    status: 500, headers: { 'X-Request-ID': receipt },
-  }));
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response('private response body', {
+        status: 500,
+        headers: { 'X-Request-ID': receipt },
+      }),
+  );
   const diagnostics = createDiagnostics('dedalus machines retrieve', scope, dir);
   await diagnostics.fetch('https://staging.invalid/v1/machines/private-machine?token=secret-query', {
     headers: { Authorization: 'Bearer secret-key' },
@@ -123,8 +149,20 @@ test('invariant client processing failures retain the latest valid response rece
   const dir = directory(t);
   const latestReceipt = '01973f7b7cf6726a9a9f4f37d4b47a22';
   const log = createDiagnostics('dedalus machines list', scope, dir);
-  log.record({ kind: 'response', status_code: 503, route: '/v1/machines', request_id: receipt, duration_ms: 1 });
-  log.record({ kind: 'response', status_code: 200, route: '/v1/machines', request_id: latestReceipt, duration_ms: 2 });
+  log.record({
+    kind: 'response',
+    status_code: 503,
+    route: '/v1/machines',
+    request_id: receipt,
+    duration_ms: 1,
+  });
+  log.record({
+    kind: 'response',
+    status_code: 200,
+    route: '/v1/machines',
+    request_id: latestReceipt,
+    duration_ms: 2,
+  });
   log.record({ kind: 'command_failure' });
   const selection = selectDiagnostics(scope, dir);
   assert.equal(selection.receipt, latestReceipt);

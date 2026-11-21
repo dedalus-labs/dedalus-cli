@@ -13,9 +13,10 @@ import {
   realpathSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, join } from 'node:path';
 
 import type { Command } from 'commander';
@@ -33,8 +34,19 @@ const RELEASE = {
   brewFormula: 'dedalus',
   windowsArchive: true,
 } as {
-  readonly repo: string;
+  /**
+   * The destination repository as `owner/repo`, which every GitHub Release request is addressed by.
+   * Absent for a CLI published to npm alone without one: nothing it ships is downloaded from GitHub.
+   */
+  readonly repo?: string;
   readonly npmPackage?: string;
+  /** The dist-tag stable npm releases land on, when the config moves them off `latest`. */
+  readonly npmDistTag?: string;
+  /**
+   * Set when the npm package is not published `public`. The registry shows such a package only to a
+   * signed-in npm, and this module sends no credentials, so an npm install of it is never checked.
+   */
+  readonly npmRestricted?: boolean;
   readonly brewFormula?: string;
   readonly windowsArchive?: boolean;
 };
@@ -69,6 +81,11 @@ type InstallKind =
        * most it can honestly do for an install it did not make and cannot drive.
        */
       readonly run?: ManagerCommand;
+      /**
+       * Set for `npx`, `bunx` and `pnpm dlx`, which run the package out of a cache rather than an
+       * install: there is nothing for `upgrade` to replace or run, and `upgrade` says so.
+       */
+      readonly cached?: boolean;
     };
 
 /**
@@ -88,6 +105,12 @@ type ManagerCommand = {
   readonly refresh?: readonly string[];
   /** Prints `<name> <version>...`, so `upgrade` can tell an upgrade from a manager that did nothing. */
   readonly installedVersions?: readonly string[];
+  /**
+   * Set for a global install by an npm-registry client (npm, pnpm, Yarn or Bun), whose own command the
+   * daily notice names in place of `upgrade`: it is the command such a user already knows, and it
+   * installs exactly what the notice compared against.
+   */
+  readonly registryClient?: boolean;
 };
 
 /**
@@ -119,11 +142,11 @@ const resolvedPath = (path: string): string => {
  * Symlinks are resolved first because that is what distinguishes the cases: Homebrew links
  * `/usr/local/bin/<cmd>` into its Cellar, so only the real path shows which manager owns the file.
  */
-const detectInstall = (binaryName: string): InstallKind => {
+const detectInstall = (binaryName: string, distTag = stableDistTag()): InstallKind => {
   const executable = process.execPath;
   // A compiled standalone executable *is* the command; running under `node`/`bun` instead means this
   // is the npm package (or a checkout of it), and the script's own path says which manager owns it.
-  if (!runsCompiled(executable, binaryName)) return detectPackageInstall();
+  if (!runsCompiled(executable, binaryName)) return detectPackageInstall(distTag);
 
   const path = resolvedPath(executable);
 
@@ -182,7 +205,7 @@ const detectInstall = (binaryName: string): InstallKind => {
   // so the honest answer is to name the archive and let the user put it in place. Reported as
   // `managed` because the outcome is the same: someone else does the work.
   if (process.platform === 'win32') {
-    return RELEASE.windowsArchive
+    return RELEASE.windowsArchive && RELEASE.repo
       ? {
           kind: 'managed',
           manager: 'a direct download',
@@ -197,6 +220,16 @@ const detectInstall = (binaryName: string): InstallKind => {
           upgrade: `reinstall ${binaryName} the way it was installed; no Windows archive is published for it to download`,
           remove: `remove ${path}`,
         };
+  }
+  // A compiled executable with no GitHub Release to replace it from: the config publishes no archive
+  // this could have come from, so whatever put it here is what has to replace it.
+  if (!RELEASE.repo) {
+    return {
+      kind: 'managed',
+      manager: 'however it was installed',
+      upgrade: `reinstall ${binaryName} the way it was installed; no release archive is published for it to download`,
+      remove: `remove ${path}`,
+    };
   }
   return { kind: 'self-managed', path };
 };
@@ -236,7 +269,7 @@ const brewProgram = (path: string): string | undefined => {
  * no fixed marker — its prefix is configurable — so it is what remains once the others are ruled out,
  * and whether it is global at all is settled by asking npm when `upgrade` actually runs.
  */
-const detectPackageInstall = (): InstallKind => {
+const detectPackageInstall = (distTag: string): InstallKind => {
   const script = resolvedPath(process.argv[1] ?? '');
   const pkg = RELEASE.npmPackage;
   // Not inside any `node_modules`: this is a checkout being run directly, which only git can update.
@@ -247,7 +280,7 @@ const detectPackageInstall = (): InstallKind => {
       return {
         kind: 'managed',
         manager: 'the package manager that installed it',
-        upgrade: `reinstall ${RELEASE.repo} with the package manager that installed it; no npm package is published for it`,
+        upgrade: `reinstall ${RELEASE.repo ?? 'it'} with the package manager that installed it; no npm package is published for it`,
         remove: 'remove it with the package manager that installed it',
       };
     }
@@ -274,8 +307,9 @@ const detectPackageInstall = (): InstallKind => {
     return {
       kind: 'managed',
       manager: runner,
-      upgrade: `${runner} ${pkg}@latest`,
+      upgrade: `${runner} ${pkg}@${distTag}`,
       remove: `nothing to remove; ${runner} keeps the package only in its cache`,
+      cached: true,
     };
   }
   // Yarn's Plug'n'Play has no `node_modules` tree: it serves each package out of a zip, in the project's
@@ -298,14 +332,14 @@ const detectPackageInstall = (): InstallKind => {
     // Bun's own binary sits beside its global tree (`$BUN_INSTALL/bin/bun`); `bun` on PATH otherwise.
     const local = join(bunRoot, 'bin', process.platform === 'win32' ? 'bun.exe' : 'bun');
     const bun = existsSync(local) ? local : 'bun';
-    return managerInstall('Bun', bun, ['add', '-g', `${pkg}@latest`], `bun remove -g ${pkg}`, safe);
+    return managerInstall('Bun', bun, ['add', '-g', `${pkg}@${distTag}`], `bun remove -g ${pkg}`, safe);
   }
   // pnpm's global tree is `<PNPM_HOME>/global/<layout version>/`, holding its `.pnpm` store or the
   // `node_modules` linked from it. Matched on that layout rather than on a `pnpm` segment, because
   // `PNPM_HOME` is whatever the user set (`~/.pnpm-home`, say), and nothing else nests a numbered
   // directory under `global` — Bun's and Yarn's trees put `node_modules` directly beneath it.
   if (/\/\.?pnpm\/global\/|\/global\/\d+\/(?:\.pnpm|node_modules)\//iu.test(script)) {
-    return managerInstall('pnpm', 'pnpm', ['add', '-g', `${pkg}@latest`], `pnpm remove -g ${pkg}`, safe);
+    return managerInstall('pnpm', 'pnpm', ['add', '-g', `${pkg}@${distTag}`], `pnpm remove -g ${pkg}`, safe);
   }
   // Yarn classic keeps its global tree under `~/.config/yarn/global` and, on Windows,
   // `%LOCALAPPDATA%\Yarn\Data\global`, hence the optional segment and the case-insensitive match.
@@ -313,7 +347,7 @@ const detectPackageInstall = (): InstallKind => {
     return managerInstall(
       'Yarn',
       'yarn',
-      ['global', 'add', `${pkg}@latest`],
+      ['global', 'add', `${pkg}@${distTag}`],
       `yarn global remove ${pkg}`,
       safe,
     );
@@ -323,10 +357,11 @@ const detectPackageInstall = (): InstallKind => {
   // already executing this file, which the bin link's shebang resolved the same way.
   const local = join(dirname(process.execPath), process.platform === 'win32' ? 'npm.cmd' : 'npm');
   const npm = existsSync(local) ? local : 'npm';
+  // `i`, npm's own short spelling, because this is also the line the daily notice prints.
   const install = managerInstall(
     'npm',
     npm,
-    ['install', '-g', `${pkg}@latest`],
+    ['i', '-g', `${pkg}@${distTag}`],
     `npm uninstall -g ${pkg}`,
     safe,
   );
@@ -347,7 +382,7 @@ const managerInstall = (
   manager,
   upgrade: `${basename(program).replace(/\.(cmd|exe)$/iu, '')} ${args.join(' ')}`,
   remove,
-  ...(safe ? { run: { program, args } } : {}),
+  ...(safe ? { run: { program, args, registryClient: true } } : {}),
 });
 
 /**
@@ -377,17 +412,65 @@ const MANAGER_QUERY_TIMEOUT_MS = 15_000;
  * Node would only join it unquoted anyway. The program is always quoted, because a profile path can
  * carry `&`, `(` or `^` as well as spaces; every argument is a fixed word, the charset-checked package
  * name, or the formula name, so none of them needs quoting.
+ *
+ * Every call is about a global install, so it runs from {@link managerDirectory} rather than wherever
+ * the user is standing, with the switches that stop a Corepack shim or Yarn from deferring to a
+ * project: one that pins another client in `packageManager` otherwise makes the shim refuse the
+ * command. A project's own `.npmrc`, `.yarnrc` or `bunfig.toml` is left unread for the same reason: a
+ * repository must not get to name the registry a global install is fetched from, so a private
+ * registry has to be in the user's own configuration. The same goes for a version manager's
+ * per-directory pin (`.tool-versions`, `mise.toml`): the client that owns a global install is the one
+ * the user's own configuration selects. On Windows the move also keeps `cmd.exe`, which looks in the
+ * working directory before `PATH`, from running a `pnpm.cmd` a repository carries. None of this holds
+ * on {@link managerDirectory}'s fallback, which is wherever the running executable lives.
  */
 const spawnManager = (
   program: string,
   args: readonly string[],
   options: SpawnSyncOptions,
 ): SpawnSyncReturns<string | Buffer> => {
-  if (process.platform !== 'win32') return spawnSync(program, [...args], options);
+  const isolated: SpawnSyncOptions = {
+    ...options,
+    cwd: managerDirectory(),
+    env: {
+      ...process.env,
+      COREPACK_ENABLE_STRICT: '0',
+      COREPACK_ENABLE_PROJECT_SPEC: '0',
+      YARN_IGNORE_PATH: '1',
+      // Stops `cmd.exe` looking in the working directory at all, so a shim sitting in the home or
+      // fallback directory is not run ahead of `PATH` either.
+      ...(process.platform === 'win32' ? { NoDefaultCurrentDirectoryInExePath: '1' } : {}),
+    },
+  };
+  if (process.platform !== 'win32') return spawnSync(program, [...args], isolated);
   // A `"` cannot be escaped inside a `cmd.exe` quoted string, and no Windows path contains one, so
   // refusing it costs nothing and keeps the quoting sound.
   if (program.includes('"')) throw new Error(`refusing to run ${program}: its path contains a quote`);
-  return spawnSync([`"${program}"`, ...args].join(' '), { ...options, shell: true });
+  return spawnSync([`"${program}"`, ...args].join(' '), { ...isolated, shell: true });
+};
+
+/**
+ * The directory package managers are started in: the user's home, which is no project's tree.
+ *
+ * Falls back to the directory of the running executable (Node.js, Bun, or the compiled command) when
+ * there is no home this process can start a child in: unset with no account entry (`homedir` throws),
+ * missing, a file, or not searchable by this user, as under `sudo -E -u`. Any of those would fail the
+ * spawn with an error naming the program.
+ * A UNC home is skipped on Windows too, because `cmd.exe` cannot start in one and says so on the
+ * output a caller may be parsing.
+ */
+const managerDirectory = (): string => {
+  try {
+    const home = homedir();
+    const unc = process.platform === 'win32' && /^[\\/]{2}/u.test(home);
+    if (isAbsolute(home) && !unc && statSync(home).isDirectory()) {
+      accessSync(home, constants.X_OK);
+      return home;
+    }
+  } catch {
+    // No usable home; the fallback below is always there.
+  }
+  return dirname(process.execPath);
 };
 
 /**
@@ -425,8 +508,9 @@ const projectManager = (project: string, script: string): string => {
  *
  * npm links a project dependency and a global install the same way, so the path alone cannot tell
  * them apart; only `npm root -g` can. Asked by `upgrade`, `upgrade --check` and `uninstall` — explicit
- * commands, where one subprocess is cheap — and never by the daily notice, which only ever says to run
- * `upgrade`, where this is settled before anything is done.
+ * commands, where one subprocess is cheap — and never by the daily notice, which runs on every
+ * invocation. The notice uses {@link dependencyOf}, the file check half of this, and names `upgrade`
+ * for a project's dependency, where this is settled before anything is done.
  *
  * A `package.json` beside the `node_modules` makes it a project's dependency: that project's lockfile
  * decides its version, so neither a global upgrade nor a global uninstall is right for it — the global
@@ -440,7 +524,7 @@ const settledInstall = (install: InstallKind): InstallKind => {
   const root = npmGlobalRoot(install.run.program);
   if (!root || isInside(script, root)) return install;
   const project = script.slice(0, script.indexOf('/node_modules/'));
-  if (existsSync(join(project, 'package.json'))) {
+  if (dependencyOf(script)) {
     const manager = projectManager(project, script);
     return {
       kind: 'managed',
@@ -455,6 +539,20 @@ const settledInstall = (install: InstallKind): InstallKind => {
     upgrade: install.upgrade,
     remove: install.remove,
   };
+};
+
+/**
+ * The project `script` is installed into as a dependency, or undefined for anything else.
+ *
+ * Read off the `package.json` beside the first `node_modules` on the path. A global tree has none
+ * there — npm's sits under `<prefix>/lib`, which holds no manifest — while a project always does. A
+ * file check rather than a subprocess, so the daily notice can afford it on every run.
+ */
+const dependencyOf = (script: string): string | undefined => {
+  const index = script.indexOf('/node_modules/');
+  if (index < 0) return undefined;
+  const project = script.slice(0, index);
+  return existsSync(join(project, 'package.json')) ? project : undefined;
 };
 
 /**
@@ -560,6 +658,7 @@ const detectTarget = (): string => {
 
 /** Latest published release tag, read from the GitHub API so the command can report the version. */
 const latestTag = async (signal?: AbortSignal): Promise<string> => {
+  if (!RELEASE.repo) throw new Error('no GitHub release is published for this CLI');
   const response = await fetch(`https://api.github.com/repos/${RELEASE.repo}/releases/latest`, {
     // `connection: close` because the abort below bounds the *request*, not the process. Node keeps
     // a pooled keep-alive socket referenced after the response resolves, so an unawaited check still
@@ -598,6 +697,211 @@ const latestTag = async (signal?: AbortSignal): Promise<string> => {
     throw new Error('the latest release has an unusable tag');
   }
   return body.tag_name;
+};
+
+/** The public npm registry, asked when the environment names no other. */
+const DEFAULT_NPM_REGISTRY = 'https://registry.npmjs.org';
+
+/**
+ * The registry an npm install is compared against: `npm_config_registry` (npm's own spelling, which
+ * it also exports to every script it runs), then `NPM_CONFIG_REGISTRY`, then the public registry.
+ *
+ * Only the environment is read, not `.npmrc`: npm's config files have their own precedence, includes
+ * and per-scope registries, and reproducing a part of that would answer from a registry npm itself
+ * might not use. The README and man page say so, and name the variable to set for a mirror.
+ *
+ * A value that is set but is not an http(s) URL throws rather than falling back to the public
+ * registry, because a variable naming a registry is a request not to use the default; the caller
+ * treats a throw as "no answer".
+ */
+const npmRegistry = (): string => {
+  const configured = process.env['npm_config_registry'] || process.env['NPM_CONFIG_REGISTRY'];
+  if (!configured) return DEFAULT_NPM_REGISTRY;
+  let url: URL;
+  try {
+    url = new URL(configured);
+  } catch {
+    throw new Error('the configured npm registry is not a URL');
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('the configured npm registry is not an http(s) URL');
+  }
+  // Credentials in the URL are dropped, not sent: `fetch` refuses a URL carrying them, and the URL is
+  // also printed when `upgrade --check` cannot read it. A registry that needs them answers 401, which
+  // is reported like any other refusal.
+  url.username = '';
+  url.password = '';
+  // Kept with its path, since a mirror is often served below one (`/api/npm/<repo>/`), and without
+  // the trailing slash the request path is appended after.
+  return url.href.replace(/\/+$/u, '');
+};
+
+/**
+ * The npm dist-tag an install of `version` follows, derived the way the publish script assigned it.
+ *
+ * A stable version follows the tag stable releases land on — `latest`, unless the config moved them.
+ * A prerelease (`1.3.0-beta.2`, which a `prereleaseType` channel releases) follows the tag its own
+ * identifier published it under, with the same fallback to `next` and the same `-prerelease` suffix
+ * where that would name a stable line. Derived from the running version rather than fixed at
+ * generation, because the channel is only known once a release has been cut.
+ */
+const npmDistTag = (version: string): string => {
+  const stable = stableDistTag();
+  // Only a numeric three-part core followed by `-` is a prerelease, as in the publish script, so a
+  // calendar version such as `2026-02-23` stays on the stable line.
+  const prerelease = /^\d+\.\d+\.\d+-([^+]+)(?:\+.*)?$/u.exec(version)?.[1];
+  if (!prerelease) return stable;
+  const candidate = prerelease.split('.')[0] ?? '';
+  const derived = DIST_TAG.test(candidate) ? candidate : 'next';
+  return derived === stable || derived === 'latest' ? `${derived}-prerelease` : derived;
+};
+
+/**
+ * npm's dist-tag charset. A tag reaches the spawned upgrade command, which on Windows runs through
+ * `cmd.exe`, so one read from the config or the cache is used only when it passes.
+ */
+const DIST_TAG = /^[a-z][a-z0-9-]*$/u;
+
+/** The dist-tag stable releases land on: the configured one, or npm's own `latest`. */
+const stableDistTag = (): string => {
+  const configured = RELEASE.npmDistTag;
+  return configured && DIST_TAG.test(configured) ? configured : 'latest';
+};
+
+/** The newest version a source knows of, and for the npm registry the dist-tag that carries it. */
+type Latest = { readonly version: string; readonly distTag?: string };
+
+/**
+ * The newest version any of `distTags` points at for this package, and the tag that points at it.
+ *
+ * Asked of the registry, never of GitHub: a release is cut on GitHub before the npm publish that
+ * follows it finishes, so a release-based answer tells an npm user about a version `npm i -g` cannot
+ * install yet. Reads the dist-tags document alone, which is a few bytes and holds every tag, rather
+ * than the packument, which grows with every version ever published. The name is escaped as npm
+ * escapes it in a request path: a scoped `@scope/name` becomes `@scope%2fname`.
+ *
+ * Several tags because a prerelease line ends: once `1.1.0` ships on `latest`, the `beta` tag a
+ * `1.1.0-beta.3` install follows stays where it was, and asking it alone would never say so.
+ */
+const latestNpmVersion = async (distTags: readonly string[], signal?: AbortSignal): Promise<Latest> => {
+  const pkg = RELEASE.npmPackage;
+  // Already true wherever `versionSource` chose this; checked again because it narrows the type.
+  if (!pkg || !NPM_PACKAGE_NAME.test(pkg)) throw new Error('no npm package is published for this CLI');
+  const registry = npmRegistry();
+  const response = await fetch(`${registry}/-/package/${pkg.replace('/', '%2f')}/dist-tags`, {
+    // `connection: close` for the reason `latestTag` gives: a pooled socket would hold the process open.
+    headers: { accept: 'application/json', connection: 'close' },
+    ...(signal ? { signal } : {}),
+  });
+  if (!response.ok) {
+    throw new Error(`could not read the dist-tags of ${pkg} from ${registry} (HTTP ${response.status})`);
+  }
+  const body: unknown = JSON.parse(
+    (await readCapped(response, response.url || registry, MAX_METADATA_BYTES)).toString('utf8'),
+  );
+  const tags = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+  let best: Latest | undefined;
+  for (const distTag of distTags) {
+    const found = tags[distTag];
+    // The same charset check a release tag gets, for the same reason: this value reaches the terminal,
+    // and npm versions are semver, which never needs a control character. A tag failing it, or absent,
+    // is skipped rather than fatal, since another tag asked for may still answer.
+    if (typeof found !== 'string' || !RELEASE_TAG.test(found)) continue;
+    if (!best || isNewerRelease(found, best.version)) best = { version: found, distTag };
+  }
+  if (!best) throw new Error(`${pkg} has no ${distTags.join(' or ')} release on ${registry}`);
+  return best;
+};
+
+/**
+ * Where an install's latest version is read from: the npm registry under one dist-tag, or GitHub
+ * Releases. Also the key the update-check cache is filed under, so a binary install and an npm install
+ * of the same command on one machine never read each other's answer.
+ */
+type VersionSource = {
+  readonly key: string;
+  readonly latest: (signal?: AbortSignal) => Promise<Latest>;
+  /** Whether this is the npm registry, whose answer also decides which dist-tag `upgrade` installs. */
+  readonly npm: boolean;
+  /**
+   * Whether the daily notice may ask it. False for a restricted npm package, which the registry hides
+   * from an unauthenticated request, so a daily check could only ever fail.
+   */
+  readonly daily: boolean;
+};
+
+/**
+ * The version source for the running install, or undefined when there is none to ask.
+ *
+ * Decided by what is running rather than by which channels the config publishes. The npm package —
+ * run by `node` or `bun` rather than as a compiled executable — is compared against the registry it
+ * was installed from, whatever else the release ships; the compiled executable, from a direct
+ * download, the install script or Homebrew, against the GitHub Release its archive came from.
+ */
+const versionSource = (binaryName: string, version: string): VersionSource | undefined => {
+  const pkg = RELEASE.npmPackage;
+  if (!runsCompiled(process.execPath, binaryName) && pkg) {
+    // A name outside npm's charset could not be put in a request path, and asking GitHub instead is
+    // the mistake this function exists to avoid, so such a package has no source at all.
+    if (!NPM_PACKAGE_NAME.test(pkg)) return undefined;
+    const channel = npmDistTag(version);
+    const stable = stableDistTag();
+    // A prerelease install also asks the stable tag, so the stable release it was leading up to is
+    // offered once it ships; a stable install has no reason to look at a prerelease line.
+    const distTags = channel === stable ? [stable] : [channel, stable];
+    if (RELEASE.npmRestricted) {
+      return {
+        key: `npm:${channel}`,
+        latest: () =>
+          Promise.reject(
+            new Error(
+              `${pkg} is not a public package, and the registry shows it only to a signed-in npm; run: npm view ${pkg} dist-tags`,
+            ),
+          ),
+        npm: true,
+        daily: false,
+      };
+    }
+    return {
+      key: `npm:${channel}`,
+      latest: (signal) => latestNpmVersion(distTags, signal),
+      npm: true,
+      daily: true,
+    };
+  }
+  return RELEASE.repo
+    ? {
+        key: 'github',
+        latest: (signal) => latestTag(signal).then((version) => ({ version })),
+        npm: false,
+        daily: true,
+      }
+    : undefined;
+};
+
+/** One bounded ask of a version source: the answer, or why there is none. */
+type LatestResult = { readonly latest: Latest } | { readonly error: Error };
+
+/**
+ * Asks `source` once, under the interactive deadline, without reporting anything.
+ *
+ * Kept apart from {@link resolveLatest} so `upgrade` on a prerelease npm install can ask before it
+ * chooses which line to install, then reuse that one answer — or that one failure — for `--check`
+ * rather than asking again and making a stalled registry cost the deadline twice.
+ */
+const askLatest = async (source: VersionSource | undefined): Promise<LatestResult> => {
+  try {
+    if (!source) throw new Error('no release is published for this CLI to compare against');
+    return {
+      latest: await withTimeout(
+        (signal) => source.latest(signal),
+        UPGRADE_CHECK_TIMEOUT_MS,
+        'the release check',
+      ),
+    };
+  } catch (error) {
+    return { error: error as Error };
+  }
 };
 
 /**
@@ -724,6 +1028,9 @@ const withTimeout = async <T>(
  * than a compromised release.
  */
 const replaceExecutable = async (executable: string, tag: string, binaryName: string): Promise<void> => {
+  // Unreachable without one, since `detectInstall` reports no self-managed install then; checked
+  // rather than asserted so a download URL is never built around `undefined`.
+  if (!RELEASE.repo) throw new Error('no GitHub release is published for this CLI');
   const asset = `${binaryName}-${detectTarget()}.tar.gz`;
   const base = `https://github.com/${RELEASE.repo}/releases/download/${tag}`;
 
@@ -969,15 +1276,20 @@ const CHECK_TIMEOUT_MS = 2_000;
 const versionLine = (binaryName: string, version: string, tag: string): string =>
   `${binaryName} ${version} is installed; ${tag} is available.\n`;
 
-/** Resolves the latest tag, reporting and setting a failing exit code rather than throwing. */
-const resolveLatestTag = async (): Promise<string | undefined> => {
-  try {
-    return await withTimeout((signal) => latestTag(signal), UPGRADE_CHECK_TIMEOUT_MS, 'the release check');
-  } catch (error) {
-    process.stderr.write(`error: ${(error as Error).message}\n`);
-    process.exitCode = 1;
-    return undefined;
-  }
+/**
+ * Resolves the latest version from `source`, reporting and setting a failing exit code rather than
+ * throwing.
+ */
+const resolveLatest = async (
+  source: VersionSource | undefined,
+  /** An answer {@link askLatest} already has, reported instead of asking again. */
+  asked?: LatestResult,
+): Promise<Latest | undefined> => {
+  const result = asked ?? (await askLatest(source));
+  if ('latest' in result) return result.latest;
+  process.stderr.write(`error: ${result.error.message}\n`);
+  process.exitCode = 1;
+  return undefined;
 };
 
 /** Where the last check is remembered, so every invocation does not hit the network. */
@@ -1047,9 +1359,9 @@ const notificationsAllowed = (): boolean => {
  *
  * Fire-and-forget on purpose: it is started before the command runs and never awaited, so a slow or
  * unreachable network never delays the command's own work. The process can still be held open for up
- * to {@link CHECK_TIMEOUT_MS} after it finishes, on a stalled connection, at most once a day. Every failure path is silent — a version check that cannot
- * reach GitHub is not something the user asked about, and reporting it would turn a courtesy into
- * noise on every offline run.
+ * to {@link CHECK_TIMEOUT_MS} after it finishes, on a stalled connection, at most once a day. Every
+ * failure path is silent — a version check that cannot reach the npm registry or GitHub is not
+ * something the user asked about, and reporting it would turn a courtesy into noise on every offline run.
  *
  * The notice is printed on the *next* run rather than this one when the cache is cold: the check
  * resolves after the command has usually finished, and interleaving a notice with output already in
@@ -1073,8 +1385,12 @@ export const notifyIfOutdated = (
   // terminal below. Skipping the check entirely is the cheap, safe answer.
   const path = cachePath(binaryName);
   if (!path) return;
+  // Nothing to compare against — a compiled executable with no GitHub Release, or an npm package whose
+  // name a request path could not carry — so there is nothing to check or to say.
+  const source = versionSource(binaryName, version);
+  if (!source?.daily) return;
 
-  let cached: { checkedAt?: number; latest?: string } = {};
+  let cached: { checkedAt?: number; latest?: string; distTag?: string; source?: string } = {};
   try {
     const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
     // `JSON.parse` returns `null` for the literal `null` without throwing, and `typeof null` is
@@ -1085,6 +1401,11 @@ export const notifyIfOutdated = (
   } catch {
     // No cache yet, or an unreadable one: treated as "never checked".
   }
+  // An answer from another source is not an answer here. A binary install and an npm install of one
+  // command share this file, and GitHub can announce a release the registry does not have yet, so an
+  // npm install reading the binary's answer would be told to install a version npm cannot find. A
+  // cache from before the source was recorded came from GitHub, the only source there was.
+  if ((cached.source ?? 'github') !== source.key) cached = {};
 
   // Report what the last check found before starting another, so a known-stale version is surfaced
   // immediately rather than a day later.
@@ -1093,10 +1414,10 @@ export const notifyIfOutdated = (
   // raw would let cursor-control sequences rewrite the surrounding lines and forge an instruction
   // that appears to come from the CLI itself.
   if (cached.latest && RELEASE_TAG.test(cached.latest) && isNewerRelease(cached.latest, version)) {
-    const install = detectInstall(binaryName);
-    // `<bin> upgrade` wherever it can do the work itself — in place, or by running the owning manager
-    // — and the manager's own instruction only where it can do neither.
-    const how = install.kind === 'managed' && !install.run ? install.upgrade : `${binaryName} upgrade`;
+    // The dist-tag that carried the newer version, so a prerelease install whose stable release has
+    // shipped is told to install the stable line rather than its own, which has not moved.
+    const distTag = cached.distTag && DIST_TAG.test(cached.distTag) ? cached.distTag : npmDistTag(version);
+    const how = noticeCommand(binaryName, detectInstall(binaryName, distTag));
     process.stderr.write(
       `\nA new release of ${binaryName} is available: ${version} → ${cached.latest}\n  ${how}\n\n`,
     );
@@ -1114,7 +1435,13 @@ export const notifyIfOutdated = (
   // it can write anything — so a user who mostly types `--help` would issue one unauthenticated API
   // request per invocation forever, never cache a result, and eventually exhaust GitHub's 60/hr
   // limit for their whole NAT. Writing up front costs one stale-by-a-day notice at worst.
-  recordCheck(path, cached.latest);
+  recordCheck(
+    path,
+    source.key,
+    cached.latest
+      ? { version: cached.latest, ...(cached.distTag ? { distTag: cached.distTag } : {}) }
+      : undefined,
+  );
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
@@ -1122,8 +1449,9 @@ export const notifyIfOutdated = (
   // and Bun timers but not in the DOM typing, hence the guarded call.
   (timeout as unknown as { unref?: () => void }).unref?.();
 
-  void latestTag(controller.signal)
-    .then((tag) => recordCheck(path, tag))
+  void source
+    .latest(controller.signal)
+    .then((latest) => recordCheck(path, source.key, latest))
     // Failure needs no second write: the attempt was already recorded above, so the throttle holds
     // whether the check succeeded, failed, or never finished.
     .catch(() => {})
@@ -1142,11 +1470,43 @@ const answeredWithoutRunning = (args: readonly string[]): boolean => {
   return options.includes('-h') || options.includes('--help');
 };
 
-/** Remembers when the check last ran, and what it found, so the throttle above can engage. */
-const recordCheck = (path: string, latest: string | undefined): void => {
+/**
+ * The command the daily notice names for this install.
+ *
+ * An npm-registry client's own global add where one owns the install — `npm i -g <pkg>@latest`, or
+ * pnpm's, Yarn's or Bun's — because that is the command such a user already runs, and it installs
+ * from the registry the notice compared against. `<bin> upgrade` wherever this CLI does more than one
+ * command could say: replacing a download in place, or a Homebrew upgrade it refreshes and confirms.
+ * The manager's own instruction where `upgrade` can do neither.
+ *
+ * An npm install inside a project is the one npm-registry case sent to `upgrade`: npm links it the
+ * way it links a global install, so the global command would add a second copy rather than upgrade
+ * this one, and `upgrade` is what tells the two apart.
+ */
+const noticeCommand = (binaryName: string, install: InstallKind): string => {
+  if (install.kind !== 'managed') return `${binaryName} upgrade`;
+  if (!install.run) return install.upgrade;
+  if (!install.run.registryClient) return `${binaryName} upgrade`;
+  const npmGlobal = install.run.npmGlobal;
+  return npmGlobal && dependencyOf(npmGlobal.script) ? `${binaryName} upgrade` : install.upgrade;
+};
+
+/**
+ * Remembers when the check last ran, against which source, and what it found, so the throttle above
+ * can engage.
+ */
+const recordCheck = (path: string, source: string, latest: Latest | undefined): void => {
   try {
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, JSON.stringify({ checkedAt: Date.now(), ...(latest ? { latest } : {}) }));
+    writeFileSync(
+      path,
+      JSON.stringify({
+        checkedAt: Date.now(),
+        source,
+        ...(latest ? { latest: latest.version } : {}),
+        ...(latest?.distTag ? { distTag: latest.distTag } : {}),
+      }),
+    );
   } catch {
     // An unwritable cache directory is not worth reporting: the check is a courtesy, and the only
     // consequence is that it runs again next time.
@@ -1212,14 +1572,27 @@ export const addUpgradeCommands = (program: Command, binaryName: string, version
     .description('Upgrade to the latest release')
     .option('--check', 'Report the latest version without installing it')
     .action(async (options: { check?: boolean }) => {
-      const install = settledInstall(detectInstall(binaryName));
+      const source = versionSource(binaryName, version);
+      // A prerelease npm install asks first which line is ahead, because its own dist-tag stops moving
+      // once the stable release ships, and installing from it would then do nothing. Asked only then:
+      // every other install runs the same command whatever the registry says. A failure is kept, not
+      // reported: the install's own line is still right to run, and `--check` reports it below.
+      const asked =
+        source?.npm && npmDistTag(version) !== stableDistTag() ? await askLatest(source) : undefined;
+      // Followed only to something newer: with the install's own tag gone from the registry, the answer
+      // is the stable line alone, and installing from it would be a quiet downgrade.
+      const ahead =
+        asked && 'latest' in asked && isNewerRelease(asked.latest.version, version)
+          ? asked.latest.distTag
+          : undefined;
+      const install = settledInstall(detectInstall(binaryName, ahead ?? npmDistTag(version)));
 
       // A managed install returns unconditionally, which is also what narrows `install` to the
       // self-managed variant for the replace below — the alternative, testing `kind` again further
       // down, reads as a guard against a state that cannot happen.
       if (install.kind === 'managed') {
         if (options.check) {
-          const tag = await resolveLatestTag();
+          const tag = (await resolveLatest(source, asked))?.version;
           if (!tag) return;
           process.stderr.write(`${binaryName} was installed with ${install.manager}.\n`);
           // A manager only ever moves forward, so a `releases/latest` that went backwards is nothing
@@ -1230,6 +1603,21 @@ export const addUpgradeCommands = (program: Command, binaryName: string, version
             tag,
             install.run ? `${binaryName} upgrade` : install.upgrade,
             false,
+          );
+          return;
+        }
+        // The registry already said nothing newer exists for this prerelease, so there is nothing to run:
+        // its own tag may be gone (an abandoned line), and installing from it would fail for no reason.
+        if (asked && 'latest' in asked && !isNewerRelease(asked.latest.version, version)) {
+          reportCheck(binaryName, version, asked.latest.version, install.upgrade, false);
+          return;
+        }
+        // Run from a cache, not installed: there is no install to replace and no manager to run, and the
+        // runner already fetches whatever its tag points at when asked to.
+        if (install.cached) {
+          process.stderr.write(
+            `${binaryName} is running from the ${install.manager} cache, so there is nothing installed to upgrade.\n` +
+              `Run the latest release with:\n  ${install.upgrade}\n`,
           );
           return;
         }
@@ -1253,7 +1641,7 @@ export const addUpgradeCommands = (program: Command, binaryName: string, version
         return;
       }
 
-      const tag = await resolveLatestTag();
+      const tag = (await resolveLatest(source))?.version;
       if (!tag) return;
       if (options.check) {
         reportCheck(binaryName, version, tag, `${binaryName} upgrade`, true);
@@ -1302,7 +1690,7 @@ export const addUpgradeCommands = (program: Command, binaryName: string, version
     .command('uninstall')
     .description('Show how to remove this installation')
     .action(() => {
-      const install = settledInstall(detectInstall(binaryName));
+      const install = settledInstall(detectInstall(binaryName, npmDistTag(version)));
       if (install.kind === 'managed') {
         process.stderr.write(
           `${binaryName} was installed with ${install.manager}, which owns the installed files.\n` +

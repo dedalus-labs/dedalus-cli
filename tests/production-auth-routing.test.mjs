@@ -31,26 +31,97 @@ test('invariant_packaged_commands_route_each_credential_to_its_compatible_endpoi
     [{ browserToken: 'fixture-browser' }, {}, [], 'https://dcs.dedaluslabs.ai', 'fixture-browser', null],
     [{ apiKey: 'fixture-api-key' }, {}, [], 'https://dcs.dedaluslabs.ai', 'fixture-api-key', null],
     [{ xAPIKey: 'fixture-x-key' }, {}, [], 'https://dcs.dedaluslabs.ai', null, 'fixture-x-key'],
-    [{ apiKey: 'old-api-key', browserToken: 'fixture-browser' }, {}, [], 'https://dcs.dedaluslabs.ai', 'fixture-browser', null],
-    [{}, { DEDALUS_BROWSER_TOKEN: 'fixture-browser' }, [], 'https://dcs.dedaluslabs.ai', 'fixture-browser', null],
-    [{}, { DEDALUS_API_KEY: 'fixture-api-key', DEDALUS_BASE_URL: 'https://alternate-api.invalid' }, [], 'https://alternate-api.invalid', 'fixture-api-key', null],
-    [{}, {}, ['--x-api-key', 'fixture-x-key', '--base-url', 'https://alternate-api.invalid'], 'https://alternate-api.invalid', null, 'fixture-x-key'],
-    [{ browserToken: 'saved-browser' }, { DEDALUS_API_KEY: 'fixture-api-key' }, [], 'https://dcs.dedaluslabs.ai', 'fixture-api-key', null],
-    [{ browserToken: 'saved-browser' }, { DEDALUS_X_API_KEY: 'fixture-x-key' }, [], 'https://dcs.dedaluslabs.ai', null, 'fixture-x-key'],
-    [{ browserToken: 'saved-browser' }, {}, ['--api-key', 'fixture-api-key'], 'https://dcs.dedaluslabs.ai', 'fixture-api-key', null],
-    [{ browserToken: 'saved-browser' }, {}, ['--x-api-key', 'fixture-x-key'], 'https://dcs.dedaluslabs.ai', null, 'fixture-x-key'],
+    [
+      { apiKey: 'old-api-key', browserToken: 'fixture-browser' },
+      {},
+      [],
+      'https://dcs.dedaluslabs.ai',
+      'fixture-browser',
+      null,
+    ],
+    [
+      {},
+      { DEDALUS_BROWSER_TOKEN: 'fixture-browser' },
+      [],
+      'https://dcs.dedaluslabs.ai',
+      'fixture-browser',
+      null,
+    ],
+    [
+      {},
+      { DEDALUS_API_KEY: 'fixture-api-key', DEDALUS_BASE_URL: 'https://alternate-api.invalid' },
+      [],
+      'https://alternate-api.invalid',
+      'fixture-api-key',
+      null,
+    ],
+    [
+      {},
+      {},
+      ['--x-api-key', 'fixture-x-key', '--base-url', 'https://alternate-api.invalid'],
+      'https://alternate-api.invalid',
+      null,
+      'fixture-x-key',
+    ],
+    [
+      { browserToken: 'saved-browser' },
+      { DEDALUS_API_KEY: 'fixture-api-key' },
+      [],
+      'https://dcs.dedaluslabs.ai',
+      'fixture-api-key',
+      null,
+    ],
+    [
+      { browserToken: 'saved-browser' },
+      { DEDALUS_X_API_KEY: 'fixture-x-key' },
+      [],
+      'https://dcs.dedaluslabs.ai',
+      null,
+      'fixture-x-key',
+    ],
+    [
+      { browserToken: 'saved-browser' },
+      {},
+      ['--api-key', 'fixture-api-key'],
+      'https://dcs.dedaluslabs.ai',
+      'fixture-api-key',
+      null,
+    ],
+    [
+      { browserToken: 'saved-browser' },
+      {},
+      ['--x-api-key', 'fixture-x-key'],
+      'https://dcs.dedaluslabs.ai',
+      null,
+      'fixture-x-key',
+    ],
   ]) {
-    writeFileSync(store, JSON.stringify({ version: 1, profiles: {
-      'https://dcs.dedaluslabs.ai': { credentials: saved, backend: 'file' },
-    } }), { mode: 0o600 });
+    writeFileSync(
+      store,
+      JSON.stringify({
+        version: 1,
+        profiles: {
+          'https://dcs.dedaluslabs.ai': { credentials: saved, backend: 'file' },
+        },
+      }),
+      { mode: 0o600 },
+    );
     const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
       env: { ...env, ...extraEnv, DEDALUS_CREDENTIALS_FILE: store, TEST_ARGS: JSON.stringify(args) },
-      encoding: 'utf8', timeout: 10000,
+      encoding: 'utf8',
+      timeout: 10000,
     });
     assert.equal(result.status, 0, result.stderr);
-    const requests = result.stderr.split('\n').filter(line => line.startsWith('REQUEST ')).map(line => JSON.parse(line.slice(8)));
+    const requests = result.stderr
+      .split('\n')
+      .filter((line) => line.startsWith('REQUEST '))
+      .map((line) => JSON.parse(line.slice(8)));
     assert.equal(requests.length, 1, result.stderr);
-    assert.deepEqual(requests[0], { url: origin + '/v1/machines', authorization: bearer && 'Bearer ' + bearer, apiKey });
+    assert.deepEqual(requests[0], {
+      url: origin + '/v1/machines',
+      authorization: bearer && 'Bearer ' + bearer,
+      apiKey,
+    });
   }
 });
 
@@ -66,12 +137,21 @@ test('invariant_browser_credentials_reject_custom_authentication_headers', (t) =
     process.argv = [process.execPath, 'dedalus', 'machines', 'list'];
     await import(${JSON.stringify(entry)});
   `;
-  for (const headers of ['x-api-key: other-key', 'X-API-Key: other-key', 'Authorization: Bearer other-token',
-    'Accept: application/json\nauthorization: Bearer other-token']) {
+  for (const headers of [
+    'x-api-key: other-key',
+    'X-API-Key: other-key',
+    'Authorization: Bearer other-token',
+    'Accept: application/json\nauthorization: Bearer other-token',
+  ]) {
     const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
-      env: { ...env, DEDALUS_CREDENTIALS_FILE: join(directory, 'credentials.json'),
-        DEDALUS_BROWSER_TOKEN: 'fixture-browser', DEDALUS_CUSTOM_HEADERS: headers },
-      encoding: 'utf8', timeout: 10_000,
+      env: {
+        ...env,
+        DEDALUS_CREDENTIALS_FILE: join(directory, 'credentials.json'),
+        DEDALUS_BROWSER_TOKEN: 'fixture-browser',
+        DEDALUS_CUSTOM_HEADERS: headers,
+      },
+      encoding: 'utf8',
+      timeout: 10_000,
     });
     assert.notEqual(result.status, 0, headers);
     assert.doesNotMatch(result.stderr, /REQUEST/, headers);

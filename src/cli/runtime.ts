@@ -4,10 +4,12 @@ import { accessSync, constants as fsConstants, createReadStream, readFileSync } 
 import { stdin as processStdin, stdout as processStdout } from 'node:process';
 
 import as from 'ansis';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
+import { addContextCommand, markCommand, markUnmarkedCommands } from './context.js';
 import { listRow } from './list';
+import { setNoInput } from './prompt';
 import { encodeToon } from './toon.js';
 import { takeWarnings } from './credentials';
 import { type CliAuthDefinition, UsageError, runLogin, runLogout, storedCredentials } from './login';
@@ -139,6 +141,10 @@ export type CreateProgramOptions = {
   readonly environmentEnv?: string;
   readonly baseUrlEnv?: string;
   readonly auth?: CliAuthDefinition;
+  // @custom start
+  // A handled result owns output while retaining the request's authenticated client.
+  readonly handleResult?: (result: unknown, client: unknown, command: Command) => Promise<boolean>;
+  // @custom end
 };
 
 type OutputOptions = {
@@ -163,6 +169,7 @@ export type GlobalOptions = {
   readonly transformError?: string;
   readonly rawOutput?: boolean;
   readonly debug?: boolean;
+  readonly noInput?: boolean;
   readonly maxItems?: string;
 };
 
@@ -182,6 +189,9 @@ export const createProgram = ({
   environmentEnv,
   baseUrlEnv,
   auth,
+  // @custom start
+  handleResult,
+  // @custom end
 }: CreateProgramOptions): Command => {
   const selection: EnvironmentSelection = { environments, defaultEnvironment, environmentEnv, baseUrlEnv };
   const program = usageExitCode(new Command());
@@ -194,11 +204,7 @@ export const createProgram = ({
     .option('--base-url <url>', 'Override the base URL for API requests')
     .option('--timeout <ms>', 'Request timeout in milliseconds')
     .option('--max-retries <count>', 'Number of retries for retryable failures')
-    .option(
-      '--format <format>',
-      'Output format: auto, json, jsonl, pretty, raw, toon, yaml',
-      defaultFormat,
-    )
+    .option('--format <format>', 'Output format: auto, json, jsonl, pretty, raw, toon, yaml', defaultFormat)
     .option(
       '--format-error <format>',
       'Error output format: auto, json, jsonl, pretty, raw, toon, yaml',
@@ -207,7 +213,12 @@ export const createProgram = ({
     .option('--transform <path>', 'Dot-path transform for data output')
     .option('--transform-error <path>', 'Dot-path transform for error output')
     .option('-r, --raw-output', 'Print transformed string values without JSON quotes')
-    .option('--debug', 'Enable SDK debug logging');
+    .option('--debug', 'Enable SDK debug logging')
+    .addOption(noInputOption());
+
+  program.hook('preAction', (_program, actionCommand) => {
+    setNoInput(actionCommand.optsWithGlobals<GlobalOptions>().noInput === true);
+  });
 
   // Registered only for an API that declares more than one environment, because that is when the
   // embedded SDK accepts an `environment` option at all. No Commander default is set: the SDK
@@ -223,13 +234,21 @@ export const createProgram = ({
     program.option('--' + option.name + ' <value>', clientOptionDescription(option));
   }
 
+  // @custom start
   for (const definition of commands)
-    addGeneratedCommand(program, SDK, clientOptions, definition, groups, selection, auth);
+    addGeneratedCommand(program, SDK, clientOptions, definition, groups, selection, auth, handleResult);
+  // @custom end
 
   if (environments.length > 0) addEnvironmentsCommand(program, selection, defaultFormat);
 
   if (completions) addCompletionCommand(program, binaryName, completions);
   if (auth) addAuthCommands(program, auth, selection);
+
+  // Everything registered above that `addGeneratedCommand` did not mark is the runtime's own
+  // (`completion`, `login`, `upgrade`, …), and `context` describes it that way. Registered last, so
+  // the hidden `context` command never shadows a name the commands above claimed.
+  markUnmarkedCommands(program, 'builtin');
+  addContextCommand(program, usageExitCode);
 
   return program;
 };
@@ -491,6 +510,7 @@ const addAuthCommands = (
     .showHelpAfterError()
     .option('--base-url <url>', 'Sign in against this base URL instead of the default')
     .option('--flow <name>', 'Sign-in flow to use: ' + flows)
+    .addOption(noInputOption())
     .addHelpText('after', authFlowHelp(auth))
     .action(async (_options: unknown, command: Command) => {
       const options = command.optsWithGlobals<GlobalOptions & { flow?: string }>();
@@ -572,6 +592,14 @@ const credentialBaseUrl = (
 const authFlowHelp = (auth: CliAuthDefinition): string =>
   '\nSign-in flows:\n' + auth.methods.map((method) => '  ' + method.name + '  ' + method.label).join('\n');
 
+// `--no-input` as a plain switch read as `noInput`, not as Commander's negation of `--input`: a
+// spec param named `input` registers `--input <value>`, and a negation would write `false` into it.
+const noInputOption = (): Option => {
+  const option = new Option('--no-input', 'Never prompt; a command that would ask fails instead');
+  option.negate = false;
+  return option;
+};
+
 const clientOptionDescription = (option: CliClientOptionDefinition): string => {
   const parts: string[] = [];
   if (option.description) parts.push(option.description);
@@ -621,6 +649,9 @@ const addGeneratedCommand = (
   groups: readonly CliCommandGroup[] | undefined,
   selection: EnvironmentSelection,
   auth: CliAuthDefinition | undefined,
+  // @custom start
+  handleResult: CreateProgramOptions['handleResult'],
+  // @custom end
 ): void => {
   const parent = ensureCommandPath(program, definition.commandPath.slice(0, -1), groups);
   const commandName = definition.commandPath.at(-1) ?? definition.methodName;
@@ -631,14 +662,12 @@ const addGeneratedCommand = (
     .option('--timeout <ms>', 'Request timeout in milliseconds')
     .option('--max-retries <count>', 'Number of retries for retryable failures')
     .option('--format <format>', 'Output format: auto, json, jsonl, pretty, raw, toon, yaml')
-    .option(
-      '--format-error <format>',
-      'Error output format: auto, json, jsonl, pretty, raw, toon, yaml',
-    )
+    .option('--format-error <format>', 'Error output format: auto, json, jsonl, pretty, raw, toon, yaml')
     .option('--transform <path>', 'Dot-path transform for data output')
     .option('--transform-error <path>', 'Dot-path transform for error output')
     .option('-r, --raw-output', 'Print transformed string values without JSON quotes')
-    .option('--debug', 'Enable SDK debug logging');
+    .option('--debug', 'Enable SDK debug logging')
+    .addOption(noInputOption());
 
   // Mirrored on the subcommand for the same reason the client options below are: so it can be
   // passed before or after the verb. Registered only when the API declares more than one
@@ -653,10 +682,7 @@ const addGeneratedCommand = (
   }
 
   if (definition.iterable)
-    command.option(
-      '--max-items <count>',
-      'Maximum number of streamed items to print; use -1 for unlimited',
-    );
+    command.option('--max-items <count>', 'Maximum number of streamed items to print; use -1 for unlimited');
 
   // Positionals are registered as optional Commander arguments because each one is also
   // accepted as an equivalent flag (e.g. `workers retrieve wkr_1` or `workers retrieve --id
@@ -705,10 +731,25 @@ const addGeneratedCommand = (
     const command = args.at(-1);
     if (!(command instanceof Command)) throw new Error('Expected Commander command context');
     const positionalValues = args.slice(0, -1);
-    await runGeneratedCommand(SDK, clientOptions, definition, command, positionalValues, selection, auth);
+    // @custom start
+    await runGeneratedCommand(
+      SDK,
+      clientOptions,
+      definition,
+      command,
+      positionalValues,
+      selection,
+      auth,
+      handleResult,
+    );
+    // @custom end
   });
 
   parent.addCommand(command);
+  // Recorded for `context`: the command and every group on its path come from the API description.
+  markCommand(command, { source: 'generated' });
+  for (let group: Command | null = parent; group?.parent; group = group.parent)
+    markCommand(group, { source: 'generated' });
 };
 
 const ensureCommandPath = (
@@ -756,6 +797,9 @@ const runGeneratedCommand = async (
   positionalValues: readonly unknown[],
   selection: EnvironmentSelection,
   auth: CliAuthDefinition | undefined,
+  // @custom start
+  handleResult: CreateProgramOptions['handleResult'],
+  // @custom end
 ): Promise<void> => {
   const rootOptions = command.optsWithGlobals<GlobalOptions>();
   const commandOptions = command.opts<GlobalOptions>();
@@ -784,13 +828,14 @@ const runGeneratedCommand = async (
   let diagnostics: ReturnType<typeof createDiagnostics> | undefined;
   try {
     const clientConfig = await sdkClientOptions(
-      rootOptions, command, clientOptions, auth, definition.authClientKeyRequirements, environment,
+      rootOptions,
+      command,
+      clientOptions,
+      auth,
+      definition.authClientKeyRequirements,
+      environment,
     );
-    const call = await callArguments(
-      definition,
-      command.opts<Record<string, unknown>>(),
-      positionalValues,
-    );
+    const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
     const organization = call.params['X-Dedalus-Org-Id'];
     const scopeOptions =
       organization === undefined ? clientConfig : { ...clientConfig, dedalusOrgID: organization };
@@ -798,7 +843,12 @@ const runGeneratedCommand = async (
       'dedalus ' + definition.commandPath.join(' '),
       diagnosticScope(scopeOptions),
     );
-    const client = buildClient(SDK, { ...clientConfig, fetch: diagnostics.fetch }, clientOptions, environment);
+    const client = buildClient(
+      SDK,
+      { ...clientConfig, fetch: diagnostics.fetch },
+      clientOptions,
+      environment,
+    );
     const method = sdkMethod(client, definition);
 
     // Required positionals are validated here (not by Commander) because each one may also be
@@ -827,6 +877,9 @@ const runGeneratedCommand = async (
       return;
     }
 
+    // @custom start
+    if (await handleResult?.(resolved, client, command)) return;
+    // @custom end
     await writeOutput(resolved, outputOptions);
   } catch (error) {
     diagnostics?.record({ kind: 'command_failure' });
@@ -862,8 +915,11 @@ export const sdkClientOptions = async (
     forwarded[option.sdkKey] = typeof value === 'string' ? clientOptionValue(value, option) : value;
   }
   await applyStoredCredentials(forwarded, clientOptions, requirements, auth, options.baseUrl, environment);
-  const organization = commandOptions['xDedalusOrgId'] ?? rootOptions['xDedalusOrgId'] ??
-    forwarded['dedalusOrgID'] ?? process.env['DEDALUS_ORG_ID'];
+  const organization =
+    commandOptions['xDedalusOrgId'] ??
+    rootOptions['xDedalusOrgId'] ??
+    forwarded['dedalusOrgID'] ??
+    process.env['DEDALUS_ORG_ID'];
   if (organization !== undefined) forwarded['dedalusOrgID'] = organization;
   return routeBrowserCredential({
     ...(options.baseUrl?.trim() ? { baseURL: options.baseUrl.trim() } : {}),
@@ -1014,10 +1070,7 @@ const callArguments = async (
   return { args: [...positionalArgs, paramsValue(sdkParams, definition), undefined], params };
 };
 
-const paramsValue = (
-  params: Record<string, unknown>,
-  definition: CliCommandDefinition,
-): unknown => {
+const paramsValue = (params: Record<string, unknown>, definition: CliCommandDefinition): unknown => {
   if (definition.bodyParamKey === undefined) return params;
   const body = params[definition.bodyParamKey];
   if (body === undefined) return params;
@@ -1039,9 +1092,7 @@ const bodyValue = (params: Record<string, unknown>, definition: CliCommandDefini
   }
   // A flattenable body is reassembled from its per-property flags into a single object. Leaf flags
   // share their parent property key, so keying by paramKey collapses them back onto that property.
-  const bodyFlags = definition.flags.filter(
-    (flag) => flag.location === 'body' && flag.paramKey !== 'send',
-  );
+  const bodyFlags = definition.flags.filter((flag) => flag.location === 'body' && flag.paramKey !== 'send');
   const body: Record<string, unknown> = {};
   for (const flag of bodyFlags) {
     if (params[flag.paramKey] !== undefined) body[flag.paramKey] = params[flag.paramKey];
@@ -1135,10 +1186,7 @@ const mergeObjects = (
   ...Object.fromEntries(Object.entries(overlay).filter(([, value]) => value !== undefined)),
 });
 
-const omitParams = (
-  params: Record<string, unknown>,
-  names: readonly string[],
-): Record<string, unknown> => {
+const omitParams = (params: Record<string, unknown>, names: readonly string[]): Record<string, unknown> => {
   const out = { ...params };
   for (const name of names) delete out[name];
   return out;
@@ -1345,7 +1393,8 @@ const coerceValue = (
 // marker honest about what follows, and leaves every other format untouched.
 const streamItemText = (value: unknown, options: OutputOptions): string => {
   if (options.format !== 'toon') return serializeOutput(value, options);
-  if (options.rawOutput && typeof value === 'string') return value;
+  if (options.rawOutput && typeof value === 'string')
+    return processStdout.isTTY ? stripControls(value) : value;
   return serializeOutput([value], options);
 };
 
@@ -1457,10 +1506,7 @@ export const writeOutput = async (value: unknown, options: OutputOptions): Promi
   processStdout.write(serializeOutput(transformValue(value, options.transform), options) + '\n');
 };
 
-const collectIterable = async (
-  value: AsyncIterable<unknown>,
-  maxItems?: number,
-): Promise<unknown[]> => {
+const collectIterable = async (value: AsyncIterable<unknown>, maxItems?: number): Promise<unknown[]> => {
   const items: unknown[] = [];
   for await (const item of value) {
     if (maxItems === 0) break;
@@ -1474,17 +1520,45 @@ const collectIterable = async (
 // human-readable card view, matching common CLI defaults.
 const serializeOutput = (value: unknown, options: OutputOptions): string => {
   const normalized = options.format === 'auto' ? 'json' : options.format;
-  if (options.rawOutput && typeof value === 'string') return value;
+  const tty = Boolean(processStdout.isTTY);
+  if (options.rawOutput && typeof value === 'string') return tty ? stripControls(value) : value;
   const safeValue = value === undefined ? null : value;
-  if (normalized === 'raw') return typeof safeValue === 'string' ? safeValue : JSON.stringify(safeValue);
-  if (normalized === 'yaml') return stringifyYaml(JSON.parse(JSON.stringify(safeValue))).trimEnd();
-  if (normalized === 'jsonl') return JSON.stringify(safeValue);
+  if (normalized === 'raw' && typeof safeValue === 'string')
+    return tty ? stripControls(safeValue) : safeValue;
   if (normalized === 'pretty') return prettyCard(safeValue, options);
+  const text = serializeData(safeValue, normalized);
+  return tty ? escapeControls(text) : text;
+};
+
+/** The machine-readable formats, which a pipe receives byte for byte. */
+const serializeData = (value: unknown, format: OutputFormat): string => {
+  if (format === 'raw' || format === 'jsonl') return JSON.stringify(value);
+  if (format === 'yaml') return stringifyYaml(JSON.parse(JSON.stringify(value))).trimEnd();
   // TOON keeps the JSON data model but drops repeated syntax, so a list response costs an agent
   // markedly fewer context tokens than the same data as JSON.
-  if (normalized === 'toon') return encodeToon(JSON.parse(JSON.stringify(safeValue)));
-  return JSON.stringify(safeValue, null, 2);
+  if (format === 'toon') return encodeToon(JSON.parse(JSON.stringify(value)));
+  return JSON.stringify(value, null, 2);
 };
+
+// Server-supplied text reaching a terminal can carry commands: ESC and U+009B (a one-character
+// CSI) start sequences that recolour, move the cursor, retitle the window or overwrite earlier
+// output. `JSON.stringify` escapes C0 but passes C1 and DEL through, and YAML quotes but keeps
+// them, so text bound for a terminal is cleaned here. Tab, newline and a CRLF line ending are
+// layout, not commands; a lone CR is not, since it returns the cursor to overwrite the line.
+// A pipe or file still gets the exact bytes, which is what a script reading the output needs; only
+// the `pretty` card, laid out for a person, is cleaned wherever it goes.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: matching them is the point.
+const TERMINAL_CONTROLS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]|\r(?!\n)/gu;
+
+/** Replaces every terminal control character in free text, for output a person reads. */
+const stripControls = (text: string): string => text.replace(TERMINAL_CONTROLS, '\ufffd');
+
+/**
+ * Writes every control character a serializer left raw as a `\uXXXX` escape. In JSON and YAML
+ * they can only sit inside quoted strings, where that escape is valid syntax for the same text.
+ */
+const escapeControls = (text: string): string =>
+  text.replace(TERMINAL_CONTROLS, (char) => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0'));
 
 // Human-readable `pretty` view: a bordered key/value card titled with the command path,
 // rendering booleans as yes/no and array entries as numbered items.
@@ -1511,19 +1585,24 @@ const prettyLines = (value: unknown, indent: string): string[] => {
   if (value && typeof value === 'object') {
     return Object.entries(value as Record<string, unknown>).flatMap(([key, entry]) => {
       if (entry && typeof entry === 'object')
-        return [indent + key + ':', ...prettyLines(entry, indent + '  ')];
-      return [indent + key + ': ' + prettyScalar(entry)];
+        return [indent + cardText(key) + ':', ...prettyLines(entry, indent + '  ')];
+      return [indent + cardText(key) + ': ' + prettyScalar(entry)];
     });
   }
   return [indent + prettyScalar(value)];
 };
 
+// The card is laid out line by line, so a value or key keeps no control character at all: a
+// newline would break the frame as surely as an escape sequence would rewrite it.
 const prettyScalar = (value: unknown): string => {
   if (value === true) return 'yes';
   if (value === false) return 'no';
   if (value === null || value === undefined) return '';
-  return String(value);
+  return cardText(String(value));
 };
+
+/** Text for one line of the pretty card: every control character, tab and newline included, removed. */
+const cardText = (text: string): string => stripControls(text).replace(/\r?\n|\t/gu, ' ');
 
 export const writeError = async (
   error: unknown,
@@ -1533,20 +1612,24 @@ export const writeError = async (
   environment: string | undefined = undefined,
 ): Promise<void> => {
   const body = transformValue(errorBody(error, clientOptions, SDK, environment), options.transform);
+  // An error body is the server's text too, so a terminal gets it cleaned like any other output.
+  const tty = Boolean(process.stderr.isTTY);
   if (options.rawOutput && typeof body === 'string') {
-    process.stderr.write(body + '\n');
+    process.stderr.write((tty ? stripControls(body) : body) + '\n');
     return;
   }
   if (options.format === 'raw') {
     // The hint is appended rather than dropped: before failures were classified, the auth hint
     // *was* the message, so printing the message alone would lose advice `raw` used to show.
     const hint = errorHintText(body);
-    process.stderr.write(String(errorMessage(body)) + (hint ? ' ' + hint : '') + '\n');
+    const message = String(errorMessage(body)) + (hint ? ' ' + hint : '');
+    process.stderr.write((tty ? stripControls(message) : message) + '\n');
     return;
   }
   const output = options.format === 'auto' ? 'pretty' : options.format;
   const safeBody = body === undefined ? null : body;
-  const serialized = serializeErrorBody(safeBody, output);
+  const raw = serializeErrorBody(safeBody, output);
+  const serialized = tty ? escapeControls(raw) : raw;
   process.stderr.write((output === 'pretty' ? as.red(serialized) : serialized) + '\n');
 };
 
@@ -1617,15 +1700,9 @@ const errorCode = (record: Record<string, unknown>, SDK: CreateProgramOptions['S
 const CONNECTION_ERROR_CODE =
   /^(ECONN|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|EHOSTUNREACH|ENETUNREACH|EPIPE|UND_ERR)/u;
 
-const isConnectionError = (
-  record: Record<string, unknown>,
-  SDK: CreateProgramOptions['SDK'],
-): boolean => {
+const isConnectionError = (record: Record<string, unknown>, SDK: CreateProgramOptions['SDK']): boolean => {
   const connectionError = (SDK as { APIConnectionError?: unknown }).APIConnectionError;
-  if (
-    typeof connectionError === 'function' &&
-    record instanceof (connectionError as new () => unknown)
-  )
+  if (typeof connectionError === 'function' && record instanceof (connectionError as new () => unknown))
     return true;
   const name = typeof record.name === 'string' ? record.name : '';
   const code = typeof record.code === 'string' ? record.code : '';
@@ -1678,6 +1755,7 @@ const authHint = (
 ): string | undefined => {
   const authOptions = clientOptions.filter((option) => option.auth);
   if (authOptions.length === 0) return undefined;
+  const flags = authOptions.map((option) => '--' + option.name).join(', ');
   const env = authOptions
     .map((option) => option.env)
     .filter((value): value is string => !!value)
@@ -1685,7 +1763,8 @@ const authHint = (
   return (
     'Authentication failed. Run `' +
     loginCommandFor(environment) +
-    '`' +
+    '`, pass ' +
+    flags +
     (env ? ', or set ' + env : '') +
     ', and try again.'
   );

@@ -1,7 +1,7 @@
 {
   "name": "Dedalus",
   "slug": "dedalus",
-  "generatorVersion": "0.38.0",
+  "generatorVersion": "0.45.0",
   "servers": [
     "https://dcs.dedaluslabs.ai"
   ],
@@ -198,8 +198,19 @@
             "required": true,
             "deprecated": false,
             "type": {
-              "kind": "ref",
-              "name": "autoresizing_switch"
+              "kind": "enum",
+              "values": [
+                "on",
+                "off"
+              ],
+              "names": [
+                "On",
+                "Off"
+              ],
+              "deprecations": [
+                false,
+                false
+              ]
             }
           },
           {
@@ -283,8 +294,19 @@
             "required": true,
             "deprecated": false,
             "type": {
-              "kind": "ref",
-              "name": "autoresizing_switch"
+              "kind": "enum",
+              "values": [
+                "on",
+                "off"
+              ],
+              "names": [
+                "On",
+                "Off"
+              ],
+              "deprecations": [
+                false,
+                false
+              ]
             }
           },
           {
@@ -348,8 +370,19 @@
             "required": false,
             "deprecated": false,
             "type": {
-              "kind": "ref",
-              "name": "autoresizing_switch"
+              "kind": "enum",
+              "values": [
+                "on",
+                "off"
+              ],
+              "names": [
+                "On",
+                "Off"
+              ],
+              "deprecations": [
+                false,
+                false
+              ]
             }
           },
           {
@@ -381,8 +414,19 @@
             "required": false,
             "deprecated": false,
             "type": {
-              "kind": "ref",
-              "name": "autoresizing_switch"
+              "kind": "enum",
+              "values": [
+                "on",
+                "off"
+              ],
+              "names": [
+                "On",
+                "Off"
+              ],
+              "deprecations": [
+                false,
+                false
+              ]
             }
           },
           {
@@ -571,6 +615,86 @@
       }
     },
     {
+      "name": "port_create_params",
+      "source": "port_create_params",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "expires",
+            "publicName": "expires",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int32",
+              "validation": {
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          },
+          {
+            "name": "port",
+            "publicName": "port",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "protocol",
+            "publicName": "protocol",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "http"
+              ],
+              "names": [
+                "HTTP"
+              ],
+              "deprecations": [
+                false
+              ]
+            }
+          },
+          {
+            "name": "visibility",
+            "publicName": "visibility",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "public",
+                "key_required",
+                "private"
+              ],
+              "names": [
+                "Public",
+                "KeyRequired",
+                "Private"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "ssh_session_create_params",
       "source": "ssh_session_create_params",
       "publicAliases": [],
@@ -586,47 +710,6 @@
             "type": {
               "kind": "primitive",
               "type": "string"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "error_detail",
-      "source": "error_detail",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "location",
-            "publicName": "location",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "message",
-            "publicName": "message",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "value",
-            "publicName": "value",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "unknown"
             }
           }
         ],
@@ -697,122 +780,6 @@
             "type": {
               "kind": "primitive",
               "type": "boolean"
-            }
-          }
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "error_model",
-      "source": "error_model",
-      "publicAliases": [],
-      "deprecated": false,
-      "type": {
-        "kind": "object",
-        "properties": [
-          {
-            "name": "detail",
-            "publicName": "detail",
-            "required": false,
-            "deprecated": false,
-            "extensions": {
-              "source": [
-                "examples"
-              ],
-              "examples": "Property foo is required but is missing."
-            },
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "errors",
-            "publicName": "errors",
-            "required": false,
-            "deprecated": false,
-            "type": {
-              "kind": "union",
-              "variants": [
-                {
-                  "kind": "array",
-                  "items": {
-                    "kind": "ref",
-                    "name": "error_detail"
-                  }
-                },
-                {
-                  "kind": "null"
-                }
-              ]
-            }
-          },
-          {
-            "name": "instance",
-            "publicName": "instance",
-            "required": false,
-            "deprecated": false,
-            "extensions": {
-              "source": [
-                "examples"
-              ],
-              "examples": "https://example.com/error-log/abc123"
-            },
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "uri"
-            }
-          },
-          {
-            "name": "status",
-            "publicName": "status",
-            "required": false,
-            "deprecated": false,
-            "extensions": {
-              "source": [
-                "examples"
-              ],
-              "examples": 400
-            },
-            "type": {
-              "kind": "primitive",
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "title",
-            "publicName": "title",
-            "required": false,
-            "deprecated": false,
-            "extensions": {
-              "source": [
-                "examples"
-              ],
-              "examples": "Bad Request"
-            },
-            "type": {
-              "kind": "primitive",
-              "type": "string"
-            }
-          },
-          {
-            "name": "type",
-            "publicName": "type",
-            "required": false,
-            "deprecated": false,
-            "extensions": {
-              "source": [
-                "examples"
-              ],
-              "examples": "https://example.com/errors/example"
-            },
-            "type": {
-              "kind": "primitive",
-              "type": "string",
-              "format": "uri"
             }
           }
         ],
@@ -1612,8 +1579,8 @@
         "kind": "object",
         "properties": [
           {
-            "name": "image_ids",
-            "publicName": "image_ids",
+            "name": "items",
+            "publicName": "items",
             "required": true,
             "deprecated": false,
             "type": {
@@ -1622,8 +1589,8 @@
                 {
                   "kind": "array",
                   "items": {
-                    "kind": "primitive",
-                    "type": "string"
+                    "kind": "ref",
+                    "name": "image"
                   }
                 },
                 {
@@ -2375,6 +2342,496 @@
               "kind": "primitive",
               "type": "integer",
               "format": "int64"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mint_port_access_key_request",
+      "source": "mint_port_access_key_request",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "expires_in",
+            "publicName": "expires_in",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int32",
+              "validation": {
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mint_port_access_key_response",
+      "source": "mint_port_access_key_response",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "access_key",
+            "publicName": "access_key",
+            "required": true,
+            "deprecated": false,
+            "access": "readOnly",
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "access_key_id",
+            "publicName": "access_key_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_at",
+            "publicName": "created_at",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "expires_at",
+            "publicName": "expires_at",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "last_used_at",
+            "publicName": "last_used_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "port_id",
+            "publicName": "port_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "revoked_at",
+            "publicName": "revoked_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "port_access_key_list_response",
+      "source": "port_access_key_list_response",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "items",
+            "publicName": "items",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "array",
+                  "items": {
+                    "kind": "ref",
+                    "name": "port_access_key_response"
+                  }
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "next_cursor",
+            "publicName": "next_cursor",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "port_access_key_response",
+      "source": "port_access_key_response",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "access_key_id",
+            "publicName": "access_key_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_at",
+            "publicName": "created_at",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "expires_at",
+            "publicName": "expires_at",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "last_used_at",
+            "publicName": "last_used_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "port_id",
+            "publicName": "port_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "revoked_at",
+            "publicName": "revoked_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "port_list",
+      "source": "port_list",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "items",
+            "publicName": "items",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "array",
+                  "items": {
+                    "kind": "ref",
+                    "name": "port"
+                  }
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            }
+          },
+          {
+            "name": "next_cursor",
+            "publicName": "next_cursor",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "port",
+      "source": "port",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "application_url",
+            "publicName": "application_url",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_at",
+            "publicName": "created_at",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "error_code",
+            "publicName": "error_code",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_message",
+            "publicName": "error_message",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "expires_at",
+            "publicName": "expires_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "initial_access_key",
+            "publicName": "initial_access_key",
+            "required": false,
+            "deprecated": false,
+            "access": "readOnly",
+            "type": {
+              "kind": "ref",
+              "name": "mint_port_access_key_response"
+            }
+          },
+          {
+            "name": "machine_id",
+            "publicName": "machine_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "port",
+            "publicName": "port",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "port_id",
+            "publicName": "port_id",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "protocol",
+            "publicName": "protocol",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "http"
+              ],
+              "names": [
+                "HTTP"
+              ],
+              "deprecations": [
+                false
+              ]
+            }
+          },
+          {
+            "name": "ready_at",
+            "publicName": "ready_at",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "retry_after_ms",
+            "publicName": "retry_after_ms",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "status",
+            "publicName": "status",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "wake_in_progress",
+                "ready",
+                "unavailable",
+                "closed",
+                "expired",
+                "failed"
+              ],
+              "names": [
+                "WakeInProgress",
+                "Ready",
+                "Unavailable",
+                "Closed",
+                "Expired",
+                "Failed"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+              ]
+            }
+          },
+          {
+            "name": "url",
+            "publicName": "url",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          },
+          {
+            "name": "visibility",
+            "publicName": "visibility",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "public",
+                "key_required",
+                "private"
+              ],
+              "names": [
+                "Public",
+                "KeyRequired",
+                "Private"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false
+              ]
             }
           }
         ],
@@ -3137,24 +3594,39 @@
       }
     },
     {
-      "name": "autoresizing_switch",
-      "source": "autoresizing_switch",
+      "name": "port_update_params",
+      "source": "port_update_params",
       "publicAliases": [],
       "deprecated": false,
       "type": {
-        "kind": "enum",
-        "values": [
-          "on",
-          "off"
+        "kind": "object",
+        "properties": [
+          {
+            "name": "visibility",
+            "publicName": "visibility",
+            "required": true,
+            "deprecated": false,
+            "type": {
+              "kind": "enum",
+              "values": [
+                "public",
+                "key_required",
+                "private"
+              ],
+              "names": [
+                "Public",
+                "KeyRequired",
+                "Private"
+              ],
+              "deprecations": [
+                false,
+                false,
+                false
+              ]
+            }
+          }
         ],
-        "names": [
-          "On",
-          "Off"
-        ],
-        "deprecations": [
-          false,
-          false
-        ]
+        "additionalProperties": false
       }
     },
     {
@@ -5454,6 +5926,160 @@
       }
     },
     {
+      "name": "CreateStatus409ResponseHeaders",
+      "source": "CreateStatus409ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus429ResponseHeaders",
+      "source": "CreateStatus429ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus503ResponseHeaders",
+      "source": "CreateStatus503ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatusdefaultResponseHeaders",
+      "source": "CreateStatusdefaultResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateResponseHeaders",
+      "source": "CreateResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus401ResponseHeaders",
+      "source": "CreateStatus401ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "CreateStatus403ResponseHeaders",
+      "source": "CreateStatus403ResponseHeaders",
+      "publicAliases": [],
+      "deprecated": false,
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "Idempotency-Key",
+            "publicName": "Idempotency-Key",
+            "required": false,
+            "deprecated": false,
+            "type": {
+              "kind": "primitive",
+              "type": "string"
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "CreateStatusdefaultResponseHeaders",
       "source": "CreateStatusdefaultResponseHeaders",
       "publicAliases": [],
@@ -5570,6 +6196,8 @@
     "machines.executions",
     "machines.executions.logs",
     "machines.autoresizing",
+    "machines.ports",
+    "machines.ports.accessKeys",
     "organization",
     "organization.autoresizing",
     "images",
@@ -5581,6 +6209,8 @@
     "machines.executions",
     "machines.executions.logs",
     "machines.autoresizing",
+    "machines.ports",
+    "machines.ports.accessKeys",
     "organization",
     "organization.autoresizing",
     "images",
@@ -5712,11 +6342,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -5929,10 +6555,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "CreateStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -6063,11 +6685,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -6255,10 +6873,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "UpdateStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -6433,10 +7047,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "DeleteStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -6600,10 +7210,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "SleepStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -6767,10 +7373,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "WakeStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -6945,10 +7547,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "RebootStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -7385,11 +7983,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -7589,10 +8183,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "CreateStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -7727,11 +8317,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -7862,11 +8448,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -8008,11 +8590,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -8236,10 +8814,6 @@
               "encoding": "json"
             }
           ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          },
           "headersModel": {
             "name": "CreateStatusdefaultResponseHeaders",
             "publicAliases": []
@@ -8374,11 +8948,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -8509,11 +9079,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -8644,11 +9210,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -8798,11 +9360,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -8931,11 +9489,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -9046,11 +9600,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -9149,11 +9699,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -9292,11 +9838,1304 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports",
+      "publicResource": "machines.ports",
+      "operation": "list",
+      "publicOperation": "list",
+      "deprecated": false,
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports",
+      "pathParams": [
+        "machine_id"
+      ],
+      "publicPathParams": [
+        "machine_id"
+      ],
+      "queryParams": [
+        "limit",
+        "cursor"
+      ],
+      "publicQueryParams": [
+        "limit",
+        "cursor"
+      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [
+        {
+          "name": "limit",
+          "required": false,
+          "style": "form",
+          "explode": false
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "style": "form",
+          "explode": false
+        }
+      ],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "PortListParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port_list",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "429",
+          "503",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "429",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "503",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "pagination": {
+        "style": "cursor",
+        "itemsField": "items",
+        "cursorField": "next_cursor",
+        "cursorParam": "cursor",
+        "cursorFields": [
+          "next_cursor"
+        ],
+        "cursorParams": [
+          "cursor"
+        ],
+        "requestLocation": "query",
+        "responseLocation": "body",
+        "itemModel": {
+          "name": "port",
+          "publicAliases": []
+        }
+      },
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports",
+      "publicResource": "machines.ports",
+      "operation": "create",
+      "publicOperation": "create",
+      "deprecated": false,
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports",
+      "pathParams": [
+        "machine_id"
+      ],
+      "publicPathParams": [
+        "machine_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [
+        "expires",
+        "port",
+        "protocol",
+        "visibility"
+      ],
+      "publicBodyParams": [
+        "expires",
+        "port",
+        "protocol",
+        "visibility"
+      ],
+      "bodyParamDetails": [
+        {
+          "name": "expires",
+          "required": false
+        },
+        {
+          "name": "port",
+          "required": true
+        },
+        {
+          "name": "protocol",
+          "required": false
+        },
+        {
+          "name": "visibility",
+          "required": false
+        }
+      ],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "PortCreateParams"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ],
+        "required": true,
+        "publicName": "body",
+        "publicIdentifier": "body"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port",
+        "publicAliases": []
+      },
+      "responseHeadersModel": {
+        "name": "CreateResponseHeaders",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "409",
+          "429",
+          "503",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
           ],
-          "model": {
-            "name": "error_model",
+          "headersModel": {
+            "name": "CreateStatus401ResponseHeaders",
             "publicAliases": []
           }
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "CreateStatus403ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "409",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "CreateStatus409ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "429",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "CreateStatus429ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "503",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "CreateStatus503ResponseHeaders",
+            "publicAliases": []
+          }
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ],
+          "headersModel": {
+            "name": "CreateStatusdefaultResponseHeaders",
+            "publicAliases": []
+          }
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports",
+      "publicResource": "machines.ports",
+      "operation": "retrieve",
+      "publicOperation": "retrieve",
+      "deprecated": false,
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "pathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "PortRetrieveParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "429",
+          "503",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "429",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "503",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports",
+      "publicResource": "machines.ports",
+      "operation": "update",
+      "publicOperation": "update",
+      "deprecated": false,
+      "method": "PATCH",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "pathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [
+        "visibility"
+      ],
+      "publicBodyParams": [
+        "visibility"
+      ],
+      "bodyParamDetails": [
+        {
+          "name": "visibility",
+          "required": true
+        }
+      ],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "PortUpdateParams"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ],
+        "required": true,
+        "publicName": "body",
+        "publicIdentifier": "body"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "409",
+          "429",
+          "503",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "409",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "429",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "503",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports",
+      "publicResource": "machines.ports",
+      "operation": "delete",
+      "publicOperation": "delete",
+      "deprecated": false,
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}",
+      "pathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "PortDeleteParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "429",
+          "503",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "429",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "503",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports.accessKeys",
+      "publicResource": "machines.ports.accessKeys",
+      "operation": "list",
+      "publicOperation": "list",
+      "deprecated": false,
+      "method": "GET",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys",
+      "pathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "queryParams": [
+        "limit",
+        "cursor"
+      ],
+      "publicQueryParams": [
+        "limit",
+        "cursor"
+      ],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [
+        {
+          "name": "limit",
+          "required": false,
+          "style": "form",
+          "explode": false
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "style": "form",
+          "explode": false
+        }
+      ],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AccessKeyListParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port_access_key_list_response",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports.accessKeys",
+      "publicResource": "machines.ports.accessKeys",
+      "operation": "mint",
+      "publicOperation": "mint",
+      "deprecated": false,
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys",
+      "pathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [
+        "expires_in"
+      ],
+      "publicBodyParams": [
+        "expires_in"
+      ],
+      "bodyParamDetails": [
+        {
+          "name": "expires_in",
+          "required": true
+        }
+      ],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AccessKeyMintParams"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ],
+        "required": true,
+        "publicName": "body",
+        "publicIdentifier": "body"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "mint_port_access_key_response",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports.accessKeys",
+      "publicResource": "machines.ports.accessKeys",
+      "operation": "revoke",
+      "publicOperation": "revoke",
+      "deprecated": false,
+      "method": "DELETE",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys/{access_key_id}",
+      "pathParams": [
+        "machine_id",
+        "port_id",
+        "access_key_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id",
+        "access_key_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [],
+      "publicBodyParams": [],
+      "bodyParamDetails": [],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "access_key_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AccessKeyRevokeParams"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "port_access_key_response",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
+        }
+      ],
+      "responseLinks": [],
+      "transport": "http"
+    },
+    {
+      "resource": "machines.ports.accessKeys",
+      "publicResource": "machines.ports.accessKeys",
+      "operation": "rotate",
+      "publicOperation": "rotate",
+      "deprecated": false,
+      "method": "POST",
+      "path": "/v1/machines/{machine_id}/ports/{port_id}/access-keys/{access_key_id}/rotate",
+      "pathParams": [
+        "machine_id",
+        "port_id",
+        "access_key_id"
+      ],
+      "publicPathParams": [
+        "machine_id",
+        "port_id",
+        "access_key_id"
+      ],
+      "queryParams": [],
+      "publicQueryParams": [],
+      "headerParams": [],
+      "publicHeaderParams": [],
+      "bodyParams": [
+        "expires_in"
+      ],
+      "publicBodyParams": [
+        "expires_in"
+      ],
+      "bodyParamDetails": [
+        {
+          "name": "expires_in",
+          "required": true
+        }
+      ],
+      "publicPositionalParams": [],
+      "pathParamDetails": [
+        {
+          "name": "machine_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "port_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        },
+        {
+          "name": "access_key_id",
+          "required": true,
+          "style": "simple",
+          "explode": false
+        }
+      ],
+      "queryParamDetails": [],
+      "headerParamDetails": [],
+      "cookieParams": [],
+      "publicCookieParams": [],
+      "cookieParamDetails": [],
+      "paramsModel": {
+        "publicName": "AccessKeyRotateParams"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ],
+        "required": true,
+        "publicName": "body",
+        "publicIdentifier": "body"
+      },
+      "response": {
+        "status": "200",
+        "contentType": "application/json",
+        "encoding": "json",
+        "contents": [
+          {
+            "contentType": "application/json",
+            "encoding": "json"
+          }
+        ]
+      },
+      "responseModel": {
+        "name": "mint_port_access_key_response",
+        "publicAliases": []
+      },
+      "result": {
+        "successStatus": "200",
+        "errorStatuses": [
+          "401",
+          "403",
+          "default"
+        ]
+      },
+      "errorResponses": [
+        {
+          "status": "401",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "403",
+          "contentType": "application/json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/json",
+              "encoding": "json"
+            }
+          ]
+        },
+        {
+          "status": "default",
+          "contentType": "application/problem+json",
+          "encoding": "json",
+          "contents": [
+            {
+              "contentType": "application/problem+json",
+              "encoding": "json"
+            }
+          ]
         }
       ],
       "responseLinks": [],
@@ -9381,11 +11220,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -9513,11 +11348,7 @@
               "contentType": "application/problem+json",
               "encoding": "json"
             }
-          ],
-          "model": {
-            "name": "error_model",
-            "publicAliases": []
-          }
+          ]
         }
       ],
       "responseLinks": [],
@@ -10257,5 +12088,972 @@
       "transport": "http"
     }
   ],
-  "webhooks": []
+  "webhooks": [],
+  "cli": {
+    "commands": [
+      {
+        "path": [
+          "machines",
+          "list"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--max-items <count>",
+            "mandatory": false
+          },
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "create"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--autosleep <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--image-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--memory-mib <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--storage-gib <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--vcpu <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "update"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--autosleep <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--storage-gib <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "delete"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--force",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "sleep"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "wake"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "reboot"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--force",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "resize"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--memory-mib <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--vcpu <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ssh",
+          "list"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--max-items <count>",
+            "mandatory": false
+          },
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ssh",
+          "create"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--public-key <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ssh",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--session-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ssh",
+          "delete"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--session-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "list"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--max-items <count>",
+            "mandatory": false
+          },
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "create"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--command <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cwd <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--env <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--stdin <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--timeout-ms <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--execution-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "delete"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--execution-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "output"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--execution-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "events"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--max-items <count>",
+            "mandatory": false
+          },
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--execution-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "logs",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--execution-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "executions",
+          "logs",
+          "create-token"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--execution-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "autoresizing",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "autoresizing",
+          "update"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cpu <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cpu-max-vcpu <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--memory <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--memory-max-mib <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "list"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--max-items <count>",
+            "mandatory": false
+          },
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "create"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--expires <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--protocol <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--visibility <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "update"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--visibility <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "delete"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "access-keys",
+          "list"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "access-keys",
+          "mint"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--expires-in <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "access-keys",
+          "revoke"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--access-key-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "machines",
+          "ports",
+          "access-keys",
+          "rotate"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--machine-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--port-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--access-key-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--expires-in <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "organization",
+          "autoresizing",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": []
+      },
+      {
+        "path": [
+          "organization",
+          "autoresizing",
+          "update"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--cpu <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cpu-max-vcpu <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--memory <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--memory-max-mib <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "images",
+          "list"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--limit <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--cursor <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "images",
+          "create"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--credential-ref <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--name <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--platform <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--source <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--source.kind <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--source.reference <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--source.sha256 <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--source.upload-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "images",
+          "retrieve"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--image-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "images",
+          "update"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--image-id <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--name <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "images",
+          "delete"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--image-id <value>",
+            "mandatory": false
+          }
+        ]
+      },
+      {
+        "path": [
+          "images",
+          "uploads",
+          "create"
+        ],
+        "source": "generated",
+        "aliases": [],
+        "hidden": false,
+        "arguments": [],
+        "flags": [
+          {
+            "flags": "--platform <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--sha256 <value>",
+            "mandatory": false
+          },
+          {
+            "flags": "--size-bytes <value>",
+            "mandatory": false
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -64,6 +64,9 @@ export type CliFlagDefinition = {
 };
 
 export type CliCommandDefinition = {
+  // @custom start
+  readonly validateParams?: (params: Readonly<Record<string, unknown>>, command: Command) => void;
+  // @custom end
   readonly resourcePath: readonly string[];
   readonly commandPath: readonly string[];
   readonly methodName: string;
@@ -836,6 +839,9 @@ const runGeneratedCommand = async (
       environment,
     );
     const call = await callArguments(definition, command.opts<Record<string, unknown>>(), positionalValues);
+    // @custom start
+    definition.validateParams?.(call.params, command);
+    // @custom end
     const organization = call.params['X-Dedalus-Org-Id'];
     const scopeOptions =
       organization === undefined ? clientConfig : { ...clientConfig, dedalusOrgID: organization };

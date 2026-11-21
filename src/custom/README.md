@@ -1,4 +1,12 @@
-# SSH shortcut
+# Command customizations
+
+`ports.ts` adds the sharing password flag to the generated port update
+definition. Validation runs after flags, file arguments and piped JSON merge,
+before the SDK sends a request. The command table and runtime hook stay inside
+`@custom` regions so regeneration retains this behavior. The generated SDK
+already forwards additional update body fields.
+
+## SSH shortcut
 
 `dedalus machines create --ssh` creates a machine, then connects through the
 same SSH flow as `dedalus ssh <machine-id>`. The generated command owns the create flags,

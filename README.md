@@ -322,6 +322,33 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 Powered by Scalar.
 
 <!-- @custom start -->
+### Port sharing passwords
+
+Set a password after creating a port with `key_required` visibility. Run the
+same command with a different value to replace it:
+
+```sh
+dedalus machines ports update \
+  --machine-id "$MACHINE_ID" \
+  --port-id "$PORT_ID" \
+  --visibility key_required \
+  --password aB12cD34
+```
+
+The password must contain exactly eight ASCII letters or digits and is
+case-sensitive. There is no generated default. Omit `--password` to preserve
+the current value. An empty value is invalid. The port must already be
+`key_required`. The server rejects a password change combined with a visibility
+transition. Replacing the password invalidates existing password browser
+sessions while independent access keys keep working.
+
+Use `--password @/path/to/password` to keep the value out of shell history and
+process arguments. The file must contain exactly eight characters, with no
+trailing newline. Piped JSON also accepts a `password` string. Invalid input
+exits with status 2 before sending the update. API errors retain the normal
+error format and exit status. The command does not print the password or save
+it in diagnostics. This command requires server support for port passwords.
+
 ### Automatic retry identity
 
 Client-generated idempotency keys use the API's 32-character UUIDv7 format.

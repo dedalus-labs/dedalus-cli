@@ -8,6 +8,11 @@ dedalus\-machines\-ports\-update \- Update port
 .SH "DESCRIPTION"
 Update port
 .SH "OPTIONS"
+.\" @custom start
+.TP
+\fB\-\-password\fR \fI<value>\fR
+Set or replace the sharing password on an existing key_required port. Exactly eight ASCII letters or digits, case-sensitive. Requires \-\-visibility key_required. Omit to preserve it. Use @path to read a file containing exactly eight characters without a trailing newline.
+.\" @custom end
 .TP
 \fB\-\-machine\-id\fR \fI<value>\fR
 Bare, lowercase, hyphenated Machine UUID. Pass the returned machine_id unchanged. Required.

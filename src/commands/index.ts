@@ -14,6 +14,7 @@ import { addUpgradeCommands } from '../cli/upgrade.js';
 import { addImageImport } from '../custom/images.js';
 // @custom start
 import { addMachineAliases, handleMachineResult } from '../custom/machines.js';
+import { withPortPasswords } from '../custom/ports.js';
 // @custom end
 import { registerFeedbackCommands } from '../feedback/command.js';
 
@@ -1580,9 +1581,11 @@ export const getProgram = (): Command => {
           defaultErrorFormat: 'json',
           clientOptions,
           // Feedback owns a positional message and attachment selection instead of generated flags.
-          commands: commands.filter(
-            (definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback',
+          // @custom start
+          commands: withPortPasswords(
+            commands.filter((definition: CliCommandDefinition) => definition.resourcePath[0] !== 'feedback'),
           ),
+          // @custom end
           groups,
           completions,
           auth,

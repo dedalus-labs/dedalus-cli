@@ -124,6 +124,11 @@ export type CliAuthDefinition = {
   readonly logo?: string;
 };
 
+// @custom start
+// The public list describes choices to people; methods also includes compatible script spellings.
+export const publicLoginFlows = (auth: CliAuthDefinition) => auth.menu ?? auth.methods;
+// @custom end
+
 /** How long the browser flow waits for the redirect before giving the terminal back. */
 const BROWSER_FLOW_TIMEOUT_MS = 300000;
 
@@ -679,7 +684,9 @@ const chooseMethod = async (
   auth: CliAuthDefinition,
   flow: string | undefined,
 ): Promise<CliAuthMethodDefinition> => {
-  const names = auth.methods.map((method) => method.name);
+  // @custom start
+  const names = publicLoginFlows(auth).map((method) => method.name);
+  // @custom end
   if (flow !== undefined) {
     const chosen = auth.methods.find((method) => method.name === flow);
     if (!chosen)

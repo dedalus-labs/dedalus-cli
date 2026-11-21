@@ -47,6 +47,6 @@ with tempfile.TemporaryDirectory() as home:
 
     check([], b'\r', b'Opening your browser to sign in.')
     check([], b'\x1b[B\r', b'API key: ')
-    check(['--flow', 'api-key'], None, b'Access token: ')
+    check(['--flow', 'api-key'], None, b'API key: ')
     check(['--flow', 'x-api-key'], None, b'API key: ')
     check(['--flow', 'oauth-browser'], None, b'Opening your browser to sign in.')

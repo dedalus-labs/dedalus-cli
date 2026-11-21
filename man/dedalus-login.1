@@ -10,7 +10,7 @@ Obtains a credential and saves it so later commands do not have to carry one. It
 .SH "OPTIONS"
 .TP
 \fB\-\-flow\fR \fIname\fR
-Sign\-in flow to use, skipping the prompt. One of: api\-key, x\-api\-key, oauth\-browser.
+Sign\-in flow to use, skipping the prompt. One of: oauth\-browser or api\-key.
 .TP
 \fB\-\-base\-url\fR \fIurl\fR
 Sign in against this base URL instead of the default.
@@ -19,14 +19,11 @@ Sign in against this base URL instead of the default.
 Never prompt; a command that would ask fails instead.
 .SH "SIGN\-IN FLOWS"
 .TP
-\fBapi\-key\fR
-Enter your access token.
-.TP
-\fBx\-api\-key\fR
-Enter your API key.
-.TP
 \fBoauth\-browser\fR
-Sign in with a browser (OAuth authorization code).
+Sign in with a browser.
+.TP
+\fBapi\-key\fR
+Use an API key.
 .SH "EXAMPLES"
 .PP
 .RS 4

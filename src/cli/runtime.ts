@@ -14,6 +14,9 @@ import { encodeToon } from './toon.js';
 import { takeWarnings } from './credentials';
 import { type CliAuthDefinition, UsageError, runLogin, runLogout, storedCredentials } from './login';
 
+// @custom start
+import { publicLoginFlows } from './login';
+// @custom end
 import { createDiagnostics, diagnosticScope } from '../feedback/diagnostics.js';
 import { routeBrowserCredential } from '../custom/browser-routing.js';
 
@@ -504,7 +507,9 @@ const addAuthCommands = (
   auth: CliAuthDefinition,
   selection: EnvironmentSelection,
 ): void => {
-  const flows = auth.methods.map((method) => method.name).join(', ');
+  // @custom start
+  const flows = publicLoginFlows(auth).map((method) => method.name).join(', ');
+  // @custom end
   const login = usageExitCode(new Command(auth.loginPath.at(-1) ?? 'login'))
     .description('Sign in and save credentials for later commands')
     .showHelpAfterError()
@@ -589,8 +594,10 @@ const credentialBaseUrl = (
   auth.defaultBaseUrl;
 
 // Lists the flows by name so `--flow` can be used without first running the picker.
+// @custom start
 const authFlowHelp = (auth: CliAuthDefinition): string =>
-  '\nSign-in flows:\n' + auth.methods.map((method) => '  ' + method.name + '  ' + method.label).join('\n');
+  '\nSign-in flows:\n' + publicLoginFlows(auth).map((flow) => '  ' + flow.name + '  ' + flow.label).join('\n');
+// @custom end
 
 // `--no-input` as a plain switch read as `noInput`, not as Commander's negation of `--input`: a
 // spec param named `input` registers `--input <value>`, and a negation would write `false` into it.

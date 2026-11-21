@@ -1525,7 +1525,7 @@ export const auth = {
   // @custom start
   menu: [
     { name: 'oauth-browser', label: 'Sign in with a browser' },
-    { name: 'x-api-key', label: 'Use an API key' },
+    { name: 'api-key', label: 'Use an API key' },
   ],
   // @custom end
   storeName: 'dedalus',
@@ -1545,7 +1545,9 @@ export const auth = {
       label: 'Enter your access token',
       kind: 'token',
       clientKey: 'apiKey',
-      prompt: 'Access token: ',
+      // @custom start
+      prompt: 'API key: ',
+      // @custom end
     },
     {
       name: 'x-api-key',

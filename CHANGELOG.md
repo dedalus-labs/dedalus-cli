@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.9.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.8.0...v0.9.0) (2026-11-21)
+
+
+### Features
+
+* **api:** add machine ports and access key commands ([5128905](https://github.com/dedalus-labs/dedalus-cli/commit/5128905031839d9aa3fd2bca3bc639418d63a3f1))
+* **api:** add machine ports and access key commands ([#129](https://github.com/dedalus-labs/dedalus-cli/issues/129)) ([0ea178f](https://github.com/dedalus-labs/dedalus-cli/commit/0ea178fd392ae8feb780ec03b60aa1846a3395d3))
+* **machines:** connect after creation with --ssh ([c66aa46](https://github.com/dedalus-labs/dedalus-cli/commit/c66aa46054e1d8c5e3a401a0ca0995c346196fb6))
+* **machines:** connect after creation with --ssh ([#120](https://github.com/dedalus-labs/dedalus-cli/issues/120)) ([9821a02](https://github.com/dedalus-labs/dedalus-cli/commit/9821a02c8ed87220feae3ae98a56c1bca8762903))
+
+
+### Bug Fixes
+
+* **cli:** label windows ssh reconnect hints for powershell ([ea489b8](https://github.com/dedalus-labs/dedalus-cli/commit/ea489b81b772a8384cbdca0f02de4decbca05824))
+* **cli:** shorten the powershell reconnect prompt ([4ff0ffb](https://github.com/dedalus-labs/dedalus-cli/commit/4ff0ffbd6b106c31fa0509d83f1f25036086c90c))
+
+
+### Chores
+
+* **api:** align scalar merge base with build 0.1.19 ([842b4fd](https://github.com/dedalus-labs/dedalus-cli/commit/842b4fdb8f85fba0c93025f1021367a494357ff9))
+* **api:** record generated baseline for build 0.1.19 ([753d331](https://github.com/dedalus-labs/dedalus-cli/commit/753d33130bf5b02e4265ad1f2df503d4941b46ae))
+* **api:** record the 0.1.19 merge base without changing CLI files ([#127](https://github.com/dedalus-labs/dedalus-cli/issues/127)) ([72b9dc4](https://github.com/dedalus-labs/dedalus-cli/commit/72b9dc45a304af087d8c71857f3b515ceb9ee8aa))
+
 ## [0.8.0](https://github.com/dedalus-labs/dedalus-cli/compare/v0.7.0...v0.8.0) (2026-11-12)
 
 

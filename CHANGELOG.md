@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.9.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.9.1...v0.9.2) (2026-11-24)
+
+
+### Features
+
+* **login:** simplify interactive sign-in choices ([aa530aa](https://github.com/dedalus-labs/dedalus-cli/commit/aa530aa341c61ebbd7a41facb1ea79c5e4920ec5))
+* **login:** simplify sign-in choices ([#132](https://github.com/dedalus-labs/dedalus-cli/issues/132)) ([9db0dad](https://github.com/dedalus-labs/dedalus-cli/commit/9db0dadfbbe273c83ed166a2e28455b294cd57c6))
+
+
+### Bug Fixes
+
+* **login:** show only public sign-in choices in help ([d82afd5](https://github.com/dedalus-labs/dedalus-cli/commit/d82afd5ab0a81f94574a37e9a4fbfda84de8cf6c))
+
+
+### Chores
+
+* release 0.9.2 ([84b33de](https://github.com/dedalus-labs/dedalus-cli/commit/84b33debe4a1b6de73bf91f142b9716ff149e709))
+* release 0.9.2 ([83290b1](https://github.com/dedalus-labs/dedalus-cli/commit/83290b1c321f87d2cc7c1fa5e127269b431cbc58))
+
 ## [0.9.1](https://github.com/dedalus-labs/dedalus-cli/compare/v0.9.0...v0.9.1) (2026-11-21)
 
 

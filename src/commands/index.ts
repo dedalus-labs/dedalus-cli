@@ -1522,6 +1522,12 @@ export const auth = {
   loginPath: ['login'],
   logoutPath: ['logout'],
   loginCommand: 'dedalus login',
+  // @custom start
+  menu: [
+    { name: 'oauth-browser', label: 'Sign in with a browser' },
+    { name: 'api-key', label: 'Use an API key' },
+  ],
+  // @custom end
   storeName: 'dedalus',
   storeEnv: 'DEDALUS_CREDENTIALS_FILE',
   baseUrlEnv: 'DEDALUS_BASE_URL',
@@ -1539,7 +1545,9 @@ export const auth = {
       label: 'Enter your access token',
       kind: 'token',
       clientKey: 'apiKey',
-      prompt: 'Access token: ',
+      // @custom start
+      prompt: 'API key: ',
+      // @custom end
     },
     {
       name: 'x-api-key',

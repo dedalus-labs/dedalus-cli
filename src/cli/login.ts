@@ -116,9 +116,18 @@ export type CliAuthDefinition = {
   readonly requirements: readonly (readonly string[])[];
   readonly envByKey: Readonly<Record<string, string>>;
   readonly methods: readonly CliAuthMethodDefinition[];
+  // @custom start
+  /** Interactive choices only. Explicit --flow names still resolve against methods. */
+  readonly menu?: readonly { readonly name: string; readonly label: string }[];
+  // @custom end
   /** Publisher logo for the browser sign-in page; absent means the page shows none. */
   readonly logo?: string;
 };
+
+// @custom start
+// The public list describes choices to people; methods also includes compatible script spellings.
+export const publicLoginFlows = (auth: CliAuthDefinition) => auth.menu ?? auth.methods;
+// @custom end
 
 /** How long the browser flow waits for the redirect before giving the terminal back. */
 const BROWSER_FLOW_TIMEOUT_MS = 300000;
@@ -675,13 +684,24 @@ const chooseMethod = async (
   auth: CliAuthDefinition,
   flow: string | undefined,
 ): Promise<CliAuthMethodDefinition> => {
-  const names = auth.methods.map((method) => method.name);
+  // @custom start
+  const names = publicLoginFlows(auth).map((method) => method.name);
+  // @custom end
   if (flow !== undefined) {
     const chosen = auth.methods.find((method) => method.name === flow);
     if (!chosen)
       throw new UsageError("Unknown sign-in flow '" + flow + "'. Available: " + names.join(', ') + '.');
     return chosen;
   }
+  // @custom start
+  if (auth.menu) {
+    const index = await promptChoice('How would you like to sign in?', auth.menu);
+    const name = auth.menu[index]?.name;
+    const chosen = auth.methods.find((method) => method.name === name);
+    if (!chosen) throw new Error('Login menu selected an unconfigured sign-in method.');
+    return chosen;
+  }
+  // @custom end
   const first = auth.methods[0];
   if (!first) throw new Error('This CLI has no sign-in flow.');
   if (auth.methods.length === 1) return first;
@@ -2325,7 +2345,9 @@ const restoreCursor = (): void => {
 /** One row of the sign-in picker: what it reads as, and the `--flow` value that skips the prompt. */
 type Choice = {
   readonly label: string;
-  readonly hint: string;
+  // @custom start
+  readonly hint?: string;
+  // @custom end
 };
 
 /**
@@ -2373,7 +2395,9 @@ const promptChoice = async (heading: string, choices: readonly Choice[]): Promis
       for (const choice of shown) {
         const selected = choice === choices[active];
         const head = (selected ? '> ' : '  ') + choice.label;
-        const tail = '  (--flow ' + choice.hint + ')';
+        // @custom start
+        const tail = choice.hint ? '  (--flow ' + choice.hint + ')' : '';
+        // @custom end
         const plain = clip(head + tail, columns);
         // The flow name is kept on every row rather than only the highlighted one, because labels
         // are not unique: an API key in a header, in a query parameter and in a cookie all read as
@@ -2460,9 +2484,10 @@ const promptChoice = async (heading: string, choices: readonly Choice[]): Promis
         return;
       }
       const chosen = choices[active];
-      processStderr.write(
-        heading + ' ' + (chosen?.label ?? '') + '  (--flow ' + (chosen?.hint ?? '') + ')\n',
-      );
+      // @custom start
+      const hint = chosen?.hint ? '  (--flow ' + chosen.hint + ')' : '';
+      processStderr.write(heading + ' ' + (chosen?.label ?? '') + hint + '\n');
+      // @custom end
       resolve(active);
     };
     // Hidden for the duration: the cursor would otherwise sit at the end of the last row drawn,

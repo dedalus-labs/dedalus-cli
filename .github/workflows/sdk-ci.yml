@@ -8,12 +8,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    strategy:
-      matrix:
-        runner:
-          - blacksmith-4vcpu-ubuntu-2404
-          - macos-15
-    runs-on: ${{ matrix.runner }}
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -30,7 +25,7 @@ jobs:
         run: pnpm run ci:generate
         shell: bash
       - name: Check generated workflows
-        run: git diff --exit-code -- .github/workflows/sdk-ci.yml
+        run: git diff --exit-code -- .github/workflows
         shell: bash
       - name: Build CLI
         run: pnpm run build
@@ -38,15 +33,7 @@ jobs:
       - name: Install and test staging package
         run: node scripts/verify-staging-package.mjs
         shell: bash
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
-        with:
-          bun-version: 1.4.1
-      - name: Test native standalone binary
-        run: node scripts/verify-standalone.mjs
-        shell: bash
       - name: Upload tested staging package
-        if: ${{ runner.os == 'Linux' }}
         uses: actions/upload-artifact@v7
         with:
           name: dedalus-cli-staging

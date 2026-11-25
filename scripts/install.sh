@@ -3,73 +3,55 @@
 set -euo pipefail
 
 main() (
-    local repo='https://github.com/dedalus-labs/dedalus-cli'
-    local install_dir="${DEDALUS_INSTALL_DIR:-$HOME/.local/bin}"
-    local version="${DEDALUS_VERSION:-}" os arch stage probe watchdog actual
+    local version="${DEDALUS_VERSION:-}" spec='dedalus-cli@latest'
+    local install_dir="${DEDALUS_INSTALL_DIR:-}" global_bin actual stage
 
-    case "$(uname -s)" in
-        Darwin) os=darwin ;;
-        Linux) os=linux ;;
-        *) echo 'Unsupported OS; this installer supports macOS and Linux.' >&2; exit 1 ;;
-    esac
-    case "$(uname -m)" in
-        x86_64|amd64) arch=x64 ;;
-        arm64|aarch64) arch=arm64 ;;
-        *) echo 'Unsupported architecture; expected x64 or arm64.' >&2; exit 1 ;;
-    esac
-
-    if [[ -z "$version" ]]; then
-        version=$(curl -fsSL --connect-timeout 10 --max-time 30 -o /dev/null \
-            -w '%{url_effective}' "$repo/releases/latest")
-        version=${version##*/}
-    fi
-    if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-        echo "Invalid release tag: $version" >&2
+    if ! command -v node >/dev/null || ! node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 20 ? 0 : 1)'; then
+        echo 'Node.js 20 or newer is required. Install it from https://nodejs.org/ and retry.' >&2
         exit 1
     fi
-
-    mkdir -p "$install_dir"
-    install_dir=$(cd "$install_dir" && pwd -P)
-    if [[ -L "$install_dir/dedalus" || -d "$install_dir/dedalus" ]]; then
+    if ! command -v pnpm >/dev/null; then
+        echo 'pnpm is required. Install it from https://pnpm.io/installation and retry.' >&2
+        exit 1
+    fi
+    if [[ -n "$version" ]]; then
+        if [[ ! "$version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid package version: $version" >&2
+            exit 1
+        fi
+        spec="dedalus-cli@${version#v}"
+    fi
+    if [[ -n "$install_dir" && ( -L "$install_dir/dedalus" || -d "$install_dir/dedalus" ) ]]; then
         echo 'Refusing to replace a symlink or directory; use the original package manager.' >&2
         exit 1
     fi
-    # Stage beside the destination so the final rename stays on one filesystem.
-    stage=$(mktemp -d "$install_dir/.dedalus-install.XXXXXX")
-    trap 'rm -rf "$stage"' EXIT
-    trap 'exit 130' INT
-    trap 'exit 143' TERM
-    local asset="dedalus-${os}-${arch}.tar.gz"
-    echo "Downloading $version ($os/$arch)..."
-    curl -fsSL --connect-timeout 10 --max-time 300 \
-        "$repo/releases/download/$version/$asset" -o "$stage/archive.tar.gz"
-    tar -xzf "$stage/archive.tar.gz" -C "$stage" dedalus
-    if [[ ! -f "$stage/dedalus" || -L "$stage/dedalus" ]]; then
-        echo "$asset did not contain a regular dedalus executable." >&2
+    if ! global_bin=$(pnpm bin --global) || [[ -z "$global_bin" ]]; then
+        echo 'Configure pnpm global installs with pnpm setup, then retry in a new shell.' >&2
         exit 1
     fi
-    chmod 755 "$stage/dedalus"
 
-    # Verify both compatibility and version before replacing the working CLI.
-    "$stage/dedalus" --version > "$stage/version" &
-    probe=$!
-    (sleep 10; kill -KILL "$probe" 2>/dev/null || true) >/dev/null 2>&1 &
-    watchdog=$!
-    if ! wait "$probe"; then
-        kill "$watchdog" 2>/dev/null || true
-        echo 'Downloaded CLI failed its version check; existing CLI left unchanged.' >&2
+    pnpm add --global --ignore-scripts "$spec"
+    actual=$("$global_bin/dedalus" --version)
+    if [[ -n "$version" && "$actual" != "${version#v}" ]]; then
+        echo "Expected ${version#v}, received $actual." >&2
         exit 1
     fi
-    kill "$watchdog" 2>/dev/null || true
-    actual=$(cat "$stage/version")
-    if [[ "$actual" != "${version#v}" ]]; then
-        echo "Expected ${version#v}, received $actual; existing CLI left unchanged." >&2
-        exit 1
+    # Older Go updaters request their original executable's directory.
+    if [[ -n "$install_dir" ]]; then
+        mkdir -p "$install_dir"
+        install_dir=$(cd "$install_dir" && pwd -P)
+        global_bin=$(cd "$global_bin" && pwd -P)
+        if [[ "$install_dir" != "$global_bin" ]]; then
+            stage=$(mktemp -d "$install_dir/.dedalus-install.XXXXXX")
+            trap 'rm -rf "$stage"' EXIT
+            printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$global_bin/dedalus" > "$stage/dedalus"
+            chmod 755 "$stage/dedalus"
+            mv -f "$stage/dedalus" "$install_dir/dedalus"
+        fi
     fi
-    mv -f "$stage/dedalus" "$install_dir/dedalus"
-    echo "Installed dedalus $version to $install_dir/dedalus"
-    echo 'For future updates, run: dedalus upgrade'
+    echo "Installed dedalus $actual with pnpm ($global_bin/dedalus)."
+    echo 'For future updates, run: pnpm add --global dedalus-cli@latest'
 )
 
-# Read the entire script before doing work when invoked by the legacy curl | bash.
+# Read the entire script before doing work when invoked by curl | bash.
 main "$@"

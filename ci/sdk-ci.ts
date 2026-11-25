@@ -6,10 +6,7 @@ export const sdkCI = workflow({
   permissions: { contents: 'read' },
   jobs: {
     verify: {
-      strategy: {
-        matrix: { runner: ['blacksmith-4vcpu-ubuntu-2404', 'macos-15'] },
-      },
-      'runs-on': '${{ matrix.runner }}',
+      'runs-on': 'blacksmith-4vcpu-ubuntu-2404',
       'timeout-minutes': 15,
       steps: [
         { uses: 'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5' },
@@ -36,7 +33,7 @@ export const sdkCI = workflow({
           name: 'Check generated workflows',
           run: command({
             file: 'git',
-            args: ['diff', '--exit-code', '--', '.github/workflows/sdk-ci.yml'],
+            args: ['diff', '--exit-code', '--', '.github/workflows'],
           }),
         },
         { name: 'Build CLI', run: command({ file: 'pnpm', args: ['run', 'build'] }) },
@@ -45,17 +42,7 @@ export const sdkCI = workflow({
           run: command({ file: 'node', args: ['scripts/verify-staging-package.mjs'] }),
         },
         {
-          name: 'Set up Bun',
-          uses: 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
-          with: { 'bun-version': '1.4.1' },
-        },
-        {
-          name: 'Test native standalone binary',
-          run: command({ file: 'node', args: ['scripts/verify-standalone.mjs'] }),
-        },
-        {
           name: 'Upload tested staging package',
-          if: "${{ runner.os == 'Linux' }}",
           uses: 'actions/upload-artifact@v7',
           with: {
             name: 'dedalus-cli-staging',

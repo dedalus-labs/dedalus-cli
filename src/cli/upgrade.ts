@@ -32,7 +32,7 @@ const RELEASE = {
   repo: 'dedalus-labs/dedalus-cli',
   npmPackage: 'dedalus-cli',
   brewFormula: 'dedalus',
-  windowsArchive: true,
+  windowsArchive: false,
 } as {
   /**
    * The destination repository as `owner/repo`, which every GitHub Release request is addressed by.
@@ -146,9 +146,8 @@ const detectInstall = (binaryName: string, distTag = stableDistTag()): InstallKi
   const executable = process.execPath;
   // A compiled standalone executable *is* the command; running under `node`/`bun` instead means this
   // is the npm package (or a checkout of it), and the script's own path says which manager owns it.
-  if (!runsCompiled(executable, binaryName)) return detectPackageInstall(distTag);
-
-  const path = resolvedPath(executable);
+  const compiled = runsCompiled(executable, binaryName);
+  const path = resolvedPath(compiled ? executable : process.argv[1] ?? '');
 
   // `Caskroom` as well as `Cellar`, and that is not redundant with the `homebrew`/`linuxbrew` segments
   // beside it: on an **Intel** Mac Homebrew's prefix is `/usr/local`, so a cask stages its executable
@@ -185,6 +184,8 @@ const detectInstall = (binaryName: string, distTag = stableDistTag()): InstallKi
         : {}),
     };
   }
+  if (!compiled) return detectPackageInstall(distTag);
+
   // `/usr/bin` is where a distro package manager installs; the documented direct download goes to
   // `/usr/local/bin`, so it does not land here.
   //

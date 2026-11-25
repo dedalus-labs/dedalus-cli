@@ -10,18 +10,14 @@ Generated CLI client for Dedalus API, published as `dedalus-cli`. Use the genera
 ## Install
 
 ```sh
-# npm (requires Node.js)
-npm install -g dedalus-cli
+# macOS, Linux, and Windows (requires Node.js 20+ and pnpm)
+pnpm add --global dedalus-cli
 
-# Homebrew — standalone binary, no Node.js required
+# Homebrew installs Node and the same CLI package
 brew install dedalus-labs/tap/dedalus
 
-# Direct download — standalone binary, no Node.js required
-curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz dedalus
-sudo mv dedalus /usr/local/bin/
-
-# Windows — download and extract dedalus-windows-x64.zip, then add it to PATH
-# https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-windows-x64.zip
+# macOS and Linux installer (requires Node.js 20+ and pnpm)
+curl -fsSL https://www.dedaluslabs.ai/install/dedalus | bash
 ```
 
 ## Client setup and authentication
@@ -65,7 +61,7 @@ Failed requests print a structured error to standard error and exit with a statu
 
 ## Requirements
 
-- Node.js 20 or newer — for the npm install only; the standalone binaries bundle their own runtime.
+- Node.js 20 or newer and pnpm. Homebrew installs its own Node dependency.
 
 ## Reference files
 

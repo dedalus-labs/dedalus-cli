@@ -1,96 +1,38 @@
 import { command, unsafeShell, type GitHubWorkflowStep } from '@dedalus-labs/hollywood';
 
-// npm trusted publishing requires a GitHub-hosted runner.
+// pnpm publish uses npm's trusted-publishing client on a GitHub-hosted runner.
 export const publishSteps = [
-  {
-    uses: 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
-  },
+  { uses: 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' },
   {
     uses: 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020',
-    with: {
-      'node-version': '24',
-      'registry-url': 'https://registry.npmjs.org',
-    },
+    with: { 'node-version': '24', 'registry-url': 'https://registry.npmjs.org' },
   },
   {
-    run: unsafeShell(`npm install`),
-    shell: 'bash',
+    uses: 'pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a',
+    with: { version: '10.20.0' },
   },
   {
-    run: unsafeShell(`npm run build`),
-    shell: 'bash',
+    name: 'Install dependencies',
+    run: command({ file: 'pnpm', args: ['install', '--frozen-lockfile', '--ignore-scripts'] }),
   },
+  { name: 'Build CLI', run: command({ file: 'pnpm', args: ['run', 'build'] }) },
   {
-    name: 'Read package version',
-    run: unsafeShell(`echo "PKG_VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"`),
-    shell: 'bash',
+    name: 'Pack Node CLI',
+    run: command({ file: 'pnpm', args: ['pack', '--pack-destination', 'release-packages'] }),
   },
-  {
-    run: unsafeShell(`npm install -g npm@11`),
-    shell: 'bash',
-  },
+  { run: unsafeShell('npm install -g npm@11'), shell: 'bash' },
   {
     name: 'Publish to npm',
-    run: unsafeShell(`node scripts/publish-npm.mjs`),
-    shell: 'bash',
+    run: command({ file: 'node', args: ['scripts/publish-npm.mjs'] }),
   },
   {
-    name: 'Set up Bun',
-    uses: 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
-    with: {
-      'bun-version': '1.4.1',
-    },
-  },
-  {
-    name: 'Compile standalone binaries',
-    run: unsafeShell(`ROOT="$PWD"
-mkdir -p release-binaries
-for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
-  rm -rf compile-out && mkdir -p compile-out
-  case "$target" in
-    windows-*)
-      bun build src/bin.ts --compile --minify --target="bun-\${target}" --outfile "compile-out/dedalus.exe"
-      (cd compile-out && zip -q "$ROOT/release-binaries/dedalus-\${target}.zip" "dedalus.exe")
-      ;;
-    *)
-      bun build src/bin.ts --compile --minify --target="bun-\${target}" --outfile "compile-out/dedalus"
-      if [[ "$target" == darwin-* ]]; then
-        codesign --force --sign - compile-out/dedalus
-      fi
-      tar -czf "release-binaries/dedalus-\${target}.tar.gz" -C compile-out "dedalus"
-      ;;
-  esac
-done
-rm -rf compile-out
-`),
-    shell: 'bash',
-  },
-  {
-    name: 'Verify macOS release binaries',
-    run: unsafeShell(`stage=$(mktemp -d)
-trap 'rm -rf "$stage"' EXIT
-for arch in x64 arm64; do
-  tar -xzf "release-binaries/dedalus-darwin-$arch.tar.gz" -C "$stage" dedalus
-  codesign --verify --strict --verbose=2 "$stage/dedalus"
-  if [[ "$arch" == arm64 ]]; then
-    test "$("$stage/dedalus" --version)" = "$PKG_VERSION"
-  fi
-done
-`),
-    shell: 'bash',
-  },
-  {
-    name: 'Attach binaries to the release',
-    run: command({ file: 'node', args: ['scripts/publish-binaries.mjs'] }),
-    env: {
-      GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}',
-    },
+    name: 'Attach Node package to the release',
+    run: command({ file: 'node', args: ['scripts/publish-package.mjs'] }),
+    env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' },
   },
   {
     name: 'Open Homebrew release PR',
-    env: {
-      HOMEBREW_TAP_TOKEN: '${{ secrets.HOMEBREW_TAP_TOKEN }}',
-    },
     run: command({ file: 'node', args: ['scripts/update-homebrew.mjs'] }),
+    env: { HOMEBREW_TAP_TOKEN: '${{ secrets.HOMEBREW_TAP_TOKEN }}' },
   },
 ] as const satisfies readonly GitHubWorkflowStep[];

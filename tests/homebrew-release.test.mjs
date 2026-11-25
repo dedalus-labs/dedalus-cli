@@ -8,18 +8,18 @@ import { test } from 'node:test';
 import { parse } from 'yaml';
 import { renderFormula } from '../scripts/update-homebrew.mjs';
 
-const targets = ['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64'];
+const archive = 'dedalus-cli-0.7.0.tgz';
 
-test('invariant_formulas_pin_every_platform_archive_before_updating_the_tap', () => {
+test('invariant_formulas_pin_the_node_package_before_updating_the_tap', () => {
   const directory = mkdtempSync(join(tmpdir(), 'homebrew-archives-'));
   try {
-    for (const target of targets) writeFileSync(join(directory, `dedalus-${target}.tar.gz`), target);
+    writeFileSync(join(directory, archive), 'node package');
     const formula = renderFormula('0.7.0', 'dedalus-labs/dedalus-cli', directory);
-    for (const target of targets) {
-      assert.ok(formula.includes(`/v0.7.0/dedalus-${target}.tar.gz`));
-      assert.ok(formula.includes(createHash('sha256').update(target).digest('hex')));
-    }
-    rmSync(join(directory, 'dedalus-linux-arm64.tar.gz'));
+    assert.ok(formula.includes(`/v0.7.0/${archive}`));
+    assert.ok(formula.includes(createHash('sha256').update('node package').digest('hex')));
+    assert.ok(formula.includes('depends_on "node"'));
+    assert.ok(formula.includes('system "pnpm", "add"'));
+    rmSync(join(directory, archive));
     assert.throws(() => renderFormula('0.7.0', 'dedalus-labs/dedalus-cli', directory), /ENOENT/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
@@ -37,8 +37,8 @@ function verifyPublication(workflow) {
     readFileSync(new URL(`../.github/workflows/${workflow}.yml`, import.meta.url), 'utf8'),
   );
   const steps = definition.jobs[workflow === 'release-please' ? 'publish' : 'release'].steps;
-  const compile = steps.find((step) => step.name === 'Compile standalone binaries').run;
-  const upload = steps.find((step) => step.name === 'Attach binaries to the release').run;
+  const pack = steps.find((step) => step.name === 'Pack Node CLI').run;
+  const upload = steps.find((step) => step.name === 'Attach Node package to the release').run;
   const homebrew = steps.find((step) => step.name === 'Open Homebrew release PR').run;
   const state = join(root, 'prs.json');
   const env = {
@@ -71,27 +71,18 @@ function verifyPublication(workflow) {
     cpSync(new URL('../scripts', import.meta.url), join(release, 'scripts'), {
       recursive: true,
     });
-    const bun = join(binaries, 'bun');
+    const pnpm = join(binaries, 'pnpm');
     writeFileSync(
-      bun,
+      pnpm,
       `#!${process.execPath}
 const fs = require('node:fs');
 const args = process.argv.slice(2);
-const output = args[args.indexOf('--outfile') + 1];
-fs.writeFileSync(output, args.find(arg => arg.startsWith('--target=')));
-fs.utimesSync(output, Number(process.env.BUILD_EPOCH), Number(process.env.BUILD_EPOCH));
+require('node:assert/strict').deepEqual(args, ['pack', '--pack-destination', 'release-packages']);
+fs.mkdirSync('release-packages', { recursive: true });
+fs.writeFileSync('release-packages/dedalus-cli-0.7.0.tgz', 'package ' + process.env.BUILD_EPOCH);
 `,
     );
-    chmodSync(bun, 0o755);
-    // Publication fixtures contain text; native signature checks run separately.
-    const codesign = join(binaries, 'codesign');
-    writeFileSync(codesign, `#!${process.execPath}
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-assert.deepEqual(process.argv.slice(2), ['--force', '--sign', '-', 'compile-out/dedalus']);
-assert.match(fs.readFileSync('compile-out/dedalus', 'utf8'), /^--target=bun-darwin-/);
-`);
-    chmodSync(codesign, 0o755);
+    chmodSync(pnpm, 0o755);
     git(['init', '--bare', '--initial-branch=main', bare]);
     git(['init', '--initial-branch=main'], seed);
     git(['config', 'user.name', 'Fixture'], seed);
@@ -146,18 +137,17 @@ else if (action === 'create') {
     chmodSync(gh, 0o755);
     writeFileSync(join(release, 'package.json'), '{"version":"0.7.0"}\n');
     const shell = (command) => run('bash', ['-e', '-o', 'pipefail', '-c', command], release);
-    const archive = 'dedalus-linux-x64.tar.gz';
-    // A previous attempt published only one platform before failing.
-    shell(compile);
-    const original = readFileSync(join(release, 'release-binaries', archive));
+    // A previous attempt uploaded the package before failing later in the release.
+    shell(pack);
+    const original = readFileSync(join(release, 'release-packages', archive));
     if (workflow === 'release-please')
-      cpSync(join(release, 'release-binaries', archive), join(published, archive));
+      cpSync(join(release, 'release-packages', archive), join(published, archive));
     env.BUILD_EPOCH = '1700000060';
-    shell(compile);
+    shell(pack);
     shell(upload);
     shell(homebrew);
     const assets = new Map(
-      [...targets.map((target) => `dedalus-${target}.tar.gz`), 'dedalus-windows-x64.zip'].map((name) => [
+      [archive].map((name) => [
         name,
         readFileSync(join(published, name)),
       ]),
@@ -169,7 +159,7 @@ else if (action === 'create') {
       for (const [name, bytes] of assets) {
         assert.deepEqual(readFileSync(join(published, name)), bytes, `${name}: published bytes`);
         assert.deepEqual(
-          readFileSync(join(release, 'release-binaries', name)),
+          readFileSync(join(release, 'release-packages', name)),
           bytes,
           `${name}: formula input`,
         );
@@ -182,13 +172,13 @@ else if (action === 'create') {
     assert.equal(git(['--git-dir', bare, 'rev-parse', 'main']), main);
     assert.equal(JSON.parse(readFileSync(state, 'utf8')).creates, 1);
 
-    // The same compiled payload gets a different archive timestamp on retry.
+    // A retry must reuse the uploaded package even if local bytes have changed.
     const retry = (epoch) => {
       env.BUILD_EPOCH = String(epoch);
-      shell(compile);
+      shell(pack);
       assert.notDeepEqual(
-        readFileSync(join(release, 'release-binaries/dedalus-darwin-arm64.tar.gz')),
-        assets.get('dedalus-darwin-arm64.tar.gz'),
+        readFileSync(join(release, 'release-packages', archive)),
+        assets.get(archive),
       );
       shell(upload);
       assertPublishedBytes();
@@ -205,11 +195,11 @@ else if (action === 'create') {
     if (workflow === 'sdk-release') git(['--git-dir', bare, 'update-ref', '-d', branch]);
     assert.match(retry(1700000240), /already contains/);
     const formula = git(['--git-dir', bare, 'show', 'main:Formula/dedalus.rb']);
-    for (const target of targets) {
+    for (const name of assets.keys()) {
       const digest = createHash('sha256')
-        .update(assets.get(`dedalus-${target}.tar.gz`))
+        .update(assets.get(name))
         .digest('hex');
-      assert.ok(formula.includes(digest), `${target}: merged formula checksum`);
+      assert.ok(formula.includes(digest), `${name}: merged formula checksum`);
     }
     assert.equal(git(['--git-dir', bare, 'rev-parse', 'main']), first);
     assert.equal(JSON.parse(readFileSync(state, 'utf8')).creates, 1);

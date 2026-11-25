@@ -14,7 +14,7 @@ export const manualReleaseWorkflow = workflow(
     },
     jobs: {
       release: {
-        'runs-on': 'ubuntu-24.04',
+        'runs-on': 'macos-15',
         environment: 'production',
         env: {
           VERSIONING_POLICY: 'manual',

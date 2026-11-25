@@ -38,7 +38,7 @@ export const publishSteps = [
     name: 'Set up Bun',
     uses: 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
     with: {
-      'bun-version': '1.4.0',
+      'bun-version': '1.4.1',
     },
   },
   {
@@ -54,11 +54,28 @@ for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64 windows-x64; do
       ;;
     *)
       bun build src/bin.ts --compile --minify --target="bun-\${target}" --outfile "compile-out/dedalus"
+      if [[ "$target" == darwin-* ]]; then
+        codesign --force --sign - compile-out/dedalus
+      fi
       tar -czf "release-binaries/dedalus-\${target}.tar.gz" -C compile-out "dedalus"
       ;;
   esac
 done
 rm -rf compile-out
+`),
+    shell: 'bash',
+  },
+  {
+    name: 'Verify macOS release binaries',
+    run: unsafeShell(`stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+for arch in x64 arm64; do
+  tar -xzf "release-binaries/dedalus-darwin-$arch.tar.gz" -C "$stage" dedalus
+  codesign --verify --strict --verbose=2 "$stage/dedalus"
+  if [[ "$arch" == arm64 ]]; then
+    test "$("$stage/dedalus" --version)" = "$PKG_VERSION"
+  fi
+done
 `),
     shell: 'bash',
   },

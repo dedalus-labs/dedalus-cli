@@ -57,7 +57,7 @@ git push origin scalar-next
       publish: {
         needs: 'release-please',
         if: "${{ !cancelled() && needs.release-please.outputs.release_created == 'true' }}",
-        'runs-on': 'ubuntu-24.04',
+        'runs-on': 'macos-15',
         environment: 'production',
         permissions: {
           contents: 'write',

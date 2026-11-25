@@ -203,6 +203,11 @@ directory, runs the tests against the installed package, and uploads the
 `dedalus-cli-staging` artifact. The artifact contains a `.tgz` and its checksum
 record. This workflow does not publish to npm or Homebrew.
 
+CI runs on Linux and Apple Silicon macOS. The macOS checks verify the standalone
+binary's code signature before running it. Releases build on macOS, sign both
+macOS binaries, verify the archived signatures with `codesign`, and check the
+ARM64 binary's version before upload.
+
 Test packages are marked private and retain the production API default.
 Set `DEDALUS_TEST_BASE_URL` to your test API and pass it explicitly:
 

@@ -6,7 +6,10 @@ export const sdkCI = workflow({
   permissions: { contents: 'read' },
   jobs: {
     verify: {
-      'runs-on': 'blacksmith-4vcpu-ubuntu-2404',
+      strategy: {
+        matrix: { runner: ['blacksmith-4vcpu-ubuntu-2404', 'macos-15'] },
+      },
+      'runs-on': '${{ matrix.runner }}',
       'timeout-minutes': 15,
       steps: [
         { uses: 'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5' },
@@ -44,7 +47,7 @@ export const sdkCI = workflow({
         {
           name: 'Set up Bun',
           uses: 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
-          with: { 'bun-version': '1.4.0' },
+          with: { 'bun-version': '1.4.1' },
         },
         {
           name: 'Test native standalone binary',
@@ -52,6 +55,7 @@ export const sdkCI = workflow({
         },
         {
           name: 'Upload tested staging package',
+          if: "${{ runner.os == 'Linux' }}",
           uses: 'actions/upload-artifact@v7',
           with: {
             name: 'dedalus-cli-staging',

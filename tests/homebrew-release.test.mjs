@@ -83,6 +83,15 @@ fs.utimesSync(output, Number(process.env.BUILD_EPOCH), Number(process.env.BUILD_
 `,
     );
     chmodSync(bun, 0o755);
+    // Publication fixtures contain text; native signature checks run separately.
+    const codesign = join(binaries, 'codesign');
+    writeFileSync(codesign, `#!${process.execPath}
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+assert.deepEqual(process.argv.slice(2), ['--force', '--sign', '-', 'compile-out/dedalus']);
+assert.match(fs.readFileSync('compile-out/dedalus', 'utf8'), /^--target=bun-darwin-/);
+`);
+    chmodSync(codesign, 0o755);
     git(['init', '--bare', '--initial-branch=main', bare]);
     git(['init', '--initial-branch=main'], seed);
     git(['config', 'user.name', 'Fixture'], seed);

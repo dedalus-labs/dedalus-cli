@@ -27,6 +27,12 @@ branch — so the PR diff shows the full pending release — and are versioned f
 release, publishes it, and syncs the version bump and changelog back to `scalar-next`.
 Pre-1.0, breaking changes bump the minor version.
 
+CLI distribution is customized on `scalar-next`: pnpm builds and packs the Node
+package, and the release workflow publishes it to npm and GitHub. No native
+executable compilation is required. Workflow sources live under `ci/`; regenerate
+them with `pnpm ci:generate` after integrating generated output, then run
+`pnpm build` and `pnpm test:package` before promoting the release.
+
 ### Choosing an exact version
 
 To release a specific version — `1.0.0`, a hotfix number, anything the commit history would

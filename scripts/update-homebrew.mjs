@@ -6,12 +6,6 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const tap = 'dedalus-labs/homebrew-tap';
-const platforms = [
-  ['macos', 'arm', 'darwin-arm64'],
-  ['macos', 'intel', 'darwin-x64'],
-  ['linux', 'arm', 'linux-arm64'],
-  ['linux', 'intel', 'linux-x64'],
-];
 
 export function renderFormula(version, repository, directory) {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
@@ -26,27 +20,18 @@ export function renderFormula(version, repository, directory) {
     '  homepage "https://docs.dedaluslabs.ai"',
     `  version "${version}"`,
     '  license "Apache-2.0"',
+    `  url "https://github.com/${repository}/releases/download/v${version}/dedalus-cli-${version}.tgz"`,
+    `  sha256 "${createHash('sha256').update(readFileSync(join(directory, `dedalus-cli-${version}.tgz`))).digest('hex')}"`,
+    '  depends_on "node"',
+    '  depends_on "pnpm" => :build',
   ];
-  for (const os of ['macos', 'linux']) {
-    lines.push('', `  on_${os} do`);
-    for (const [, architecture, target] of platforms.filter(([name]) => name === os)) {
-      const archive = `dedalus-${target}.tar.gz`;
-      const digest = createHash('sha256')
-        .update(readFileSync(join(directory, archive)))
-        .digest('hex');
-      lines.push(
-        `    on_${architecture} do`,
-        `      url "https://github.com/${repository}/releases/download/v${version}/${archive}"`,
-        `      sha256 "${digest}"`,
-        '    end',
-      );
-    }
-    lines.push('  end');
-  }
   lines.push(
     '',
     '  def install',
-    '    bin.install "dedalus"',
+    '    libexec.mkpath',
+    '    system "pnpm", "add", "--dir", libexec, "--prod", "--ignore-scripts", cached_download.to_s',
+    '    (bin/"dedalus").write_env_script libexec/"node_modules/.bin/dedalus", PATH: "#{Formula["node"].opt_bin}:$PATH"',
+    '    man1.install Dir[libexec/"node_modules/dedalus-cli/man/*.1"]',
     '  end',
     '',
     '  test do',
@@ -60,7 +45,7 @@ export function renderFormula(version, repository, directory) {
 
 export function updateHomebrew() {
   const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
-  const formula = renderFormula(version, process.env.GITHUB_REPOSITORY, 'release-binaries');
+  const formula = renderFormula(version, process.env.GITHUB_REPOSITORY, 'release-packages');
   if (process.argv.includes('--dry-run')) {
     process.stdout.write(formula);
     return;
@@ -118,7 +103,7 @@ export function updateHomebrew() {
     const body = join(directory, 'release-pr-body.txt');
     writeFileSync(
       body,
-      `Update the standalone CLI formula to ${version}. All four platform archives are pinned to the SHA-256 digests of the binaries uploaded by this release.\n`,
+      `Update the Node CLI formula to ${version}. The package archive is pinned to the SHA-256 digest uploaded by this release. Homebrew installs Node and uses pnpm to install the CLI.\n`,
     );
     run('gh', [
       'pr',

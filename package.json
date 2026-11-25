@@ -8,6 +8,10 @@
     "url": "git+https://github.com/dedalus-labs/dedalus-cli.git"
   },
   "type": "module",
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "dedalus": "./dist/esm/bin.js"
   },

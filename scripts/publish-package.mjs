@@ -1,4 +1,4 @@
-// Both release workflows call this after compilation. Published archives stay
+// Both release workflows call this after packing. Published archives stay
 // immutable; retries fill missing assets and download the bytes Homebrew hashes.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -10,13 +10,7 @@ const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 const repository = process.env.GITHUB_REPOSITORY;
 if (!repository) throw new Error('GITHUB_REPOSITORY is required');
 const tag = `v${version}`;
-const archives = [
-  'dedalus-linux-x64.tar.gz',
-  'dedalus-linux-arm64.tar.gz',
-  'dedalus-darwin-x64.tar.gz',
-  'dedalus-darwin-arm64.tar.gz',
-  'dedalus-windows-x64.zip',
-];
+const archives = [`dedalus-cli-${version}.tgz`];
 const run = (args, capture = false) => {
   const result = spawnSync('gh', args, {
     encoding: 'utf8',
@@ -31,7 +25,7 @@ const published = new Set(assets.map(({ name }) => name));
 for (const archive of archives) {
   if (published.has(archive)) continue;
   // Never replace an asset: a merged Homebrew formula may already pin its bytes.
-  run(['release', 'upload', tag, join('release-binaries', archive), '--repo', repository]);
+  run(['release', 'upload', tag, join('release-packages', archive), '--repo', repository]);
 }
 
 const directory = mkdtempSync(join(tmpdir(), 'dedalus-release-'));
@@ -41,9 +35,9 @@ try {
   }
   // Hash the published assets, including any reused from a previous attempt.
   for (const archive of archives) {
-    copyFileSync(join(directory, archive), join('release-binaries', archive));
+    copyFileSync(join(directory, archive), join('release-packages', archive));
   }
-  // The standalone upgrade command requires checksums for the published bytes.
+  // Record checksums for the package actually published to GitHub.
   const checksums = archives
     .map(
       (archive) =>

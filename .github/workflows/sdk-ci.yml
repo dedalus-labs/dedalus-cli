@@ -25,20 +25,13 @@ jobs:
         run: pnpm run ci:generate
         shell: bash
       - name: Check generated workflows
-        run: git diff --exit-code -- .github/workflows/sdk-ci.yml
+        run: git diff --exit-code -- .github/workflows
         shell: bash
       - name: Build CLI
         run: pnpm run build
         shell: bash
       - name: Install and test staging package
         run: node scripts/verify-staging-package.mjs
-        shell: bash
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
-        with:
-          bun-version: 1.4.0
-      - name: Test native standalone binary
-        run: node scripts/verify-standalone.mjs
         shell: bash
       - name: Upload tested staging package
         uses: actions/upload-artifact@v7

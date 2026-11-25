@@ -149,15 +149,12 @@ const detectInstall = (binaryName: string, distTag = stableDistTag()): InstallKi
   const compiled = runsCompiled(executable, binaryName);
   const path = resolvedPath(compiled ? executable : process.argv[1] ?? '');
 
-  // `Caskroom` as well as `Cellar`, and that is not redundant with the `homebrew`/`linuxbrew` segments
-  // beside it: on an **Intel** Mac Homebrew's prefix is `/usr/local`, so a cask stages its executable
-  // at `/usr/local/Caskroom/<token>/<version>/<bin>` — a path carrying none of the other three. Without
-  // this, such an install classified as self-managed and `upgrade` renamed a downloaded binary over the
-  // file inside the Caskroom, which is admin-owned on Intel Homebrew and so writable without `sudo`.
-  // Brew went on recording the old version and reverted the binary on the next `brew upgrade`. Apple
-  // Silicon and Linux casks were caught only because `/opt/homebrew` and `/home/linuxbrew` happen to
-  // contain a matching segment.
-  if (/\/(Cellar|Caskroom|homebrew|linuxbrew)\//u.test(path) && RELEASE.brewFormula) {
+  // Node packages belong to Homebrew only inside this formula's keg. npm and pnpm
+  // global installations can share Homebrew's prefix without belonging to the formula.
+  const homebrewOwned = compiled
+    ? /\/(Cellar|Caskroom|homebrew|linuxbrew)\//u.test(path)
+    : /\/(?:Cellar|Caskroom)\/([^/]+)\/[^/]+\//u.exec(path)?.[1] === RELEASE.brewFormula;
+  if (homebrewOwned && RELEASE.brewFormula) {
     // A cask is upgraded and removed through `--cask`. The token is the formula's own lowercased name,
     // which is what the generated cask is declared under, so one value serves both spellings.
     const cask = /\/Caskroom\//u.test(path);

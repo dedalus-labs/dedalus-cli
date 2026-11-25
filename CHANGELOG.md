@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.3](https://github.com/dedalus-labs/dedalus-cli/compare/v0.9.2...v0.9.3) (2026-11-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** distribute the cli through pnpm ([#135](https://github.com/dedalus-labs/dedalus-cli/issues/135))
+
+### Features
+
+* **cli:** distribute the cli through pnpm ([#135](https://github.com/dedalus-labs/dedalus-cli/issues/135)) ([8cd8956](https://github.com/dedalus-labs/dedalus-cli/commit/8cd89563f422f33684fbfa4a4de3b4ef6912f8ae))
+
 ## [0.9.2](https://github.com/dedalus-labs/dedalus-cli/compare/v0.9.1...v0.9.2) (2026-11-24)
 
 

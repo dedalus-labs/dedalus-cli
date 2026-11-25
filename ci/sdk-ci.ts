@@ -33,22 +33,13 @@ export const sdkCI = workflow({
           name: 'Check generated workflows',
           run: command({
             file: 'git',
-            args: ['diff', '--exit-code', '--', '.github/workflows/sdk-ci.yml'],
+            args: ['diff', '--exit-code', '--', '.github/workflows'],
           }),
         },
         { name: 'Build CLI', run: command({ file: 'pnpm', args: ['run', 'build'] }) },
         {
           name: 'Install and test staging package',
           run: command({ file: 'node', args: ['scripts/verify-staging-package.mjs'] }),
-        },
-        {
-          name: 'Set up Bun',
-          uses: 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
-          with: { 'bun-version': '1.4.0' },
-        },
-        {
-          name: 'Test native standalone binary',
-          run: command({ file: 'node', args: ['scripts/verify-standalone.mjs'] }),
         },
         {
           name: 'Upload tested staging package',

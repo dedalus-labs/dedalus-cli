@@ -34,11 +34,11 @@ export const npmDistTagForVersion = (version) => {
   return /^[a-z][a-z0-9-]*$/.test(candidate) ? candidate : 'next';
 };
 
-/** Runs one npm command with inherited CI credentials and output. */
-const runNpm = (args, stdio = 'inherit') => spawnSync('npm', args, { stdio });
+/** Runs one pnpm command with inherited CI credentials and output. */
+const runPnpm = (args, stdio = 'inherit') => spawnSync('pnpm', args, { stdio });
 
 /** Publishes the repository package once, applying a derived prerelease dist-tag when needed. */
-export const publishNpm = (runner = runNpm, metadata = readPackageMetadata()) => {
+export const publishNpm = (runner = runPnpm, metadata = readPackageMetadata()) => {
   const { name, version } = metadata;
   const packageSpec = `${name}@${version}`;
   if (runner(['view', packageSpec, 'version'], 'ignore').status === 0) {
@@ -65,7 +65,8 @@ export const publishNpm = (runner = runNpm, metadata = readPackageMetadata()) =>
       : stableTags.includes(derived)
         ? `${derived}-prerelease`
         : derived;
-  const args = ['publish', '--access', ACCESS, ...(tag ? ['--tag', tag] : [])];
+  const archive = `./release-packages/${name.replace('@', '').replace('/', '-')}-${version}.tgz`;
+  const args = ['publish', archive, '--no-git-checks', '--access', ACCESS, ...(tag ? ['--tag', tag] : [])];
   console.log(
     tag ? `Publishing ${packageSpec} to npm with dist-tag ${tag}` : `Publishing ${packageSpec} to npm`,
   );

@@ -7,5 +7,6 @@ node_modules/
 /apple-codesign-*/
 /compile-out/
 /release-binaries/
+/release-packages/
 /tap/
 /artifacts/

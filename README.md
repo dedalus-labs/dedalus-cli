@@ -32,29 +32,27 @@ The full API of this library can be found in [api.md](./api.md).
 ## Installation
 
 ```sh
-# npm (requires Node.js)
-npm install -g dedalus-cli
+# macOS, Linux, and Windows (requires Node.js 20+ and pnpm)
+pnpm add --global dedalus-cli
 
-# Homebrew — standalone binary, no Node.js required
+# Homebrew installs Node and the same CLI package
 brew install dedalus-labs/tap/dedalus
 
-# Direct download — standalone binary, no Node.js required
-curl -fsSL "https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/').tar.gz" | tar xz dedalus
-sudo mv dedalus /usr/local/bin/
-
-# Windows — download and extract dedalus-windows-x64.zip, then add it to PATH
-# https://github.com/dedalus-labs/dedalus-cli/releases/latest/download/dedalus-windows-x64.zip
+# macOS and Linux installer (requires Node.js 20+ and pnpm)
+curl -fsSL https://www.dedaluslabs.ai/install/dedalus | bash
 ```
 
 ### Upgrading
 
-Run `dedalus upgrade --check` to check for a release, then `dedalus upgrade` to
-install it. Package-manager installations use their owning manager. Standalone
-macOS and Linux installations download the release archive and verify its
-`checksums.txt` before replacing the executable.
+Run `pnpm add --global dedalus-cli@latest` to upgrade a pnpm installation.
+`dedalus upgrade --check` checks for a release, and `dedalus upgrade` uses the
+package manager that owns the installation. Homebrew installations use Homebrew.
 
-If your CLI does not recognize `dedalus upgrade`, reinstall it using one of the
-methods above. Older Go CLI versions do not support this command.
+New releases ship a Node package instead of native executables. Existing direct
+downloads must migrate with the installation command above. Remove the old
+executable if it takes precedence over pnpm's `dedalus` on your `PATH`.
+If pnpm reports that its global bin directory is missing, run `pnpm setup` and
+open a new shell before installing.
 
 <br />
 
@@ -203,6 +201,10 @@ directory, runs the tests against the installed package, and uploads the
 `dedalus-cli-staging` artifact. The artifact contains a `.tgz` and its checksum
 record. This workflow does not publish to npm or Homebrew.
 
+CI builds and tests the Node package with pnpm on Linux. Releases use
+GitHub-hosted Ubuntu for npm trusted publishing and attach the same Node package
+archive to GitHub. Homebrew installs that archive through pnpm and supplies Node.
+
 Test packages are marked private and retain the production API default.
 Set `DEDALUS_TEST_BASE_URL` to your test API and pass it explicitly:
 
@@ -218,6 +220,9 @@ Set `DEDALUS_API_KEY` to a staging credential before submitting. To reproduce CI
 locally, run `pnpm install --frozen-lockfile`, `pnpm build`, and `pnpm test:package`.
 Custom feedback code lives under `src/feedback` and is integrated on `scalar-next`.
 Validate Scalar regeneration there before promoting a release.
+Release workflow customizations live under `ci/`. After merging generated output,
+run `pnpm ci:generate` and the package checks before releasing. CI rejects drift
+in any generated workflow, including the release workflows.
 
 ## Shell Completion
 
@@ -317,7 +322,7 @@ Paginated commands fetch subsequent pages for you. Use `--max-items <count>` to 
 
 ## Requirements
 
-- Node.js 20 or newer — for the npm install only; the standalone binaries bundle their own runtime.
+- Node.js 20 or newer and pnpm. Homebrew installs its own Node dependency.
 
 Powered by Scalar.
 
